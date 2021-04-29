@@ -8,7 +8,7 @@ val _ = new_theory "gol_list";
 
 (* The precence of (i,j) in a list means that location (i,j) is Live. *)
 Definition fromList_def:
-  fromList l i j = if MEM (i,j) l then Live else Dead
+  fromList l i j = MEM (i,j) l
 End
 
 Definition min_max_def:
@@ -48,7 +48,7 @@ End
 (* This computes the next state after a step-transition in GOL *)
 Definition next_def:
   next l =
-    FILTER (λ(i,j). step (fromList l) i j = Live) (active_area l)
+    FILTER (λ(i,j). step (fromList l) i j) (active_area l)
 End
 
 Theorem min_max_thm:
@@ -99,10 +99,11 @@ Proof
   \\ intLib.COOPER_TAC
 QED
 
-Theorem c2n_eq_0:
-  c2n c = 0 ⇔ c = Dead
+Theorem b2n_eq:
+  (b2n b = 0 ⇔ ~b) ∧
+  (b2n b = 1 ⇔ b)
 Proof
-  Cases_on ‘c’ \\ fs [c2n_def]
+  Cases_on ‘b’ \\ fs []
 QED
 
 (* correctness of next *)
@@ -121,7 +122,7 @@ Proof
   \\ qsuff_tac ‘live_adj (fromList l) i j = 0’
   THEN1 (strip_tac \\ fs [step_def,AllCaseEqs()])
   \\ simp [live_adj_def]
-  \\ fs [c2n_eq_0]
+  \\ fs [b2n_eq]
   \\ fs [fromList_def,AllCaseEqs()]
   \\ CCONTR_TAC \\ fs []
   \\ res_tac \\ intLib.COOPER_TAC

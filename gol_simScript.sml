@@ -8,10 +8,6 @@ open preamble gol_rulesTheory gol_listTheory gol_transTheory
 
 val _ = new_theory "gol_sim";
 
-Definition b2n_def:
-  b2n T = 1n ∧ b2n F = 0
-End
-
 val gol_def = zDefine ‘
   gol x1 x2 x3 y1 y2 y3 z1 z2 z3 ⇔
     let n = SUM (MAP b2n [x1;x2;x3;y1;y3;z1;z2;z3]) in
