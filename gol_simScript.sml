@@ -153,4 +153,35 @@ Theorem gol4[compute] = (* four or more T *)
 
 *)
 
+(* specifications
+
+Definition step60_def:
+  step60 s = FUNPOW step 60 s
+End
+
+Definition has_rep_def:
+  has_rep footprint code g =
+    ∀(i:int) (j:int).
+      g i j ⇒ if (i,j) IN footprint
+              then (i,j) IN code
+              else F
+End
+
+Definition spec_def:
+  spec ins (rep,f,next,s) outs ⇔
+    ∀g. has_rep f (rep s) g ⇒
+        has_rep f (rep (next s)) (step60 g)
+End
+
+  spec [(0,0,i)] (K {},{},I,()) [(1,1,i)]
+
+  seq [(0,0,x);(1,1,y)]
+      (t,...)
+      [(2,2,λn. if n < 5 then t else x (n-5) ∧ y (n-5))]
+
+  (rep s * all_inputs ins * rest)
+
+
+*)
+
 val _ = export_theory();
