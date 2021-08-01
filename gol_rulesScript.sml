@@ -157,4 +157,19 @@ Proof
   \\ fs [AC UNION_COMM UNION_ASSOC]
 QED
 
+(* from string *)
+
+Definition fromString_def:
+  fromStrings i j [] = ([]:(int # int) list) ∧
+  fromStrings i j (str :: strs) =
+    FLAT (MAPi (λn c. if MEM c "  ." then [] else [(& n + i,j)]) str) ++
+    fromStrings i (j+1) strs
+End
+
+Definition build_def:
+  build i j strs =
+    QSORT (λ(i1,j1) (i2,j2). if i1 = i2 then j1 ≤ j2 else i1 ≤ i2)
+      (fromStrings i j strs)
+End
+
 val _ = export_theory();
