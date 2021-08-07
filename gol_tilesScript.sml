@@ -35,20 +35,19 @@ Proof
   \\ fs [integerTheory.INT_MOD_COMMON_FACTOR]
 QED
 
-val tile_tm = “build (-2) 0
-  [ "..x..";
-    ".xxx.";
-    "xxxxx";
-    ".xxx.";
-    "..x.."]” |> EVAL |> concl |> rand
+val tile_tm = “build 0 (-4)
+  [ "....xx....";
+    "...xxxx...";
+    "..xxxxxx..";
+    ".xxxxxxxx.";
+    "xxxxxxxxxx";
+    ".xxxxxxxx.";
+    "..xxxxxx..";
+    "...xxxx...";
+    "....xx...."]” |> EVAL |> concl |> rand
 
 Definition tile_def:
-  tile =
-    [                (-2,2);
-             (-1,1); (-1,2); (-1,3);
-      (0,0); ( 0,1); ( 0,2); ( 0,3); (0,4);
-             ( 1,1); ( 1,2); ( 1,3);
-                     ( 2,2);                 ] : (int # int) list
+  tile = ^tile_tm
 End
 
 Definition translate_def:
@@ -71,20 +70,39 @@ Proof
   fs [IN_DISJOINT,EVERY_MEM] \\ metis_tac []
 QED
 
+Theorem DISJOINT_prop:
+  EVERY P xs ∧ EVERY (λx. ~P x) ys ⇒
+  DISJOINT (set xs) (set ys)
+Proof
+  fs [IN_DISJOINT,EVERY_MEM] \\ metis_tac []
+QED
+
 Theorem DISJOINT_tile_lemma[local]:
   a ≠ (0,0) ⇒ DISJOINT (set (tile_at a)) (set tile)
 Proof
   PairCases_on ‘a’ \\ fs [tile_at_def]
   \\ Cases_on ‘real_xy (a0,a1)’
   \\ drule real_xy_even \\ rw []
-  \\ Cases_on ‘2 <= j’
-  THEN1 (fs [tile_def,translate_def] \\ intLib.COOPER_TAC)
-  \\ Cases_on ‘j <= -2’
-  THEN1 (fs [tile_def,translate_def] \\ intLib.COOPER_TAC)
   \\ Cases_on ‘2 <= i’
-  THEN1 (fs [tile_def,translate_def] \\ Cases_on ‘i=0’ \\ gvs [] \\ intLib.COOPER_TAC)
+  THEN1
+   (irule DISJOINT_prop
+    \\ qexists_tac ‘λ(x,y). 2 * &L ≤ x’
+    \\ EVAL_TAC \\ intLib.COOPER_TAC)
   \\ Cases_on ‘i <= -2’
-  THEN1 (fs [tile_def,translate_def] \\ Cases_on ‘i=0’ \\ gvs [] \\ intLib.COOPER_TAC)
+  THEN1
+   (irule DISJOINT_prop
+    \\ qexists_tac ‘λ(x,y). x < 0’
+    \\ EVAL_TAC \\ intLib.COOPER_TAC)
+  \\ Cases_on ‘2 <= j’
+  THEN1
+   (irule DISJOINT_prop
+    \\ qexists_tac ‘λ(x,y). &L ≤ y’
+    \\ EVAL_TAC \\ intLib.COOPER_TAC)
+  \\ Cases_on ‘j <= -2’
+  THEN1
+   (irule DISJOINT_prop
+    \\ qexists_tac ‘λ(x,y). y < - & L’
+    \\ EVAL_TAC \\ rw [] \\ TRY intLib.COOPER_TAC)
   \\ Cases_on ‘i=0’ THEN1
    (Cases_on ‘j = 0’
     THEN1 (gvs [real_xy_def] \\ ‘F’ by intLib.COOPER_TAC)
@@ -99,27 +117,32 @@ Proof
   \\ Cases_on ‘i’ \\ fs []
 QED
 
+Theorem DISJOINT_IMAGE:
+  INJ (f:'a -> 'a) UNIV UNIV ∧ DISJOINT (IMAGE f s) (IMAGE f t) ⇒ DISJOINT s t
+Proof
+  rw [IN_DISJOINT,IN_IMAGE] \\ CCONTR_TAC \\ fs []
+  \\ first_x_assum (qspec_then ‘f x’ mp_tac)
+  \\ ‘∀x' y. f x' = f y ⇔ x' = y’ by metis_tac [INJ_DEF,IN_UNIV]
+  \\ fs []
+QED
+
 Theorem DISJOINT_tile_at_add:
   DISJOINT (set (tile_at (a1+i,a2+j))) (set (tile_at (b1+i,b2+j)))
   ⇒ DISJOINT (set (tile_at (a1,a2))) (set (tile_at (b1,b2)))
 Proof
-  fs [IN_DISJOINT,tile_at_def,tile_def,translate_def,real_xy_def]
-  \\ fs [integerTheory.INT_RDISTRIB,integerTheory.INT_SUB_RDISTRIB]
-  \\ rw []
-  \\ PairCases_on ‘x’ \\ fs []
-  \\ first_x_assum (qspec_then ‘(x0 + i * 5 + j * 5,x1 + j * 5 - i * 5)’ mp_tac)
-  \\ fs [] \\ rpt strip_tac
-  \\ ‘∀x0 a1 a2.
-        x0 + i * 5 + j * 5 = a1 + i * 5 + (a2 + j * 5) ⇔ x0 = a1+a2’ by
-        intLib.COOPER_TAC \\ fs []
-  \\ ‘∀x0 a1 a2.
-        x0 + j * 5 - i * 5 = a1 + j * 5 - (a2 + i * 5) ⇔ x0 = a1-a2’ by
-        intLib.COOPER_TAC \\ fs []
-  \\ ‘∀x0 a1 a2 k.
-        x0 + j * 5 - i * 5 = k + (a1 + j * 5 - (a2 + i * 5)) ⇔ x0 = k+a1-a2’ by
-        intLib.COOPER_TAC \\ fs []
-  THEN1 (disj1_tac \\ CCONTR_TAC \\ fs [] \\ intLib.COOPER_TAC \\ fs [])
-  \\ disj2_tac \\ CCONTR_TAC \\ fs [] \\ intLib.COOPER_TAC \\ fs []
+  rw [] \\ irule DISJOINT_IMAGE
+  \\ ‘∃ix iy. real_xy (i,j) = (ix,iy)’ by metis_tac [PAIR]
+  \\ qexists_tac ‘λ(x,y). (x+ix,y+iy)’
+  \\ reverse conj_tac THEN1 fs [INJ_DEF,FORALL_PROD]
+  \\ last_x_assum mp_tac
+  \\ match_mp_tac (METIS_PROVE [] “x = x1 ∧ y = y1 ⇒ a x y ⇒ a x1 y1”)
+  \\ fs [GSYM LIST_TO_SET_MAP]
+  \\ fs [tile_at_def,translate_def,real_xy_def,MAP_MAP_o,o_DEF,LAMBDA_PROD]
+  \\ gvs [integerTheory.INT_RDISTRIB,integerTheory.INT_SUB_RDISTRIB]
+  \\ rpt strip_tac
+  \\ rpt (AP_TERM_TAC ORELSE AP_THM_TAC)
+  \\ rw [FUN_EQ_THM]
+  \\ intLib.COOPER_TAC
 QED
 
 Theorem DISJOINT_tile:
