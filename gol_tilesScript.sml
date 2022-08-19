@@ -5,7 +5,7 @@ open preamble gol_rulesTheory;
 
 val _ = new_theory "gol_tiles";
 
-Overload L[local] = “5:num”;
+Overload L[local] = “15:num”;
 
 Definition real_xy_def:
   real_xy (m,n) =
@@ -35,16 +35,12 @@ Proof
   \\ fs [integerTheory.INT_MOD_COMMON_FACTOR]
 QED
 
-val tile_tm = “build 0 (-4)
-  [ "....xx....";
-    "...xxxx...";
-    "..xxxxxx..";
-    ".xxxxxxxx.";
-    "xxxxxxxxxx";
-    ".xxxxxxxx.";
-    "..xxxxxx..";
-    "...xxxx...";
-    "....xx...."]” |> EVAL |> concl |> rand
+val corner =
+  “REVERSE (GENLIST (λy. (GENLIST (λx. (if y <= x then #"x" else #"."))) L) L)”
+  |> EVAL |> concl |> rand
+val half = “^corner ++ TL (REVERSE ^corner)” |> EVAL |> concl |> rand
+val full = “MAP (λxs. xs ++ REVERSE xs) ^half” |> EVAL |> concl |> rand
+val tile_tm = “build 0 (1 - &L) ^full” |> EVAL |> concl |> rand
 
 Definition tile_def:
   tile = ^tile_tm
@@ -75,6 +71,37 @@ Theorem DISJOINT_prop:
   DISJOINT (set xs) (set ys)
 Proof
   fs [IN_DISJOINT,EVERY_MEM] \\ metis_tac []
+QED
+
+Definition check_pairs_def:
+  check_pairs [] = T ∧
+  check_pairs ((x,y)::xs) =
+    (ALL_DISTINCT (y :: MAP SND (FILTER (λ(a,b). a = x) xs)) ∧
+     check_pairs (FILTER (λ(a,b). a ≠ x) xs))
+Termination
+  WF_REL_TAC ‘measure LENGTH’ \\ rw [] \\ Induct_on ‘xs’ \\ rw [FORALL_PROD]
+End
+
+Theorem check_pairs_thm:
+  ∀xs. check_pairs xs ⇔ ALL_DISTINCT xs
+Proof
+  ho_match_mp_tac check_pairs_ind
+  \\ rw [check_pairs_def]
+  \\ fs [MEM_MAP,EXISTS_PROD,MEM_FILTER]
+  \\ Cases_on ‘MEM (x,y) xs’ \\ fs []
+  \\ once_rewrite_tac [EQ_SYM_EQ]
+  \\ rpt (pop_assum kall_tac)
+  \\ Induct_on ‘xs’ \\ fs [FORALL_PROD] \\ rw []
+  \\ fs [MEM_MAP,EXISTS_PROD,MEM_FILTER]
+  \\ metis_tac []
+QED
+
+Theorem check_pairs_IMP_DISJOINT_set:
+  check_pairs (xs ++ ys) ⇒
+  DISJOINT (set xs) (set ys)
+Proof
+  fs [check_pairs_thm] \\ rw [DISJOINT_set_set,ALL_DISTINCT_APPEND]
+  \\ fs [EVERY_MEM] \\ metis_tac []
 QED
 
 Theorem DISJOINT_tile_lemma[local]:
@@ -109,12 +136,13 @@ Proof
     \\ ‘j = 1 \/ j = -1’ by intLib.COOPER_TAC \\ gvs [])
   \\ Cases_on ‘j=0’ THEN1
    (‘i = 1 \/ i = -1’ by intLib.COOPER_TAC \\ gvs [])
-  \\ fs [DISJOINT_set_set]
-  \\ Cases_on ‘i=1’
-  THEN1 (‘j = 1 \/ j = -1’ by intLib.COOPER_TAC \\ gvs [] \\ EVAL_TAC)
-  \\ Cases_on ‘i=-1’
-  THEN1 (‘j = 1 \/ j = -1’ by intLib.COOPER_TAC \\ gvs [] \\ EVAL_TAC)
-  \\ Cases_on ‘i’ \\ fs []
+  \\ ‘(j = 1 ∨ j = -1) ∧ (i = 1 ∨ i = -1)’ by
+   (Cases_on ‘i=1’ THEN1 (gvs [] \\ intLib.COOPER_TAC)
+    \\ Cases_on ‘i=-1’ THEN1 (gvs [] \\ intLib.COOPER_TAC)
+    \\ Cases_on ‘i’ \\ fs [])
+  \\ gvs []
+  \\ irule check_pairs_IMP_DISJOINT_set
+  \\ CONV_TAC (RAND_CONV EVAL) \\ EVAL_TAC
 QED
 
 Theorem DISJOINT_IMAGE:
