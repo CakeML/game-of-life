@@ -1,4 +1,6 @@
-public class Point2D {
+import java.util.*;
+
+public class Point2D implements Comparable<Point2D> {
 
     private int x;
     private int y;
@@ -8,8 +10,8 @@ public class Point2D {
         this.y = y;
     }
 
-    public int x() { return x; }
-    public int y() { return y; }
+    public int getX() { return x; }
+    public int getY() { return y; }
 
     public int hashCode() {
         return x + 2000*y;
@@ -24,6 +26,12 @@ public class Point2D {
 
     public String toString() {
         return "(" + x + "," + y + ")";
+    }
+
+    public int compareTo(Point2D other) {
+        if (other == null) { return -1; }
+        if (this.x != other.x) { return this.x - other.x; }
+        return this.y - other.y;
     }
 
 }
