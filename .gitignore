@@ -29,6 +29,9 @@ cake-x64-64.tar.gz
 *.ml.txt
 *translate_timing.txt
 
+# Java classes
+*.class
+
 # Emacs backup files
 *~
 
