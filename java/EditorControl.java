@@ -6,10 +6,12 @@ import java.nio.file.*;
 public class EditorControl extends JFrame implements GridModel, GridViewListener {
 
     private JLabel status = new JLabel();
+    private EditorModel model;
 
-    public EditorControl() {
+    public EditorControl(String input) {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900,700); setLocation(50,50);
+        model = new EditorModel(input);
         JPanel p = new JPanel(new BorderLayout());
         GridView w = new GridView(this,this);
         p.add(w,BorderLayout.CENTER);
@@ -77,42 +79,15 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
                 }
             } catch (Exception e) {}
         }
-        System.out.println(input);
-        EditorControl f = new EditorControl();
+        EditorControl f = new EditorControl(input);
     }
 
     private void setStatus(String s) {
         status.setText("  " + s);
     }
 
-    private boolean isGatePos(int i, int j) {
-        if (i < 0) { i = -i; }
-        if (j < 0) { j = -j; }
-        i = i + 2;
-        j = j + 2;
-        if ((i % 15 < 5) && (j % 15 < 5)) {
-            return ((i / 15 + j / 15) % 2 == 0);
-        } else {
-            return false;
-        }
-    }
-
-    private final Color bgLight = new Color(80,80,80);
-    private final Color bgDark = new Color(40,40,40);
-    private final Color bgVeryDark = new Color(30,30,30);
-
     public Color cell(int i, int j) {
-        if (i == 0 && j == 0) { return Color.RED; }
-        if (i == 1 && j == 1) { return Color.GREEN; }
-        if (i == 1 && j == 2) { return Color.YELLOW; }
-        if (i == 1 && j == 3) { return Color.WHITE; }
-        if (isGatePos(i,j)) {
-            return bgLight;
-        }
-        if (i == 0 || j == 0) {
-            return bgVeryDark;
-        }
-        return bgDark;
+        return model.cell(i,j);
     }
 
     public void mouseClicked(int x, int y) {
