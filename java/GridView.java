@@ -7,7 +7,7 @@ public class GridView extends JPanel implements MouseListener, MouseMotionListen
     private GridModel m;
     private GridViewListener l;
 
-    private int cellWidth = 50;
+    private int cellWidth = 8;
     private int navX = 0;
     private int navY = 0;
 
@@ -38,7 +38,7 @@ public class GridView extends JPanel implements MouseListener, MouseMotionListen
                 g.fillRect(dragX + navX + midX + i * cellWidth,
                            dragY + navY + midY + j * cellWidth,
                            cellWidth,cellWidth);
-                g.setColor(Color.GRAY);
+                g.setColor(Color.BLACK);
                 g.drawRect(dragX + navX + midX + i * cellWidth,
                            dragY + navY + midY + j * cellWidth,
                            cellWidth,cellWidth);
@@ -102,6 +102,18 @@ public class GridView extends JPanel implements MouseListener, MouseMotionListen
         int y = e.getY();
         dragX = (x - mouseDownX);
         dragY = (y - mouseDownY);
+        repaint();
+    }
+
+    public void zoomOut() {
+        if (3 < cellWidth) {
+            cellWidth = cellWidth - 1;
+            repaint();
+        }
+    }
+
+    public void zoomIn() {
+        cellWidth = cellWidth + 1;
         repaint();
     }
 
