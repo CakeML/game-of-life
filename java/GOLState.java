@@ -11,6 +11,46 @@ public class GOLState {
         cells = new TreeMap<Point2D,BoolExp>();
     }
 
+    public GOLState(String rle) {
+        this();
+        readRLE(rle);
+    }
+
+    private void readRLE(String rle) {
+        TreeMap<Point2D,BoolExp> newCells = new TreeMap<Point2D,BoolExp>();
+        if (rle == null) { return; }
+        int i = 0;
+        int len = rle.length();
+        int x = 0;
+        int y = 0;
+        int rep = 1;
+        while (i < len) {
+            Character c = rle.charAt(i);
+            if (c == 'b') {
+                x = x + rep;
+            } else if (c == 'o') {
+                for (int k=0; k < rep; k++) {
+                    newCells.put(new Point2D(x,y),defaultTrue);
+                    x++;
+                }
+            } else if (c == '$') {
+                x = 0;
+                y = y + rep;
+            } else if (c == '!') {
+                break;
+            } else if ('0' <= c && c <= '9') {
+                int j = i+1;
+                while (j < len && '0' <= rle.charAt(j) && rle.charAt(j) <= '9') { j++; }
+                rep = Integer.parseInt(rle.substring(i,j));
+                i = j;
+                continue;
+            }
+            i++;
+            rep = 1;
+        }
+        cells = translate(-x/2,-y/2,newCells);
+    }
+
     public void setCell(int x, int y, BoolExp b) {
         setCell(new Point2D(x,y), b);
     }
@@ -42,6 +82,21 @@ public class GOLState {
             ret += "  " + entry.getKey().toString() + " = " + entry.getValue() + "\n";
         }
         return ret + ")\n";
+    }
+
+    private TreeMap<Point2D,BoolExp> translate(int dx, int dy, Map<Point2D,BoolExp> old) {
+        TreeMap<Point2D,BoolExp> ret = new TreeMap<Point2D,BoolExp>();
+        for (Map.Entry<Point2D,BoolExp> entry : old.entrySet()) {
+            Point2D p = entry.getKey();
+            ret.put(new Point2D(p.getX() + dx, p.getY() + dy), entry.getValue());
+        }
+        return ret;
+    }
+
+    public GOLState translate(int dx, int dy) {
+        GOLState ret = new GOLState();
+        ret.cells = translate(dx, dy, cells);
+        return ret;
     }
 
     // returns a new state following the rules of Game of Life
@@ -88,7 +143,11 @@ public class GOLState {
         for (Point2D xy : surrounding) {
             cell(xy).addVars(vars);
         }
-        String[] vs = (String[])vars.toArray();
+        String[] vs = new String[vars.toArray().length];
+        int i = 0;
+        for (String s : vars) {
+            vs[i++] = s;
+        }
         // now build expression
         Map<String,Boolean> varMapping = new TreeMap<String,Boolean>();
         return buildBoolExp(0,vs,p,surrounding,varMapping);

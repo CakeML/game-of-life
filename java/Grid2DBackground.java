@@ -4,7 +4,7 @@ import javax.swing.*;
 
 public class Grid2DBackground implements GridModel {
 
-    private boolean isGatePos(int i, int j) {
+    public static boolean isGatePos(int i, int j) {
         if (i < 0) { i = -i; }
         if (j < 0) { j = -j; }
         i = i + 2;
@@ -14,6 +14,16 @@ public class Grid2DBackground implements GridModel {
         } else {
             return false;
         }
+    }
+
+    public static int getGateX(int x) {
+        if (x < 0) { x = x-2; } else { x = x+2; }
+        return (x / 15) * 15;
+    }
+
+    public static int getGateY(int y) {
+        if (y < 0) { y = y-2; } else { y = y+2; }
+        return (y / 15) * 15;
     }
 
     private final Color bgLight = new Color(80,80,80);
