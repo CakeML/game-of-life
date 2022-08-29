@@ -111,8 +111,14 @@ public class GOLState {
         }
         // insert new state for each point in toVisit
         for (Point2D p : toVisit) {
-            ret.setCell(p,tickValOf(p));
+            BoolExp e = tickValOf(p);
+            if (!(e instanceof BoolFalse)) {
+                ret.setCell(p,e);
+            }
         }
+        // print debug output
+        System.out.println("------------------------------------");
+        System.out.println(this.toString());
         // return the resulting GOLState
         return ret;
     }

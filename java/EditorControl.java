@@ -48,9 +48,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
             });
         buttons.add(gateOut);
         JButton run60 = new JButton("run step");
-        run60.addActionListener((ActionEvent e) -> {
-                model.tick();
-                w.repaint(); });
+        run60.addActionListener((ActionEvent e) -> { run60(); });
         buttons.add(run60);
         JButton export = new JButton("export");
         export.addActionListener((ActionEvent e) -> { export(); });
@@ -62,10 +60,28 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         setStatus("");
     }
 
-    public void run60() { }
+    public void run60() {
+        model.startSim();
+        repaint();
+        javax.swing.Timer t = new javax.swing.Timer(10,null);
+        ActionListener al = new ActionListener() {
+                int k = 0;
+                public void actionPerformed(ActionEvent evt) {
+                    k++;
+                    setStatus("After tick: " + k);
+                    model.tick();
+                    repaint();
+                    if (k >= 60) {
+                        t.stop();
+                    }
+                }
+            };
+        t.addActionListener(al);
+        t.start();
+    }
 
     public void export() {
-        System.out.println("..");
+        System.out.println("export() not implemented yet");
     }
 
     public static void main(String[] args) {

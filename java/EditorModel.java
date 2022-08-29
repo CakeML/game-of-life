@@ -8,6 +8,7 @@ public class EditorModel implements GridModel {
     private GOLState golState;
     private Grid2DBackground bg;
     private LinkedList<Gate> gates = new LinkedList<Gate>();
+    private int genCount = 0;
 
     public EditorModel(String rle) {
         golState = new GOLState(rle);
@@ -32,9 +33,20 @@ public class EditorModel implements GridModel {
             } else {
                 return gc;
             }
-        } else {
+        } else if (b instanceof BoolTrue) {
             return Color.WHITE;
+        } else if (b instanceof BoolVar) {
+            return Color.YELLOW;
+        } else {
+            return Color.MAGENTA;
         }
+    }
+
+    public void startSim() {
+        for (Gate gate : gates) {
+            gate.modifyGOLState(golState,genCount);
+        }
+        genCount++;
     }
 
     public void tick() {
