@@ -24,6 +24,10 @@ public class BoolVar implements BoolExp {
         return name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public boolean equals(Object o) {
         if (o == null) { return false; }
         if (o instanceof BoolVar) {

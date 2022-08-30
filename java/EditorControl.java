@@ -47,9 +47,12 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
                 mode = EditorMode.GATE_OUT;
             });
         buttons.add(gateOut);
-        JButton run60 = new JButton("run step");
+        JButton run60 = new JButton("run 60 steps");
         run60.addActionListener((ActionEvent e) -> { run60(); });
         buttons.add(run60);
+        JButton rename = new JButton("rename");
+        rename.addActionListener((ActionEvent e) -> { model.rename(); w.repaint(); });
+        buttons.add(rename);
         JButton export = new JButton("export");
         export.addActionListener((ActionEvent e) -> { export(); });
         buttons.add(export);
@@ -142,6 +145,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         mouseX = x;
         mouseY = y;
         w.repaint();
+        setStatus("("+x+","+y+"): " + model.cellInfo(x,y));
     }
 
     public void mouseExited() {

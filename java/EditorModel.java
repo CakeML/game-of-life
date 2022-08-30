@@ -9,6 +9,7 @@ public class EditorModel implements GridModel {
     private Grid2DBackground bg;
     private LinkedList<Gate> gates = new LinkedList<Gate>();
     private int genCount = 0;
+    private int varCount = 0;
 
     public EditorModel(String rle) {
         golState = new GOLState(rle);
@@ -24,6 +25,14 @@ public class EditorModel implements GridModel {
         return null;
     }
 
+    public String cellInfo(int x, int y) {
+        return golState.cell(x,y).toString();
+    }
+
+    private final Color aGlider = new Color(255,100,100);
+    private final Color bGlider = new Color(150,255,150);
+    private final Color tGlider = new Color(100,100,255);
+
     public Color cell(int x, int y) {
         BoolExp b = golState.cell(x,y);
         if (b instanceof BoolFalse) {
@@ -36,6 +45,15 @@ public class EditorModel implements GridModel {
         } else if (b instanceof BoolTrue) {
             return Color.WHITE;
         } else if (b instanceof BoolVar) {
+            BoolVar var = (BoolVar)b;
+            String n = var.getName();
+            if (n.startsWith("a")) {
+                return aGlider;
+            } else if (n.startsWith("b")) {
+                return bGlider;
+            } else if (n.startsWith("t")) {
+                return tGlider;
+            }
             return Color.YELLOW;
         } else {
             return Color.MAGENTA;
@@ -69,6 +87,24 @@ public class EditorModel implements GridModel {
         Gate g = new Gate(x,y,isInGate);
         gates.add(g);
         return true;
+    }
+
+    public void rename() {
+        Set<Point2D> all = golState.points();
+        HashMap<String,BoolVar> map = new HashMap<String,BoolVar>();
+        for (Point2D p : all) {
+            BoolExp e = golState.cell(p);
+            if (e instanceof BoolTrue) { continue; }
+            if (e instanceof BoolFalse) { continue; }
+            String k = e.toString();
+            BoolVar v = map.get(k);
+            if (v == null) {
+                v = new BoolVar("t" + varCount);
+                map.put(k,v);
+                varCount++;
+            }
+            golState.setCell(p,v);
+        }
     }
 
 }
