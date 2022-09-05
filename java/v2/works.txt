@@ -1,0 +1,5 @@
+place the marker according to marker-position.png
+
+lwss-rotate-wn-ready.rle
+lwss-or-ready.rle
+lwss-and-ready.rle

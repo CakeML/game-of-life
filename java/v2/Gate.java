@@ -130,15 +130,15 @@ public class Gate {
         switch (dir) {
             case EAST:
                 System.out.println("EAST x=" + x + " y=" + y);
-                golState.setCell(x+2,y,var);
+                golState.setCell(x,y,var);
+                golState.setCell(x+1,y+1,var);
+                golState.setCell(x+2,y+1,var);
                 golState.setCell(x+3,y+1,var);
                 golState.setCell(x+4,y+1,var);
-                golState.setCell(x+5,y+1,var);
-                golState.setCell(x+6,y+1,var);
-                golState.setCell(x+6,y,var);
-                golState.setCell(x+6,y-1,var);
-                golState.setCell(x+5,y-2,var);
-                golState.setCell(x+2,y-2,var);
+                golState.setCell(x+4,y,var);
+                golState.setCell(x+4,y-1,var);
+                golState.setCell(x+3,y-2,var);
+                golState.setCell(x,y-2,var);
                 return;
             case WEST:
                 System.out.println("WEST x=" + x + " y=" + y);
@@ -150,23 +150,27 @@ public class Gate {
                 return;
             case NORTH:
                 System.out.println("NORTH x=" + x + " y=" + y);
-                golState.setCell(x+2,y-14,var);
-                golState.setCell(x,y-14,var);
-                golState.setCell(x-1,y-15,var);
-                golState.setCell(x-1,y-16,var);
-                golState.setCell(x-1,y-17,var);
-                golState.setCell(x-1,y-18,var);
-                golState.setCell(x,y-18,var);
-                golState.setCell(x+1,y-18,var);
-                golState.setCell(x+2,y-17,var);
+                golState.setCell(x,y+16,var);
+                golState.setCell(x-2,y+16,var);
+                golState.setCell(x-3,y+15,var);
+                golState.setCell(x-3,y+14,var);
+                golState.setCell(x-3,y+13,var);
+                golState.setCell(x-3,y+12,var);
+                golState.setCell(x-2,y+12,var);
+                golState.setCell(x-1,y+12,var);
+                golState.setCell(x,y+13,var);
                 return;
             case SOUTH:
                 System.out.println("SOUTH x=" + x + " y=" + y);
-                golState.setCell(x,y,var);
-                golState.setCell(x-1,y,var);
-                golState.setCell(x-1,y-1,var);
-                golState.setCell(x-2,y-1,var);
-                golState.setCell(x-2,y+1,var);
+                golState.setCell(x-1,y-13,var);
+                golState.setCell(x+1,y-13,var);
+                golState.setCell(x+2,y-12,var);
+                golState.setCell(x+2,y-11,var);
+                golState.setCell(x+2,y-10,var);
+                golState.setCell(x+2,y-9,var);
+                golState.setCell(x+1,y-9,var);
+                golState.setCell(x,y-9,var);
+                golState.setCell(x-1,y-10,var);
                 return;
         }
         return;
