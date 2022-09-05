@@ -125,9 +125,10 @@ public class Gate {
                 golState.setCell(x+i,y+j,defaultFalse);
             }
         }
-        if (!isInGate) { return; }
         BoolVar var = new BoolVar(varName + genCount);
-        switch (dir) {
+        Direction d = dir;
+        if (!isInGate) { var = null; d = opposite(dir); }
+        switch (d) {
             case EAST:
                 System.out.println("EAST x=" + x + " y=" + y);
                 golState.setCell(x,y,var);
@@ -142,11 +143,15 @@ public class Gate {
                 return;
             case WEST:
                 System.out.println("WEST x=" + x + " y=" + y);
-                golState.setCell(x-1,y+1,var);
-                golState.setCell(x+1,y+1,var);
-                golState.setCell(x-1,y+2,var);
-                golState.setCell(x,y+2,var);
-                golState.setCell(x,y+3,var);
+                golState.setCell(x-1,y+3,var);
+                golState.setCell(x-1,y+5,var);
+                golState.setCell(x-2,y+2,var);
+                golState.setCell(x-3,y+2,var);
+                golState.setCell(x-4,y+2,var);
+                golState.setCell(x-5,y+2,var);
+                golState.setCell(x-5,y+3,var);
+                golState.setCell(x-5,y+4,var);
+                golState.setCell(x-4,y+5,var);
                 return;
             case NORTH:
                 System.out.println("NORTH x=" + x + " y=" + y);
