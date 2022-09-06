@@ -20,7 +20,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
 
     public EditorControl(String input) {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900,700); setLocation(50,50);
+        setSize(1100,700); setLocation(50,50);
         model = new EditorModel(input);
         JPanel p = new JPanel(new BorderLayout());
         w = new GridView(this,this);
@@ -47,9 +47,12 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
                 mode = EditorMode.GATE_OUT;
             });
         buttons.add(gateOut);
-        JButton run60 = new JButton("run 60 steps");
-        run60.addActionListener((ActionEvent e) -> { run60(); });
-        buttons.add(run60);
+        JButton run60button = new JButton("run 60 steps");
+        run60button.addActionListener((ActionEvent e) -> { run60(run60button); });
+        buttons.add(run60button);
+        JButton fastforward = new JButton("fast forward");
+        fastforward.addActionListener((ActionEvent e) -> { fast60(); });
+        buttons.add(fastforward);
         JButton rename = new JButton("rename");
         rename.addActionListener((ActionEvent e) -> { model.rename(); w.repaint(); });
         buttons.add(rename);
@@ -63,7 +66,16 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         setStatus("");
     }
 
-    public void run60() {
+    public void fast60() {
+        model.startSim();
+        for (int i=0;i<60;i++) {
+            model.tick();
+        }
+        repaint();
+    }
+
+    public void run60(JButton b) {
+        b.setEnabled(false);
         model.startSim();
         repaint();
         javax.swing.Timer t = new javax.swing.Timer(10,null);
@@ -76,6 +88,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
                     repaint();
                     if (k >= 60) {
                         t.stop();
+                        b.setEnabled(true);
                     }
                 }
             };

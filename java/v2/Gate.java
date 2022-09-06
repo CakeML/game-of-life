@@ -130,7 +130,6 @@ public class Gate {
         if (!isInGate) { var = null; d = opposite(dir); }
         switch (d) {
             case EAST:
-                System.out.println("EAST x=" + x + " y=" + y);
                 golState.setCell(x,y,var);
                 golState.setCell(x+1,y+1,var);
                 golState.setCell(x+2,y+1,var);
@@ -142,7 +141,6 @@ public class Gate {
                 golState.setCell(x,y-2,var);
                 return;
             case WEST:
-                System.out.println("WEST x=" + x + " y=" + y);
                 golState.setCell(x-1,y+3,var);
                 golState.setCell(x-1,y+5,var);
                 golState.setCell(x-2,y+2,var);
@@ -154,7 +152,6 @@ public class Gate {
                 golState.setCell(x-4,y+5,var);
                 return;
             case NORTH:
-                System.out.println("NORTH x=" + x + " y=" + y);
                 golState.setCell(x,y+16,var);
                 golState.setCell(x-2,y+16,var);
                 golState.setCell(x-3,y+15,var);
@@ -166,7 +163,6 @@ public class Gate {
                 golState.setCell(x,y+13,var);
                 return;
             case SOUTH:
-                System.out.println("SOUTH x=" + x + " y=" + y);
                 golState.setCell(x-1,y-13,var);
                 golState.setCell(x+1,y-13,var);
                 golState.setCell(x+2,y-12,var);
