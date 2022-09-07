@@ -10,6 +10,7 @@ public class EditorModel implements GridModel {
     private LinkedList<Gate> gates = new LinkedList<Gate>();
     private int genCount = 0;
     private int varCount = 0;
+    private LinkedList<GOLState> history = new LinkedList<GOLState>();
 
     public EditorModel(String rle) {
         golState = new GOLState(rle);
@@ -64,11 +65,14 @@ public class EditorModel implements GridModel {
         for (Gate gate : gates) {
             gate.modifyGOLState(golState,genCount);
         }
+        history = new LinkedList<GOLState>();
+        history.add(golState);
         genCount++;
     }
 
     public void tick() {
         golState = golState.tick();
+        history.add(golState);
     }
 
     public void translate(int x, int y) {

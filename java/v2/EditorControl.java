@@ -18,7 +18,8 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         NONE, SET_00, GATE_IN, GATE_OUT
     }
 
-    public EditorControl(String input) {
+    public EditorControl(String name,String input) {
+        super(name);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100,700); setLocation(50,50);
         model = new EditorModel(input);
@@ -102,6 +103,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
 
     public static void main(String[] args) {
         String input = "!";
+        String name = "";
         if (args.length > 0) {
             Path path = Paths.get(args[0]);
             try {
@@ -114,8 +116,9 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
                     input = input.substring(i+1);
                 }
             } catch (Exception e) {}
+            name = args[0];
         }
-        EditorControl f = new EditorControl(input);
+        EditorControl f = new EditorControl(name,input);
     }
 
     private void setStatus(String s) {

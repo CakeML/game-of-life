@@ -19,7 +19,7 @@ public class Point2D implements Comparable<Point2D> {
 
     public boolean equals(Object o) {
         if (o == null) { return false; }
-        if (!(o instanceof Point2D)) { return false; }
+        if (o.getClass() != this.getClass()) { return false; }
         Point2D d = (Point2D)o;
         return x == d.x && y == d.y;
     }
