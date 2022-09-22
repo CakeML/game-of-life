@@ -7,8 +7,8 @@ public class GridView extends JPanel implements MouseListener, MouseMotionListen
     private GridModel m;
     private GridViewListener l;
 
-    private int cellWidth = 8;
-    private int navX = 0;
+    private int cellWidth = 4;
+    private int navX = -75 * cellWidth;
     private int navY = 0;
 
     private int mouseDownX;

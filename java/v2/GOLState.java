@@ -16,6 +16,46 @@ public class GOLState {
         readRLE(rle);
     }
 
+    private boolean isSet(Point2D p, TreeMap<Point2D,BoolExp> cs) {
+        BoolExp b = cs.get(p);
+        if (b == null) { return false; }
+        return b instanceof BoolTrue;
+    }
+
+    private boolean isSet(int x, int y, Point2D p, TreeMap<Point2D,BoolExp> cs) {
+        Point2D q = new Point2D(x + p.getX(), y + p.getY());
+        return isSet(q,cs);
+    }
+
+    private boolean isClear(Point2D p, TreeMap<Point2D,BoolExp> cs) {
+        BoolExp b = cs.get(p);
+        if (b == null) { return true; }
+        return b instanceof BoolFalse;
+    }
+
+    private boolean isClear(int x, int y, Point2D p, TreeMap<Point2D,BoolExp> cs) {
+        Point2D q = new Point2D(x + p.getX(), y + p.getY());
+        return isClear(q,cs);
+    }
+
+    private boolean hasSpecialPattern(Point2D p, TreeMap<Point2D,BoolExp> cs) {
+        // ...
+        // .x.
+        // ...
+        // .x.   <-- that x is the position of the marker
+        // ..x
+        return isSet(p,cs) &&
+               isSet(1,1,p,cs) &&
+               isSet(0,-2,p,cs) &&
+               isClear(-1,-1,p,cs) &&
+               isClear( 0,-1,p,cs) &&
+               isClear( 1,-1,p,cs) &&
+               isClear(-1, 0,p,cs) &&
+               isClear( 1, 0,p,cs) &&
+               isClear(-1, 1,p,cs) &&
+               isClear( 0, 1,p,cs);
+    }
+
     private void readRLE(String rle) {
         TreeMap<Point2D,BoolExp> newCells = new TreeMap<Point2D,BoolExp>();
         if (rle == null) { return; }
@@ -48,7 +88,18 @@ public class GOLState {
             i++;
             rep = 1;
         }
-        cells = translate(-x/2,-y/2,newCells);
+        int midX = x/2;
+        int midY = y/2;
+        // attempt to find special marker pattern for (0,0)
+        Set<Point2D> allPoints = newCells.keySet();
+        for (Point2D p : allPoints) {
+            if (hasSpecialPattern(p,newCells)) {
+                midX = p.getX();
+                midY = p.getY();
+                break;
+            }
+        }
+        cells = translate(-midX,-midY,newCells);
     }
 
     public void setCell(int x, int y, BoolExp b) {

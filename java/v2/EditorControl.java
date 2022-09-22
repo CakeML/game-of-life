@@ -21,7 +21,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
     public EditorControl(String name,String input) {
         super(name);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1100,700); setLocation(50,50);
+        setSize(1100,750); setLocation(50,20);
         model = new EditorModel(input);
         JPanel p = new JPanel(new BorderLayout());
         w = new GridView(this,this);
