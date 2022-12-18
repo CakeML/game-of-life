@@ -21,6 +21,14 @@ public class Gate {
         this.isInGate = isInGate;
     }
 
+    public Gate(int x, int y, boolean isInGate, Direction dir, String varName) {
+        this.x = x;
+        this.y = y;
+        this.isInGate = isInGate;
+        this.dir = dir;
+        this.varName = varName;
+    }
+
     public void nextVersion() {
         switch (k) {
             case 0: dir = Direction.EAST; break;
