@@ -135,6 +135,21 @@ public class GOLState {
         return ret + ")\n";
     }
 
+    public String toHOLString() {
+        String ret = "     [";
+        boolean isFirst = true;
+        for (Map.Entry<Point2D,BoolExp> entry : cells.entrySet()) {
+            BoolExp v = entry.getValue();
+            if (v == null) { continue; }
+            String v_str = v.toString();
+            if (v_str.equals("F")) { continue; }
+            if (!isFirst) { ret += ",\n      "; }
+            ret += "(" + entry.getKey().toString() + ", " + v_str + ")";
+            isFirst = false;
+        }
+        return ret + "]\n";
+    }
+
     private TreeMap<Point2D,BoolExp> translate(int dx, int dy, Map<Point2D,BoolExp> old) {
         TreeMap<Point2D,BoolExp> ret = new TreeMap<Point2D,BoolExp>();
         for (Map.Entry<Point2D,BoolExp> entry : old.entrySet()) {

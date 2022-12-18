@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.util.*;
+import java.io.*;
 
 public class EditorModel implements GridModel {
 
@@ -120,6 +121,33 @@ public class EditorModel implements GridModel {
         history = new LinkedList<GOLState>();
         history.add(golState);
         genCount++;
+    }
+
+    public void export(String filename) {
+        try {
+            FileOutputStream output = new FileOutputStream("taScript.sml");
+            output.write("open HolKernel Parse boolLib bossLib gol_simTheory gol_simLib;\n\n".getBytes());
+            output.write("val _ = new_theory \"ta\";\n\n".getBytes());
+            output.write("Theorem gol_simulation:\n".getBytes());
+            output.write("  gol_simulation\n    [\n".getBytes());
+            boolean isFirst = true;
+            for (GOLState s : history) {
+                if (!isFirst) {
+                    output.write("   ,\n".getBytes());
+                }
+                output.write(s.toHOLString().getBytes());
+                isFirst = false;
+            }
+            output.write("    ]\n".getBytes());
+            output.write("Proof\n".getBytes());
+            output.write("  cheat\n".getBytes());
+            output.write("QED\n\n".getBytes());
+            output.write("val _ = export_theory();\n".getBytes());
+            output.flush();
+            output.close();
+        } catch (IOException e) {
+            System.out.println("Write failed");
+        }
     }
 
     public void tick() {

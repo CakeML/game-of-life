@@ -58,7 +58,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         rename.addActionListener((ActionEvent e) -> { model.rename(); w.repaint(); });
         buttons.add(rename);
         JButton export = new JButton("export");
-        export.addActionListener((ActionEvent e) -> { export(); });
+        export.addActionListener((ActionEvent e) -> { model.export(name + ".txt"); });
         buttons.add(export);
         p.add(buttons,BorderLayout.NORTH);
         p.add(status,BorderLayout.SOUTH);
@@ -95,10 +95,6 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
             };
         t.addActionListener(al);
         t.start();
-    }
-
-    public void export() {
-        System.out.println("export() not implemented yet");
     }
 
     public static void main(String[] args) {
