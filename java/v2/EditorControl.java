@@ -52,7 +52,7 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         run60button.addActionListener((ActionEvent e) -> { run60(run60button); });
         buttons.add(run60button);
         JButton fastforward = new JButton("fast forward");
-        fastforward.addActionListener((ActionEvent e) -> { fast60(); });
+        fastforward.addActionListener((ActionEvent e) -> { fast60(model); repaint(); });
         buttons.add(fastforward);
         JButton rename = new JButton("rename");
         rename.addActionListener((ActionEvent e) -> { model.rename(); w.repaint(); });
@@ -67,12 +67,11 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         setStatus("");
     }
 
-    public void fast60() {
+    public static void fast60(EditorModel model) {
         model.startSim();
         for (int i=0;i<60;i++) {
             model.tick();
         }
-        repaint();
     }
 
     public void run60(JButton b) {
@@ -97,24 +96,43 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         t.start();
     }
 
+    private static String readFile(String filename) {
+        String input = "!";
+        Path path = Paths.get(filename);
+        try {
+            input = new String(Files.readAllBytes(path));
+            int i = 0;
+            while (i<input.length() && input.charAt(i) != '\n') {
+                i++;
+            }
+            if (i<input.length()) {
+                input = input.substring(i+1);
+            }
+        } catch (Exception e) {}
+        return input;
+    }
+
     public static void main(String[] args) {
         String input = "!";
         String name = "";
         if (args.length > 0) {
-            Path path = Paths.get(args[0]);
-            try {
-                input = new String(Files.readAllBytes(path));
-                int i = 0;
-                while (i<input.length() && input.charAt(i) != '\n') {
-                    i++;
-                }
-                if (i<input.length()) {
-                    input = input.substring(i+1);
-                }
-            } catch (Exception e) {}
             name = args[0];
+            input = readFile(name);
         }
-        EditorControl f = new EditorControl(name,input);
+        if (args.length < 2) {
+            EditorControl f = new EditorControl(name,input);
+        } else {
+            if (!args[0].equals("--batch")) {
+                return;
+            }
+            for (int i=1;i<args.length; i++) {
+                name = args[i];
+                input = readFile(name);
+                EditorModel model = new EditorModel(name,input);
+                for (int k=0;k<10;k++) { fast60(model); }
+                model.export(name + ".txt");
+            }
+        }
     }
 
     private void setStatus(String s) {

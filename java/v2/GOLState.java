@@ -135,19 +135,17 @@ public class GOLState {
         return ret + ")\n";
     }
 
-    public String toHOLString() {
-        String ret = "     [";
-        boolean isFirst = true;
+    public String toExportString() {
+        String ret = "GOLState\n";
         for (Map.Entry<Point2D,BoolExp> entry : cells.entrySet()) {
-            BoolExp v = entry.getValue();
-            if (v == null) { continue; }
-            String v_str = v.toString();
-            if (v_str.equals("F")) { continue; }
-            if (!isFirst) { ret += ",\n      "; }
-            ret += "(" + entry.getKey().toString() + ", " + v_str + ")";
-            isFirst = false;
+            BoolExp b = entry.getValue();
+            if (b == null) { continue; }
+            String v = b.toString();
+            if (v.equals("F")) { continue; }
+            ret += entry.getKey().toString() + ":" + v + "\n";
         }
-        return ret + "]\n";
+        ret += "End\n";
+        return ret;
     }
 
     private TreeMap<Point2D,BoolExp> translate(int dx, int dy, Map<Point2D,BoolExp> old) {

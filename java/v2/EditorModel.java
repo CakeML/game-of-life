@@ -49,8 +49,12 @@ public class EditorModel implements GridModel {
                 break;
             }
         }
-        String input = name.substring(i1+1,i2);
-        String output = name.substring(i2+1,i3);
+        String input = "";
+        String output = "";
+        try {
+            input = name.substring(i1+1,i2);
+            output = name.substring(i2+1,i3);
+        } catch (Exception e) { return; }
         if (!onlyNWSE(input)) { return; }
         if (!onlyNWSE(output)) { return; }
         String varName = "a";
@@ -125,26 +129,14 @@ public class EditorModel implements GridModel {
 
     public void export(String filename) {
         try {
-            FileOutputStream output = new FileOutputStream("taScript.sml");
-            output.write("open HolKernel Parse boolLib bossLib gol_simTheory gol_simLib;\n\n".getBytes());
-            output.write("val _ = new_theory \"ta\";\n\n".getBytes());
-            output.write("Theorem gol_simulation:\n".getBytes());
-            output.write("  gol_simulation\n    [\n".getBytes());
-            boolean isFirst = true;
+            System.out.print("Writing " + filename + " ... ");
+            FileOutputStream output = new FileOutputStream(filename);
             for (GOLState s : history) {
-                if (!isFirst) {
-                    output.write("   ,\n".getBytes());
-                }
-                output.write(s.toHOLString().getBytes());
-                isFirst = false;
+                output.write(s.toExportString().getBytes());
             }
-            output.write("    ]\n".getBytes());
-            output.write("Proof\n".getBytes());
-            output.write("  cheat\n".getBytes());
-            output.write("QED\n\n".getBytes());
-            output.write("val _ = export_theory();\n".getBytes());
             output.flush();
             output.close();
+            System.out.println("done.");
         } catch (IOException e) {
             System.out.println("Write failed");
         }
