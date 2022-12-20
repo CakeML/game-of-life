@@ -3,15 +3,18 @@
 
   The plane is represented as a square.
 *)
-open preamble gol_rulesTheory gol_listTheory gol_transTheory
+open preamble gol_rulesTheory (* gol_listTheory gol_transTheory *)
      integerTheory sortingTheory;
 
 val _ = new_theory "gol_sim";
 
-val gol_def = zDefine ‘
+Definition gol_def[nocompute]:
   gol x1 x2 x3 y1 y2 y3 z1 z2 z3 ⇔
     let n = SUM (MAP b2n [x1;x2;x3;y1;y3;z1;z2;z3]) in
-      if y2 then n = 2 ∨ n = 3 else n = 3’
+      if y2 then n = 2 ∨ n = 3 else n = 3
+End
+
+(*
 
 Definition next_row_def:
   next_row (x1::x2::x3::xs) (y1::y2::y3::ys) (z1::z2::z3::zs) =
@@ -55,7 +58,7 @@ Definition tick_n_def:
       | SOME f => tick_n (n-1:num) f
 End
 
-
+*)
 
 Theorem gol_sim:
   gol a F F F b F F F F = F ∧
@@ -183,5 +186,7 @@ End
 
 
 *)
+
+Theorem gol_simp = LIST_CONJ [gol_sim,gol4,gol3,gol3F,gol2,gol2F,gol1];
 
 val _ = export_theory();
