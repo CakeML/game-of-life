@@ -91,6 +91,16 @@ Proof
   \\ fs [AC DISJ_COMM DISJ_ASSOC]
 QED
 
+Theorem step_SUBSET_infl:
+  step s ⊆ infl s
+Proof
+  fs [step_def,SUBSET_DEF] \\ PairCases \\ fs [IN_step,infl_thm]
+  \\ strip_tac
+  \\ ‘live_adj s x0 x1 ≠ 0’ by (pop_assum mp_tac \\ IF_CASES_TAC \\ fs [])
+  \\ last_x_assum kall_tac
+  \\ fs [live_adj_def,IN_DEF]
+QED
+
 Theorem infl_union:
   DISJOINT (infl s) (infl s') ⇒ infl (s ∪ s') = infl s ∪ infl s'
 Proof
@@ -155,6 +165,15 @@ Proof
   \\ conj_tac THEN1 (fs [IN_DISJOINT] \\ metis_tac [])
   \\ qexists_tac ‘m’
   \\ fs [AC UNION_COMM UNION_ASSOC]
+QED
+
+(* infl props *)
+
+Theorem infl_mono:
+  x ⊆ y ⇒ infl x ⊆ infl y
+Proof
+  fs [infl_thm,SUBSET_DEF,FORALL_PROD]
+  \\ rw [] \\ fs []
 QED
 
 (* from string *)
