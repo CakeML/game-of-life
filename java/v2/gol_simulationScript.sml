@@ -1,15 +1,312 @@
 (*
-  A formalisation of the rules of Conway's Game of Life (GOL).
+  Definitions that help simulation
 *)
 open preamble gol_rulesTheory gol_simTheory;
 
 val _ = new_theory "gol_simulation";
 
-(* important definitions *)
+(* simulating a grid of optional booleans *)
+
+Definition bool_def[simp]:
+  bool NONE = F ∧
+  bool (SOME b) = b
+End
+
+Definition next_row_def:
+  (next_row (x1::x2::x3::xs) (y1::y2::y3::ys) (z1::z2::z3::zs) (q::qs) ⇔
+     gol (bool x1) (bool x2) (bool x3)
+         (bool y1) (bool y2) (bool y3)
+         (bool z1) (bool z2) (bool z3) = bool q ∧
+     next_row (x2::x3::xs) (y2::y3::ys) (z2::z3::zs) qs) ∧
+  (next_row (x1::x2::[]) (y1::y2::[]) (z1::z2::[]) (q::[]) ⇔
+     gol (bool x1) (bool x2) F
+         (bool y1) (bool y2) F
+         (bool z1) (bool z2) F = bool q) ∧
+  (next_row _ _ _ _ ⇔ F)
+End
+
+Definition next_frame_def:
+  (next_frame (x::y::z::xs) (q::qs) ⇔
+     next_row (NONE :: x) (NONE :: y) (NONE :: z) q ∧
+     next_frame (y::z::xs) qs) ∧
+  (next_frame (x::y::[]) (q::[]) ⇔
+     next_row (NONE :: x) (NONE :: y) (NONE :: MAP (K NONE) y) q) ∧
+  (next_frame _ _ ⇔ F)
+End
+
+Definition next_sim_def:
+  next_sim (x::xs) qs = next_frame (MAP (K NONE) x :: x :: xs) qs
+End
+
+
+(* from_row/frame *)
+
+Definition from_row_def:
+  from_row x y [] = [] ∧
+  from_row x y (NONE::ts) = from_row (x+1) y ts ∧
+  from_row x y (SOME b::ts) = ((x:int,y:int),b) :: from_row (x+1) y ts
+End
+
+Definition from_frame_def:
+  from_frame x y [] = [] ∧
+  from_frame x y (r::rows) = from_row x y r ++ from_frame x (y+1) rows
+End
+
+
+(* dimensions of the frame *)
+
+Definition frame_ok_def:
+  frame_ok (w,h) xs ⇔
+    LENGTH xs = h ∧ h ≠ 0 ∧
+    EVERY (λx. LENGTH x = w) xs ∧ w ≠ 0
+End
+
+Triviality next_row_length:
+  ∀xs ys zs x y z qs n.
+    next_row (x::xs) (y::ys) (z::zs) qs ∧
+    LENGTH xs = LENGTH ys ∧ xs ≠ [] ∧
+    LENGTH xs = LENGTH zs ∧ n = LENGTH xs ⇒
+    LENGTH qs = n
+Proof
+  Induct \\ fs []
+  \\ Cases_on ‘ys’ \\ fs []
+  \\ Cases_on ‘zs’ \\ fs []
+  \\ Cases_on ‘qs’ \\ fs [next_row_def]
+  \\ Cases_on ‘xs = []’
+  >- (rename [‘next_row _ _ _ (h5::t5)’] \\ Cases_on ‘t5’ \\ gvs [next_row_def])
+  \\ Cases_on ‘xs’ \\ fs []
+  \\ Cases_on ‘t’ \\ Cases_on ‘t'’ \\ gvs []
+  \\ fs [next_row_def] \\ rw []
+  \\ res_tac \\ fs []
+QED
+
+Theorem frame_ok_next_sim:
+  next_sim xs ys ∧ frame_ok (w,h) xs ⇒
+  frame_ok (w,h) ys
+Proof
+  Cases_on ‘xs’ \\ fs [next_sim_def,frame_ok_def] \\ strip_tac
+  \\ rename [‘LENGTH h = w’]
+  \\ qsuff_tac ‘
+    ∀xs ys.
+      next_frame xs ys ∧ EVERY (λx. LENGTH x = LENGTH h ∧ x ≠ []) xs ∧ 1 < LENGTH xs ⇒
+      LENGTH ys + 1 = LENGTH xs ∧
+      EVERY (λx. LENGTH x = LENGTH h) ys’
+  >-
+   (disch_then drule \\ fs [ADD1]
+    \\ disch_then irule  \\ CCONTR_TAC \\ gvs []
+    \\ gvs [EVERY_MEM,EXISTS_MEM]
+    \\ res_tac \\ fs [])
+  \\ rpt $ pop_assum kall_tac
+  \\ gen_tac
+  \\ completeInduct_on ‘LENGTH xs’ \\ fs []
+  \\ rpt gen_tac \\ strip_tac \\ gvs [PULL_FORALL]
+  \\ strip_tac
+  \\ Cases_on ‘xs’ \\ fs []
+  \\ rename [‘next_frame (x::ys)’]
+  \\ Cases_on ‘ys’ \\ fs []
+  \\ rename [‘next_frame (x::y::zs) qs’]
+  \\ Cases_on ‘zs’ \\ gvs [next_frame_def,ADD1]
+  >-
+   (Cases_on ‘qs’ \\ gvs [next_frame_def,ADD1]
+    \\ Cases_on ‘t’ \\ gvs [next_frame_def,ADD1]
+    \\ rw [] \\ drule next_row_length \\ rw [])
+  \\ Cases_on ‘qs’ \\ gvs [next_frame_def,ADD1]
+  \\ strip_tac \\ gvs []
+  \\ drule next_row_length
+  \\ strip_tac \\ gvs []
+  \\ first_x_assum $ drule_at $ Pos $ el 2
+  \\ gvs []
+QED
+
+(* simulation is accurate if the borders are NONE initially *)
+
+Definition frame_borders_none_def:
+  frame_borders_none xs ⇔
+    EVERY IS_NONE (HD xs) ∧
+    EVERY IS_NONE (LAST xs) ∧
+    EVERY (IS_NONE o HD) xs ∧
+    EVERY (IS_NONE o LAST) xs
+End
 
 Definition to_state_def:
   to_state xs = { p | MEM (p,T) xs } : gol_rules$state
 End
+
+Theorem IN_to_state:
+  (x,y) IN to_state xs ⇔ MEM ((x,y),T) xs
+Proof
+  fs [to_state_def]
+QED
+
+Theorem to_state_thm:
+  to_state xs (x,y) ⇔ MEM ((x,y),T) xs
+Proof
+  fs [GSYM IN_to_state,IN_DEF]
+QED
+
+Triviality MEM_from_row:
+  ∀h x y ax ay.
+    MEM ((ax,ay),T) (from_row x y h) ⇔
+    ∃m. ay = y ∧ ax − x = &m ∧ m < LENGTH h ∧ EL m h = SOME T
+Proof
+  Induct \\ fs [from_row_def]
+  \\ Cases \\ fs [from_row_def]
+  \\ rw [] \\ eq_tac \\ rw []
+  >- (qexists_tac ‘SUC m’ \\ fs [ADD1] \\ intLib.COOPER_TAC)
+  >- (Cases_on ‘m’ \\ fs [] \\ first_x_assum $ irule_at $ Pos last \\ fs []
+      \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘SUC m’ \\ fs [ADD1] \\ intLib.COOPER_TAC)
+  \\ Cases_on ‘m’ \\ fs [] \\ disj2_tac
+  \\ first_x_assum $ irule_at $ Pos last \\ fs []
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem MEM_from_frame:
+  ∀xs x y ax ay w h.
+    frame_ok (w,h) xs ⇒
+    (MEM ((ax,ay),T) (from_frame x y xs) =
+     ∃m n.
+       ax - x = & m ∧
+       ay - y = & n ∧
+       m < w ∧ n < h ∧
+       EL m (EL n xs) = SOME T)
+Proof
+  qsuff_tac ‘
+   ∀xs x y ax ay w h.
+     LENGTH xs = h ∧ EVERY (λx. LENGTH x = w) xs ⇒
+     (MEM ((ax,ay),T) (from_frame x y xs) =
+      ∃m n.
+        ax - x = & m ∧
+        ay - y = & n ∧
+        m < w ∧ n < h ∧
+        EL m (EL n xs) = SOME T)’
+  >- fs [frame_ok_def]
+  \\ Induct
+  \\ fs [from_frame_def] \\ rw []
+  \\ Cases_on ‘ay = y’ \\ gvs [MEM_from_row]
+  >- (res_tac \\ fs [])
+  \\ first_x_assum drule
+  \\ strip_tac \\ fs []
+  \\ eq_tac \\ rw []
+  >- (qexists_tac ‘m’ \\ qexists_tac ‘SUC n’ \\ fs [] \\ intLib.COOPER_TAC)
+  \\ qexists_tac ‘m’ \\ fs []
+  \\ Cases_on ‘n’ \\ fs []
+  \\ first_x_assum $ irule_at $ Pos last \\ fs []
+  \\ intLib.COOPER_TAC
+QED
+
+Definition el_el_def:
+  el_el x y xd yd ys ⇔
+    xd ≤ x ∧ yd ≤ y ∧
+    y-yd < LENGTH ys ∧
+    x-xd < LENGTH (EL (y-yd) ys) ∧
+    EL (x-xd) (EL (y-yd) ys) = SOME T
+End
+
+Theorem next_sim_gol[local]:
+  next_sim xs ys ∧ frame_ok (w,h) xs ⇒
+  (EL nx (EL ny ys) = SOME T ⇔
+   gol (el_el nx ny     1 1 xs) (el_el nx ny     0 1 xs) (el_el (nx+1) ny     0 1 xs)
+       (el_el nx ny     1 0 xs) (el_el nx ny     0 0 xs) (el_el (nx+1) ny     0 0 xs)
+       (el_el nx (ny+1) 1 0 xs) (el_el nx (ny+1) 0 0 xs) (el_el (nx+1) (ny+1) 0 0 xs))
+Proof
+  cheat
+QED
+
+Theorem step_from_frame:
+  next_sim xs ys ∧ frame_borders_none xs ∧ frame_ok (w,h) xs ⇒
+  step (to_state (from_frame x y xs)) = to_state (from_frame x y ys)
+Proof
+  rw [EXTENSION,FORALL_PROD]
+  \\ rename [‘(ax,ay) IN _’]
+  \\ fs [IN_step,IN_to_state]
+  \\ drule_all frame_ok_next_sim \\ strip_tac
+  \\ dxrule MEM_from_frame
+  \\ drule MEM_from_frame
+  \\ rpt strip_tac \\ fs []
+  \\ Cases_on ‘ax < x’
+  >-
+   (qsuff_tac ‘live_adj (to_state (from_frame x y xs)) ax ay = 0’
+    >- (fs [] \\ CCONTR_TAC \\ fs [] \\ intLib.COOPER_TAC)
+    \\ fs [live_adj_def,to_state_thm]
+    \\ CCONTR_TAC \\ gvs []
+    \\ rpt intLib.COOPER_TAC
+    \\ ‘m = 0’ by intLib.COOPER_TAC
+    \\ gvs []
+    \\ gvs [frame_borders_none_def,frame_ok_def]
+    \\ gvs [EVERY_EL])
+  \\ Cases_on ‘ay < y’
+  >-
+   (qsuff_tac ‘live_adj (to_state (from_frame x y xs)) ax ay = 0’
+    >- (fs [] \\ CCONTR_TAC \\ fs [] \\ intLib.COOPER_TAC)
+    \\ fs [live_adj_def,to_state_thm]
+    \\ CCONTR_TAC \\ gvs []
+    \\ rpt intLib.COOPER_TAC
+    \\ ‘n = 0’ by intLib.COOPER_TAC
+    \\ gvs []
+    \\ gvs [frame_borders_none_def,frame_ok_def]
+    \\ Cases_on ‘xs’ \\ gvs []
+    \\ gvs [EVERY_EL])
+  \\ ‘0 ≤ ax - x’ by intLib.COOPER_TAC
+  \\ dxrule integerTheory.NUM_POSINT_EXISTS
+  \\ ‘0 ≤ ay - y’ by intLib.COOPER_TAC
+  \\ dxrule integerTheory.NUM_POSINT_EXISTS
+  \\ strip_tac \\ fs []
+  \\ strip_tac \\ fs []
+  \\ rename [‘EL nx (EL ny xs) = SOME T’]
+  \\ ‘ay = y + &ny ∧ ax = x + &nx’ by intLib.COOPER_TAC \\ gvs []
+  \\ reverse $ Cases_on ‘nx < w’
+  >-
+   (‘live_adj (to_state (from_frame x y xs)) (x + &nx) (y + &ny) = 0’ suffices_by fs []
+    \\ fs [live_adj_def,to_state_thm]
+    \\ CCONTR_TAC \\ gvs []
+    \\ rpt intLib.COOPER_TAC
+    \\ ‘m = w-1’ by intLib.COOPER_TAC \\ gvs []
+    \\ gvs [frame_borders_none_def,frame_ok_def]
+    \\ qpat_x_assum ‘EVERY (IS_NONE ∘ LAST) xs’ mp_tac
+    \\ rewrite_tac [EVERY_EL] \\ strip_tac
+    \\ pop_assum drule \\ strip_tac \\ fs []
+    \\ qpat_x_assum ‘EVERY (λx. LENGTH x = w) xs’ mp_tac
+    \\ rewrite_tac [EVERY_EL] \\ strip_tac
+    \\ pop_assum drule \\ strip_tac \\ fs []
+    \\ rename [‘LAST xx’]
+    \\ Cases_on ‘xx’ using SNOC_CASES \\ fs []
+    \\ gvs [SNOC_APPEND,EL_LENGTH_APPEND])
+  \\ reverse $ Cases_on ‘ny < h’
+  >-
+   (‘live_adj (to_state (from_frame x y xs)) (x + &nx) (y + &ny) = 0’ suffices_by fs []
+    \\ fs [live_adj_def,to_state_thm]
+    \\ CCONTR_TAC \\ gvs []
+    \\ rpt intLib.COOPER_TAC
+    \\ ‘n = h-1’ by intLib.COOPER_TAC \\ gvs []
+    \\ gvs [frame_borders_none_def,frame_ok_def]
+    \\ Cases_on ‘xs’ using SNOC_CASES \\ fs []
+    \\ gvs [SNOC_APPEND,EL_LENGTH_APPEND]
+    \\ gvs [EVERY_EL])
+  \\ fs []
+  \\ simp [live_adj_def,to_state_thm]
+  \\ ‘∀(x:int) a. x + &a + 1 − x = & (a + 1)’ by intLib.COOPER_TAC \\ fs []
+  \\ ‘∀(x:int) a. x + &a − x = & a’ by intLib.COOPER_TAC \\ fs []
+  \\ ‘∀(x:int) n m. x + &n − 1 − x = &m ⇔ m = n - 1 ∧ n ≠ 0’ by intLib.COOPER_TAC \\ fs []
+  \\ gvs [] \\ rewrite_tac [ADD_ASSOC]
+  \\ drule_all next_sim_gol
+  \\ disch_then $ rewrite_tac o single
+  \\ fs [gol_def]
+  \\ fs [el_el_def]
+  \\ ‘∀ny. ny < LENGTH xs ⇒ LENGTH (EL ny xs) = w’ by fs [frame_ok_def,EVERY_EL]
+  \\ fs []
+  \\ ‘LENGTH xs = h’ by fs [frame_ok_def]
+  \\ full_simp_tac std_ss [SF CONJ_ss,DECIDE “1 ≤ nx ⇔ nx:num ≠ 0”]
+  \\ pop_assum kall_tac
+  \\ ‘0 < h ∧ 0 < w’ by fs [frame_ok_def]
+  \\ full_simp_tac std_ss [AC CONJ_COMM CONJ_ASSOC]
+  \\ full_simp_tac std_ss [AC ADD_COMM ADD_ASSOC]
+  \\ IF_CASES_TAC \\ fs []
+QED
+
+
+(* important definitions *)
+
 
 Definition gol_simulation_def:
   (gol_simulation [] ⇔ T) ∧
@@ -18,6 +315,9 @@ Definition gol_simulation_def:
      step (to_state x) = to_state y ∧
      gol_simulation (y::ys))
 End
+
+(*  *)
+
 
 (* minor definitions *)
 
