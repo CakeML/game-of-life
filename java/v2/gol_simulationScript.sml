@@ -203,14 +203,176 @@ Definition el_el_def:
     EL (x-xd) (EL (y-yd) ys) = SOME T
 End
 
+Definition next_row'_def:
+  (next_row' (x1::x2::x3::xs) (y1::y2::y3::ys) (z1::z2::z3::zs) (q::qs) ⇔
+     gol (bool x1) (bool x2) (bool x3)
+         (bool y1) (bool y2) (bool y3)
+         (bool z1) (bool z2) (bool z3) = bool q ∧
+     next_row' (x2::x3::xs) (y2::y3::ys) (z2::z3::zs) qs) ∧
+  (next_row' (x1::x2::[]) (y1::y2::[]) (z1::z2::[]) (q::[]) ⇔ T) ∧
+  (next_row' _ _ _ _ ⇔ F)
+End
+
+Definition next_frame'_def:
+  (next_frame' (x::y::z::xs) (q::qs) ⇔
+     next_row' x y z q ∧ next_frame' (y::z::xs) qs) ∧
+  (next_frame' (x::y::[]) (q::[]) ⇔ T) ∧
+  (next_frame' _ _ ⇔ F)
+End
+
+Overload bel = “λx y xs. bool (EL x (EL y xs))”
+
+Triviality list_split3:
+  SUC n < LENGTH xs ∧ n ≠ 0 ⇒
+  ∃ys y1 y2 y3 zs.
+    xs = ys ++ y1::y2::y3::zs ∧
+    n = LENGTH ys + 1
+Proof
+  rw []
+  \\ drule miscTheory.LESS_LENGTH
+  \\ strip_tac \\ gvs []
+  \\ Cases_on ‘ys1’ using SNOC_CASES >- fs []
+  \\ gvs []
+  \\ Cases_on ‘l’ using SNOC_CASES >- fs []
+  \\ full_simp_tac std_ss [SNOC_APPEND]
+  \\ full_simp_tac std_ss [GSYM APPEND_ASSOC,APPEND]
+  \\ fs [LENGTH_APPEND]
+  \\ metis_tac []
+QED
+
+Triviality EL_lemma:
+  EL (LENGTH xs) (xs ++ y::ys) = y ∧
+  EL (SUC (LENGTH xs)) (xs ++ y::y1::ys) = y1 ∧
+  EL (SUC (SUC (LENGTH xs))) (xs ++ y::y1::y2::ys) = y2
+Proof
+  Induct_on ‘xs’ \\ fs []
+QED
+
+Theorem next_frame'_gol[local]:
+  ∀xs ys nx ny.
+    next_frame' xs ys ∧ xs ≠ [] ∧
+    EVERY (λx. LENGTH x = LENGTH (HD xs)) xs ∧
+    ny ≠ 0 ∧ nx ≠ 0 ∧
+    ny + 1 < LENGTH xs ∧ nx + 1 < LENGTH (EL ny xs) ⇒
+    (EL (nx-1) (EL (ny-1) ys) = SOME T ⇔
+     gol (bel (nx-1) (ny-1) xs) (bel nx (ny-1) xs) (bel (nx+1) (ny-1) xs)
+         (bel (nx-1) ny     xs) (bel nx ny     xs) (bel (nx+1) ny     xs)
+         (bel (nx-1) (ny+1) xs) (bel nx (ny+1) xs) (bel (nx+1) (ny+1) xs))
+Proof
+  rw []
+  \\ pop_assum mp_tac \\ fs [GSYM ADD1]
+  \\ drule_all list_split3
+  \\ qabbrev_tac ‘k = LENGTH (HD xs)’
+  \\ strip_tac \\ gvs []
+  \\ full_simp_tac std_ss [GSYM APPEND_ASSOC,APPEND]
+  \\ rewrite_tac [GSYM ADD1,EL_lemma]
+  \\ strip_tac
+  \\ drule_all list_split3
+  \\ ‘SUC nx < LENGTH y1’ by fs []
+  \\ drule_all list_split3
+  \\ ‘SUC nx < LENGTH y3’ by fs []
+  \\ drule_all list_split3
+  \\ rpt strip_tac \\ gvs []
+  \\ full_simp_tac std_ss [GSYM APPEND_ASSOC,APPEND]
+  \\ rewrite_tac [GSYM ADD1,EL_lemma]
+  \\ rename [‘rs1 ++
+              (xs ++ x0::x1::x2::xs1)::
+              (ys ++ y0::y1::y2::ys1)::
+              (zs ++ z0::z1::z2::zs1)::rs2’]
+  \\ ‘LENGTH xs = LENGTH ys’ by fs [] \\ fs [EL_lemma]
+  \\ ‘LENGTH ys = LENGTH zs’ by fs [] \\ fs [EL_lemma]
+  \\ gvs []
+  \\ last_x_assum mp_tac
+  \\ qid_spec_tac ‘ys'’
+  \\ qid_spec_tac ‘rs1’
+  \\ Induct
+  \\ Cases_on ‘ys'’
+  \\ fs [next_frame'_def]
+  >-
+   (rw [] \\ qpat_x_assum ‘next_row' _ _ _ _’ mp_tac
+    \\ qpat_x_assum ‘LENGTH _ = LENGTH _ ’ mp_tac
+    \\ qpat_x_assum ‘LENGTH _ = LENGTH _ ’ mp_tac
+    \\ qid_spec_tac ‘h’
+    \\ qid_spec_tac ‘zs’
+    \\ qid_spec_tac ‘ys’
+    \\ qid_spec_tac ‘xs’
+    \\ Induct \\ gvs []
+    >-
+     (Cases \\ fs [next_row'_def]
+      \\ rename [‘h = SOME _’] \\ Cases_on ‘h’ \\ fs [])
+    \\ gen_tac \\ Cases \\ gvs [] \\ Cases \\ fs []
+    \\ gvs [next_row'_def]
+    \\ rename [‘LENGTH ts1 = LENGTH ts2 ⇒ LENGTH ts3 = _ ⇒ _’]
+    \\ Cases \\ fs [next_row'_def]
+    >- (Cases_on ‘ts1’ \\ Cases_on ‘ts2’ \\ Cases_on ‘ts3’ \\ fs [next_row'_def])
+    \\ rw []
+    \\ rename [‘_ (_::(ts1++_)) (_::(ts2++_)) (_::(ts3++_)) _’]
+    \\ first_x_assum irule \\ fs []
+    \\ qexists_tac ‘ts2’ \\ fs []
+    \\ Cases_on ‘ts1’ \\ Cases_on ‘ts2’ \\ Cases_on ‘ts3’ \\ fs [next_row'_def]
+    \\ Cases_on ‘t'’ \\ fs [next_row'_def]
+    \\ rename [‘_ (_::_::(ts1++_)) (_::_::(ts2++_)) (_::_::(ts3++_))’]
+    \\ Cases_on ‘ts1’ \\ Cases_on ‘ts2’ \\ Cases_on ‘ts3’ \\ fs [next_row'_def])
+  >- (Cases_on ‘rs1'’ \\ fs [next_frame'_def]
+      \\ Cases_on ‘t’ \\ fs [next_frame'_def])
+  \\ Cases_on ‘rs1'’ \\ fs []
+  >-
+   (fs [next_frame'_def]
+    \\ Cases_on ‘t’ \\ fs [next_frame'_def] \\ rw [] \\ fs [])
+  \\ Cases_on ‘t'’ \\ fs [next_frame'_def]
+QED
+
+Theorem next_sim_imp_next_frame':
+  next_sim xs ys ⇒
+  next_frame' ([REPLICATE (LENGTH (HD xs)) NONE ++ [NONE; NONE]] ++
+               MAP (λx. [NONE] ++ x ++ [NONE]) xs ++
+               [REPLICATE (LENGTH (HD xs)) NONE ++ [NONE; NONE]]) ys
+Proof
+  cheat
+QED
+
 Theorem next_sim_gol[local]:
-  next_sim xs ys ∧ frame_ok (w,h) xs ⇒
+  next_sim xs ys ∧ frame_ok (w,h) xs ∧
+  ny < LENGTH xs ∧ nx < LENGTH (EL ny xs) ⇒
   (EL nx (EL ny ys) = SOME T ⇔
    gol (el_el nx ny     1 1 xs) (el_el nx ny     0 1 xs) (el_el (nx+1) ny     0 1 xs)
        (el_el nx ny     1 0 xs) (el_el nx ny     0 0 xs) (el_el (nx+1) ny     0 0 xs)
        (el_el nx (ny+1) 1 0 xs) (el_el nx (ny+1) 0 0 xs) (el_el (nx+1) (ny+1) 0 0 xs))
 Proof
-  cheat
+  rw []
+  \\ drule next_sim_imp_next_frame' \\ strip_tac
+  \\ drule next_frame'_gol
+  \\ disch_then $ qspecl_then [‘nx+1’,‘ny+1’] mp_tac
+  \\ impl_tac >- (fs [GSYM ADD1] \\ fs [EVERY_MAP,ADD1]
+                  \\ fs [rich_listTheory.EL_APPEND1,EL_MAP]
+                  \\ fs [frame_ok_def]
+                  \\ Cases_on ‘xs’ \\ fs [])
+  \\ strip_tac \\ fs []
+  \\ pop_assum kall_tac
+  \\ fs [GSYM ADD1,DECIDE “n+2 = SUC (SUC n)”]
+  \\ irule $ prove(
+       “x1 = y1 ∧ x2 = y2 ∧ x3 = y3 ∧
+        x4 = y4 ∧ x5 = y5 ∧ x6 = y6 ∧
+        x7 = y7 ∧ x8 = y8 ∧ x9 = y9 ⇒
+        gol x1 x2 x3 x4 x5 x6 x7 x8 x9 =
+        gol y1 y2 y3 y4 y5 y6 y7 y8 y9”, fs [])
+  \\ rpt strip_tac
+  \\ fs [el_el_def]
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+  \\ cheat (*
+    Cases_on ‘ny’ \\ fs [rich_listTheory.EL_APPEND1]
+    \\ fs [EL_REPLICATE,EL_MAP]
+    \\ Cases_on ‘nx’ \\ fs [rich_listTheory.EL_APPEND1]
+    \\ fs [ADD1]
+ *)
 QED
 
 Theorem step_from_frame:
@@ -289,6 +451,7 @@ Proof
   \\ ‘∀(x:int) a. x + &a − x = & a’ by intLib.COOPER_TAC \\ fs []
   \\ ‘∀(x:int) n m. x + &n − 1 − x = &m ⇔ m = n - 1 ∧ n ≠ 0’ by intLib.COOPER_TAC \\ fs []
   \\ gvs [] \\ rewrite_tac [ADD_ASSOC]
+  \\ ‘ny < LENGTH xs ∧ nx < LENGTH (EL ny xs)’ by fs [frame_ok_def,EVERY_EL]
   \\ drule_all next_sim_gol
   \\ disch_then $ rewrite_tac o single
   \\ fs [gol_def]
