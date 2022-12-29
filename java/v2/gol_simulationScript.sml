@@ -209,14 +209,14 @@ Definition next_row'_def:
          (bool y1) (bool y2) (bool y3)
          (bool z1) (bool z2) (bool z3) = bool q ∧
      next_row' (x2::x3::xs) (y2::y3::ys) (z2::z3::zs) qs) ∧
-  (next_row' (x1::x2::[]) (y1::y2::[]) (z1::z2::[]) (q::[]) ⇔ T) ∧
+  (next_row' (x1::x2::[]) (y1::y2::[]) (z1::z2::[]) [] ⇔ T) ∧
   (next_row' _ _ _ _ ⇔ F)
 End
 
 Definition next_frame'_def:
   (next_frame' (x::y::z::xs) (q::qs) ⇔
      next_row' x y z q ∧ next_frame' (y::z::xs) qs) ∧
-  (next_frame' (x::y::[]) (q::[]) ⇔ T) ∧
+  (next_frame' (x::y::[]) [] ⇔ T) ∧
   (next_frame' _ _ ⇔ F)
 End
 
@@ -304,7 +304,9 @@ Proof
     \\ gvs [next_row'_def]
     \\ rename [‘LENGTH ts1 = LENGTH ts2 ⇒ LENGTH ts3 = _ ⇒ _’]
     \\ Cases \\ fs [next_row'_def]
-    >- (Cases_on ‘ts1’ \\ Cases_on ‘ts2’ \\ Cases_on ‘ts3’ \\ fs [next_row'_def])
+    >- (Cases_on ‘ts1’ \\ Cases_on ‘ts2’ \\ Cases_on ‘ts3’ \\ fs [next_row'_def]
+        \\ rename [‘_ (_::_::(ts1++_)) (_::_::(ts2++_)) (_::_::(ts3++_))’]
+        \\ Cases_on ‘ts1’ \\ Cases_on ‘ts2’ \\ Cases_on ‘ts3’ \\ fs [next_row'_def])
     \\ rw []
     \\ rename [‘_ (_::(ts1++_)) (_::(ts2++_)) (_::(ts3++_)) _’]
     \\ first_x_assum irule \\ fs []
@@ -322,13 +324,50 @@ Proof
   \\ Cases_on ‘t'’ \\ fs [next_frame'_def]
 QED
 
+Triviality MAP_K_eq_REPLICATE_LENGTH:
+  ∀xs x. MAP (K x) xs = REPLICATE (LENGTH xs) x
+Proof
+  Induct \\ fs []
+QED
+
+Theorem next_row_imp_next_row':
+  ∀xs ys zs rs.
+    next_row xs ys zs rs ⇒
+    next_row' (xs ++ [NONE]) (ys ++ [NONE]) (zs ++ [NONE]) rs ∧
+    LENGTH xs = LENGTH ys
+Proof
+  Induct >- fs [next_row_def]
+  \\ rpt gen_tac
+  \\ simp [Once (DefnBase.one_line_ify NONE next_row_def)]
+  \\ every_case_tac \\ fs []
+  \\ fs [next_row'_def,next_row_def]
+  \\ rw [] \\ res_tac \\ fs []
+QED
+
 Theorem next_sim_imp_next_frame':
-  next_sim xs ys ⇒
+  next_sim xs ys ∧ xs ≠ [] ⇒
   next_frame' ([NONE::REPLICATE (LENGTH (HD xs)) NONE ++ [NONE]] ++
                MAP (λx. [NONE] ++ x ++ [NONE]) xs ++
                [NONE::REPLICATE (LENGTH (HD xs)) NONE ++ [NONE]]) ys
 Proof
-  cheat
+  Cases_on ‘xs’ \\ fs [next_sim_def]
+  \\ qsuff_tac ‘
+       ∀xs ys.
+         next_frame xs ys ∧ 2 ≤ LENGTH xs ⇒
+         next_frame' (MAP (λx. NONE::(x ++ [NONE])) xs ++
+                      [NONE::(REPLICATE (LENGTH (HD xs)) NONE ++ [NONE])]) ys’
+  >- (rw [] \\ first_x_assum drule \\ fs [MAP_K_eq_REPLICATE_LENGTH])
+  \\ Induct >- fs []
+  \\ Cases_on ‘xs’ >- fs []
+  \\ Cases_on ‘t’ \\ rw []
+  >-
+   (Cases_on ‘ys’ \\ fs [next_frame_def]
+    \\ Cases_on ‘t’ \\ fs [next_frame_def]
+    \\ fs [next_frame'_def,MAP_K_eq_REPLICATE_LENGTH]
+    \\ drule next_row_imp_next_row' \\ fs [])
+  \\ Cases_on ‘ys’ \\ fs [next_frame_def]
+  \\ fs [next_frame'_def]
+  \\ drule next_row_imp_next_row' \\ fs []
 QED
 
 Theorem next_sim_gol[local]:
@@ -339,8 +378,8 @@ Theorem next_sim_gol[local]:
        (el_el nx ny     1 0 xs) (el_el nx ny     0 0 xs) (el_el (nx+1) ny     0 0 xs)
        (el_el nx (ny+1) 1 0 xs) (el_el nx (ny+1) 0 0 xs) (el_el (nx+1) (ny+1) 0 0 xs))
 Proof
-  rw []
-  \\ drule next_sim_imp_next_frame' \\ strip_tac
+  rw [] \\ Cases_on ‘xs = []’ >- fs []
+  \\ drule_all next_sim_imp_next_frame' \\ strip_tac
   \\ drule next_frame'_gol
   \\ disch_then $ qspecl_then [‘nx+1’,‘ny+1’] mp_tac
   \\ impl_tac >- (fs [GSYM ADD1] \\ fs [EVERY_MAP,ADD1]
