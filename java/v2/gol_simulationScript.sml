@@ -324,9 +324,9 @@ QED
 
 Theorem next_sim_imp_next_frame':
   next_sim xs ys ⇒
-  next_frame' ([REPLICATE (LENGTH (HD xs)) NONE ++ [NONE; NONE]] ++
+  next_frame' ([NONE::REPLICATE (LENGTH (HD xs)) NONE ++ [NONE]] ++
                MAP (λx. [NONE] ++ x ++ [NONE]) xs ++
-               [REPLICATE (LENGTH (HD xs)) NONE ++ [NONE; NONE]]) ys
+               [NONE::REPLICATE (LENGTH (HD xs)) NONE ++ [NONE]]) ys
 Proof
   cheat
 QED
@@ -358,21 +358,99 @@ Proof
         gol y1 y2 y3 y4 y5 y6 y7 y8 y9”, fs [])
   \\ rpt strip_tac
   \\ fs [el_el_def]
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-  \\ cheat (*
-    Cases_on ‘ny’ \\ fs [rich_listTheory.EL_APPEND1]
-    \\ fs [EL_REPLICATE,EL_MAP]
-    \\ Cases_on ‘nx’ \\ fs [rich_listTheory.EL_APPEND1]
-    \\ fs [ADD1]
- *)
+  >-
+   (Cases_on ‘ny’ \\ fs []
+    \\ Cases_on ‘nx’ \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ DEP_REWRITE_TAC [EL_REPLICATE] \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ ‘LENGTH (EL (SUC n) xs) = LENGTH (EL n xs)’ by fs [frame_ok_def,EVERY_EL]
+    \\ strip_tac \\ gvs []
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (Cases_on ‘ny’ \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ DEP_REWRITE_TAC [EL_REPLICATE] \\ fs []
+    \\ ‘LENGTH (EL (SUC n) xs) = LENGTH (EL n xs)’ by fs [frame_ok_def,EVERY_EL]
+    \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (Cases_on ‘ny’ \\ fs []
+    >- (Cases_on ‘SUC nx = LENGTH $ HD xs’
+        >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs [] \\ fs [EL_MAP])
+        \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+        \\ DEP_REWRITE_TAC [EL_REPLICATE] \\ fs [])
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ ‘LENGTH (EL (SUC n) xs) = LENGTH (EL n xs)’ by fs [frame_ok_def,EVERY_EL]
+    \\ fs []
+    \\ Cases_on ‘SUC nx = LENGTH (EL n xs)’
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs [] \\ fs [EL_MAP])
+    \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ Cases_on ‘nx’ \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ Cases_on ‘EL nx (EL ny xs)’ \\ fs [])
+  >-
+   (DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ Cases_on ‘SUC nx = LENGTH (EL ny xs)’
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs [] \\ fs [EL_MAP])
+    \\ fs []
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs [] \\ fs [EL_MAP]
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (Cases_on ‘SUC ny = LENGTH xs’ \\ fs []
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs []
+        \\ Cases_on ‘nx’ \\ fs []
+        \\ DEP_REWRITE_TAC [EL_APPEND1]
+        \\ DEP_REWRITE_TAC [EL_REPLICATE] \\ fs []
+        \\ gvs [frame_ok_def,EVERY_EL] \\ Cases_on ‘xs’ \\ fs []
+        \\ first_x_assum $ qspec_then ‘0’ mp_tac \\ fs [])
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs []
+    \\ DEP_REWRITE_TAC [EL_MAP] \\ fs []
+    \\ Cases_on ‘nx’ \\ fs []
+    \\ Cases_on ‘n = LENGTH (EL (SUC ny) xs)’ \\ fs []
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs [])
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs []
+    \\ ‘LENGTH (EL (SUC ny) xs) = LENGTH (EL ny xs)’ by fs [frame_ok_def,EVERY_EL]
+    \\ fs []
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (Cases_on ‘SUC ny = LENGTH xs’ \\ fs []
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs []
+        \\ DEP_REWRITE_TAC [EL_APPEND1]
+        \\ DEP_REWRITE_TAC [EL_REPLICATE] \\ fs []
+        \\ gvs [frame_ok_def,EVERY_EL] \\ Cases_on ‘xs’ \\ fs []
+        \\ first_x_assum $ qspec_then ‘0’ mp_tac \\ fs [])
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs []
+    \\ DEP_REWRITE_TAC [EL_MAP] \\ fs []
+    \\ ‘LENGTH (EL (SUC ny) xs) = LENGTH (EL ny xs)’ by fs [frame_ok_def,EVERY_EL]
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs []
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
+  >-
+   (Cases_on ‘SUC ny = LENGTH xs’ \\ fs []
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs []
+        \\ Cases_on ‘SUC nx = LENGTH (HD xs)’
+        >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs [])
+        \\ DEP_REWRITE_TAC [EL_APPEND1]
+        \\ DEP_REWRITE_TAC [EL_REPLICATE] \\ fs []
+        \\ gvs [frame_ok_def,EVERY_EL] \\ Cases_on ‘xs’ \\ fs []
+        \\ first_x_assum $ qspec_then ‘0’ mp_tac \\ fs [])
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs []
+    \\ DEP_REWRITE_TAC [EL_MAP] \\ fs []
+    \\ Cases_on ‘SUC nx = LENGTH (EL (SUC ny) xs)’
+    >- (DEP_REWRITE_TAC [EL_APPEND2] \\ fs [])
+    \\ DEP_REWRITE_TAC [EL_APPEND1] \\ fs []
+    \\ ‘LENGTH (EL (SUC ny) xs) = LENGTH (EL ny xs)’ by fs [frame_ok_def,EVERY_EL]
+    \\ fs []
+    \\ rename [‘bel n1 n2 xs’] \\ Cases_on ‘EL n1 (EL n2 xs)’ \\ fs [])
 QED
 
 Theorem step_from_frame:
