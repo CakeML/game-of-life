@@ -1,12 +1,11 @@
 (*
   Definitions that help symbolically simulate GOL instances
-
-  The plane is represented as a square.
 *)
-open preamble gol_rulesTheory (* gol_listTheory gol_transTheory *)
-     integerTheory sortingTheory;
+open preamble gol_rulesTheory integerTheory;
 
 val _ = new_theory "gol_sim";
+
+(* Main definition *)
 
 Definition gol_def[nocompute]:
   gol x1 x2 x3 y1 y2 y3 z1 z2 z3 ⇔
@@ -14,66 +13,14 @@ Definition gol_def[nocompute]:
       if y2 then n = 2 ∨ n = 3 else n = 3
 End
 
-(*
-
-Definition next_row_def:
-  next_row (x1::x2::x3::xs) (y1::y2::y3::ys) (z1::z2::z3::zs) =
-    gol x1 x2 x3 y1 y2 y3 z1 z2 z3 ::
-      next_row (x2::x3::xs) (y2::y3::ys) (z2::z3::zs) ∧
-  next_row _ _ _ = []
-End
-
-Definition next_frame_def:
-  next_frame prev (x::y::xs) = next_row prev x y :: next_frame x (y::xs) ∧
-  next_frame prev _ = []
-End
-
-Definition zero_borders_def:
-  zero_borders rows ⇔
-    ~NULL rows ∧
-    EVERY (λn. n = F) (HD rows) ∧
-    EVERY (λn. n = F) (LAST rows) ∧
-    EVERY (λr. HD r = F ∧ LAST r = F ∧ LENGTH r = LENGTH (HD rows)) rows
-End
-
-Definition add_zero_borders_def:
-  add_zero_borders frame =
-    (F::F::MAP (K F) (HD frame)) ::
-    MAP (λr. F :: r ++ [F]) frame ++ [F::F::MAP (K F) (HD frame)]
-End
-
-Definition tick_def:
-  tick frame =
-    if zero_borders frame then
-      let rows = add_zero_borders frame in
-        SOME (next_frame (HD rows) (TL rows))
-    else NONE
-End
-
-Definition tick_n_def:
-  tick_n n frame =
-    if n = 0 then SOME frame else
-      case tick frame of
-      | NONE => NONE
-      | SOME f => tick_n (n-1:num) f
-End
-
+(* The automation below derives theorems such as these:
+     gol a F F F b F F F F = F ∧
+     gol T T T F b F F F F = T ∧
+     gol T T F F b F F F F = b ∧
+     gol T T T T b c d e f = F
 *)
 
-Theorem gol_sim:
-  gol a F F F b F F F F = F ∧
-  gol T T T F b F F F F = T ∧
-  gol T T F F b F F F F = b ∧
-  gol T T T T b c d e f = F
-Proof
-  Cases_on ‘a’ \\ Cases_on ‘b’
-  \\ fs [gol_def,b2n_def]
-  \\ Cases_on ‘c’
-  \\ Cases_on ‘d’
-  \\ Cases_on ‘e’
-  \\ Cases_on ‘f’
-  \\ EVAL_TAC
-QED
+val _ = (max_print_depth := 30);
 
 fun insert 0 x xs = x::xs
   | insert n x [] = x::[]
@@ -146,47 +93,28 @@ Theorem gol4[compute] = (* four or more T *)
        \\ Cases_on ‘e’ \\ Cases_on ‘f’ \\ fs [gol_def,b2n_def]))
   |> LIST_CONJ;
 
-(*
+val gol_1var = let
+  fun all_comb 0 = [[]]
+    | all_comb n = let
+        val xs = all_comb (n-1)
+        in map (fn x => c::x) xs @ map (fn x => F::x) xs end
+  val xs = all_comb 9
+  fun one vs = let
+    val tm = list_mk_comb(“gol”,vs)
+    val tac = TRY (tmCases_on c [])
+              THEN fs [gol4,gol3,gol3F,gol2,gol2F,gol1]
+              THEN NO_TAC
+    fun auto_prove goal = tac ([],goal) |> snd |> (fn f => f [])
+    val lemma = auto_prove (mk_eq(tm,F)) handle HOL_ERR _ =>
+                auto_prove (mk_eq(tm,c)) handle HOL_ERR _ =>
+                auto_prove (mk_eq(tm,T))
+    in lemma end
+  in LIST_CONJ (map one xs) end;
 
-        EVAL “tick_n 1 [[F;F;F;F;F;F;F];
-                        [F;F;F;T;F;F;F];
-                        [F;F;F;b;F;F;F];
-                        [F;F;F;T;F;F;F];
-                        [F;F;F;F;F;F;F]]”
+Theorem gol_1var[compute] = gol_1var;
 
-*)
-
-(* specifications
-
-Definition step60_def:
-  step60 s = FUNPOW step 60 s
-End
-
-Definition has_rep_def:
-  has_rep footprint code g =
-    ∀(i:int) (j:int).
-      g i j ⇒ if (i,j) IN footprint
-              then (i,j) IN code
-              else F
-End
-
-Definition spec_def:
-  spec ins (rep,f,next,s) outs ⇔
-    ∀g. has_rep f (rep s) g ⇒
-        has_rep f (rep (next s)) (step60 g)
-End
-
-  spec [(0,0,i)] (K {},{},I,()) [(1,1,i)]
-
-  seq [(0,0,x);(1,1,y)]
-      (t,...)
-      [(2,2,λn. if n < 5 then t else x (n-5) ∧ y (n-5))]
-
-  (rep s * all_inputs ins * rest)
-
-
-*)
-
-Theorem gol_simp = LIST_CONJ [gol_sim,gol4,gol3,gol3F,gol2,gol2F,gol1];
+Theorem gol_simp =
+  [gol4,gol3,gol3F,gol2,gol2F,gol1,gol_1var]
+  |> LIST_CONJ |> PURE_REWRITE_RULE [GSYM CONJ_ASSOC];
 
 val _ = export_theory();

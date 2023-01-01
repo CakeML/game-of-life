@@ -1,4 +1,4 @@
-open preamble gol_simulationTheory;
+open preamble gol_simulationTheory gol_simTheory;
 
 val _ = new_theory "gol_wires";
 
@@ -43,77 +43,112 @@ val (d1::d2::_) = data
 
 val _ = (max_print_depth := 500);
 
-fun prove_all_distinct goal =
-  prove(goal,
-    (irule SORTED_ii_lt_IMP
-     \\ fs [sortingTheory.SORTED_DEF]
-     \\ EVAL_TAC) ORELSE EVAL_TAC)
+max_print_depth := 10;
 
-fun prove_step_to_state d1 d2 = let
-  fun mk_int i = intSyntax.term_of_int (Arbint.fromInt i)
-  fun mk_pair f g (x,y) = pairSyntax.mk_pair(f x, g y)
-  fun mk_iib_list xs = listSyntax.mk_list(xs,“:(int # int) # bool”)
-  fun mk_ii_list xs = listSyntax.mk_list(xs,“:int # int”)
-  fun infl [] = []
-    | infl ((x,y)::xs) =
-       (x-1,y-1) :: (x,y-1) :: (x+1,y-1) ::
-       (x-1,y  ) :: (x,y  ) :: (x+1,y  ) ::
-       (x-1,y+1) :: (x,y+1) :: (x+1,y+1) ::  infl xs
-  fun remove_dups [] = []
-    | remove_dups [x] = [x]
-    | remove_dups (x::y::ys) =
-        if x = y then remove_dups (x::ys) else x :: remove_dups (y::ys)
-  val ps = infl (d1 |> map fst)
-           |> sort (fn (i,j) => fn (i',j') => (i < i') orelse ((i = i') andalso (j < j')))
-           |> remove_dups
-  val xs_tm = map (mk_pair (mk_pair mk_int mk_int) I) d1 |> mk_iib_list
-  val ys_tm = map (mk_pair (mk_pair mk_int mk_int) I) d2 |> mk_iib_list
-  val ps_tm = map (mk_pair mk_int mk_int) ps |> mk_ii_list
-  val th = SPECL [xs_tm,ys_tm,ps_tm] IMP_step_to_state
-           |> PURE_REWRITE_RULE [MAP,FST]
-           |> CONV_RULE (PATH_CONV "lr" (REWR_CONV LET_THM THENC BETA_CONV))
-           |> CONV_RULE (PATH_CONV "lr" (REWR_CONV LET_THM THENC BETA_CONV))
-  val goal = th |> concl |> dest_imp |> fst
-  val (dist_goal1,goal) = dest_conj goal
-  val (dist_goal2,goal) = dest_conj goal
-  val (every_mem_goal,goal) = dest_conj goal
-  val (infl_goal,check_pos_goal) = dest_conj goal
-  val _ = print " - Proving ALL_DISINCT\n"
-  val dist_thm1 = prove_all_distinct dist_goal1
-  val dist_thm2 = prove_all_distinct dist_goal2
-  val _ = print " - Proving EVERY_MEM\n"
-  val every_mem_thm = prove_all_distinct every_mem_goal
-  val _ = print " - Proving check_infl\n"
-  val check_infl_thm = prove_all_distinct infl_goal
-  val _ = print " - Proving check_pos\n"
-  fun case_all_goal_vars_tac (asms,goal) = let
-    val vs = free_vars goal
-    fun tac [] = all_tac
-      | tac (v::vs) = tmCases_on v [] THEN tac vs
-    in tac vs (asms,goal) end
-(*
-    set_goal([],check_pos_goal)
-*)
-  val check_pos_thm = prove(check_pos_goal,
-    rpt (once_rewrite_tac [EVERY_DEF]
-         \\ conj_tac >- (EVAL_TAC \\ rewrite_tac [gol_simTheory.gol_simp]
-                         \\ case_all_goal_vars_tac
-                         \\ rewrite_tac [gol_simTheory.gol_simp]))
-    \\ rewrite_tac [EVERY_DEF])
-  val _ = print " - Composing all lemmas\n"
-  val lemma =
-    LIST_CONJ [dist_thm1,dist_thm2,every_mem_thm,check_infl_thm,check_pos_thm]
-  in MP th lemma end
+fun mk_list_list d = let
+  val none = optionSyntax.mk_none bool
+  fun some tm = optionSyntax.mk_some tm
+  fun lookup [] (x:int * int) = none
+    | lookup ((y,b)::xs) x = if x = y then some b else lookup xs x
+  fun list200 f = List.tabulate (200,fn i => f (i-100));
+  fun mk_list tms = listSyntax.mk_list(tms,type_of (hd tms))
+  val d = map (fn ((i,j),x) => ((i-75,j-75),x)) d
+  in mk_list (list200 (fn j => mk_list (list200 (fn i => lookup d (i,j))))) end
 
-fun prove_all_steps data = let
-  fun prove_steps i [] = []
-    | prove_steps i [d] = []
-    | prove_steps i (d1::d2::ds) = let
-    val _ = print ("Step " ^ int_to_string i ^ ":\n")
-    val th = prove_step_to_state d1 d2
-    in th :: prove_steps (i+1) (d2::ds) end
-  in prove_steps 1 data end
+Theorem next_row_none:
+  next_row (NONE::NONE::NONE::xs)
+           (NONE::NONE::NONE::ys)
+           (NONE::NONE::NONE::zs)
+           (NONE::rs) =
+  next_row (NONE::NONE::xs)
+           (NONE::NONE::ys)
+           (NONE::NONE::zs)
+           rs ∧
+  next_row (NONE::NONE::[])
+           (NONE::NONE::[])
+           (NONE::NONE::[])
+           (NONE::[]) = T
+Proof
+  fs [next_row_def,gol_simp]
+QED
 
-val thms = time prove_all_steps (curry List.take data 3);
+Inductive steps_sim:
+[~base:]
+  (∀w h policy xs.
+     frame_ok (w,h) xs ⇒
+     steps_sim w h policy 0n xs xs) ∧
+[~step:]
+  (∀w h policy xs ys zs.
+     steps_sim w h policy n xs ys ∧
+     frame_borders_none ys ∧
+     policy n ys ∧
+     next_sim ys zs ⇒
+     steps_sim w h policy (n+1) xs zs)
+End
+
+Theorem steps_sim_step_thm:
+  steps_sim w h policy n xs ys ⇒
+  ∀zs.
+    frame_borders_none ys ∧
+    policy n ys ∧
+    next_sim ys zs ⇒
+    steps_sim w h policy (n+1) xs zs
+Proof
+  rw [] \\ drule_all steps_sim_step   \\ fs []
+QED
+
+val policy = ‘λn xs. T’
+
+val xs = d1
+
+fun prove_steps_sim_base policy xs = let
+  val th = steps_sim_base |> Q.SPECL [‘200’,‘200’,policy]
+  val th = SPEC (mk_list_list xs) th
+  val frame_ok_tm = th |> concl |> dest_imp |> fst
+  val frame_ok_th = prove(frame_ok_tm,
+    REWRITE_TAC [frame_ok_def,EVAL “200 ≠ 0:num”]
+    \\ CONV_TAC (PATH_CONV "lrlr" listLib.LENGTH_CONV)
+    \\ REWRITE_TAC [EVERY_DEF]
+    \\ rpt strip_tac
+    \\ CONV_TAC BETA_CONV
+    \\ CONV_TAC (PATH_CONV "lr" listLib.LENGTH_CONV)
+    \\ REWRITE_TAC [])
+  in MP th frame_ok_th end
+
+val th = prove_steps_sim_base policy d1
+
+val zs = d2
+
+fun prove_steps_sim_step n th zs = let
+  val _ = print (int_to_string n ^ " ")
+  val th1 = MATCH_MP steps_sim_step_thm th
+  val th2 = SPEC (mk_list_list zs) th1
+            |> CONV_RULE (PATH_CONV "rllr" EVAL)
+  val (x,_) = th2 |> concl |> dest_imp
+  val (borders_tm,x) = x |> dest_conj
+  val (policy_tm,next_sim_tm) = x |> dest_conj
+  val borders_th = prove(borders_tm,
+    REWRITE_TAC [frame_borders_none_def,HD,LAST_CONS]
+    \\ REWRITE_TAC [EVERY_DEF,combinTheory.o_THM,HD,IS_NONE_DEF,LAST_CONS])
+  val policy_th = prove(policy_tm,
+    EVAL_TAC)
+  val next_sim_th = prove(next_sim_tm,
+    REWRITE_TAC [next_sim_def,MAP,K_THM]
+    \\ REWRITE_TAC [next_frame_def,next_row_none,bool_def]
+    \\ REWRITE_TAC [next_row_def,MAP,K_THM]
+    \\ rpt conj_tac
+    \\ TRY (REWRITE_TAC [bool_def,gol_simp] \\ NO_TAC))
+  in MP th2 (LIST_CONJ [borders_th,policy_th,next_sim_th]) end;
+
+fun prove_steps policy data = let
+  val _ = print "steps: "
+  val th0 = prove_steps_sim_base policy (hd data)
+  fun steps n th0 [] = th0
+    | steps n th0 (d::ds) = steps (n+1) (prove_steps_sim_step n th0 d) ds
+  val th = steps 1 th0 (tl data)
+  val _ = print " done.\n"
+  in th end;
+
+Theorem steps = prove_steps policy data;
 
 val _ = export_theory();

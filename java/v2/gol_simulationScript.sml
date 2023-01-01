@@ -584,6 +584,13 @@ Proof
   \\ IF_CASES_TAC \\ fs []
 QED
 
+Theorem step_from_frame_200_200:
+  ∀xs ys.
+    next_sim xs ys ∧ frame_borders_none xs ∧ frame_ok (200,200) xs ⇒
+    step (to_state (from_frame (-100) (-100) xs)) = to_state (from_frame (-100) (-100) ys)
+Proof
+  rw [] \\ drule_all step_from_frame \\ fs []
+QED
 
 (* important definitions *)
 
