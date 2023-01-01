@@ -37,8 +37,8 @@ public class Grid2DBackground implements GridModel {
     public Color cell(int i, int j) {
         if (inBox(i,j,0,-2,5,5)) { return new Color(120,20,20); }       // e in
         if (inBox(i,j,0+150,-2,5,5)) { return new Color(120,20,20); }   // e out
-        if (inBox(i,j,145,2,5,5)) { return new Color(120,20,20); }      // w in
-        if (inBox(i,j,145-150,2,5,5)) { return new Color(120,20,20); }  // w out
+        if (inBox(i,j,145,1,5,5)) { return new Color(120,20,20); }      // w in
+        if (inBox(i,j,145-150,1,5,5)) { return new Color(120,20,20); }  // w out
         if (inBox(i,j,71,75,5,17)) { return new Color(120,20,20); }     // n in
         if (inBox(i,j,71,75-150,5,17)) { return new Color(120,20,20); } // n out
         if (inBox(i,j,74,62-150,5,14)) { return new Color(20,120,20); } // s in
