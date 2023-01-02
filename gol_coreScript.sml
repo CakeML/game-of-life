@@ -1,14 +1,18 @@
 (*
-  Definitions that help symbolically simulate GOL instances
+  Definition and lemmas to help simulation of core GOL decision in
+  symbolic simulations.
 *)
-open preamble gol_rulesTheory integerTheory;
+open preamble gol_rulesTheory;
 
-val _ = new_theory "gol_sim";
+val _ = new_theory "gol_core";
 
 (* Main definition *)
 
 Definition gol_def[nocompute]:
-  gol x1 x2 x3 y1 y2 y3 z1 z2 z3 ⇔
+  gol x1 x2 x3
+      y1 y2 y3
+      z1 z2 z3
+  ⇔
     let n = SUM (MAP b2n [x1;x2;x3;y1;y3;z1;z2;z3]) in
       if y2 then n = 2 ∨ n = 3 else n = 3
 End

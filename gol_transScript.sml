@@ -1,9 +1,11 @@
 (*
   Defines transformations: move, rotate, mirror
 *)
-open preamble gol_rulesTheory gol_listTheory;
+open preamble gol_rulesTheory (* gol_listTheory *);
 
 val _ = new_theory "gol_trans";
+
+(*
 
 (* moves all coordinates in one direction *)
 Definition move_def:
@@ -19,5 +21,7 @@ End
 Definition mirror_def:
   mirror l = MAP (λ(i,j). (-i:int,j:int)) l
 End
+
+*)
 
 val _ = export_theory();

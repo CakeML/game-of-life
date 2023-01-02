@@ -1,4 +1,4 @@
-open preamble gol_simulationTheory gol_simTheory;
+open preamble gol_simulationTheory gol_coreTheory;
 
 val _ = new_theory "gol_wires";
 
@@ -74,48 +74,6 @@ fun mk_list_list d = let
   val _ = print ("y-min/max: " ^ int_to_string dy_min ^ ", " ^ int_to_string dy_max ^ "\n")
   val _ = print "----\n"
   in mk_list (list200 (fn j => mk_list (list200 (fn i => lookup d (i,j))))) end
-
-Theorem next_row_none:
-  next_row (NONE::NONE::NONE::xs)
-           (NONE::NONE::NONE::ys)
-           (NONE::NONE::NONE::zs)
-           (NONE::rs) =
-  next_row (NONE::NONE::xs)
-           (NONE::NONE::ys)
-           (NONE::NONE::zs)
-           rs ∧
-  next_row (NONE::NONE::[])
-           (NONE::NONE::[])
-           (NONE::NONE::[])
-           (NONE::[]) = T
-Proof
-  fs [next_row_def,gol_simp]
-QED
-
-Inductive steps_sim:
-[~base:]
-  (∀w h policy xs.
-     frame_ok (w,h) xs ⇒
-     steps_sim w h policy 0n xs xs) ∧
-[~step:]
-  (∀w h policy xs ys zs.
-     steps_sim w h policy n xs ys ∧
-     frame_borders_none ys ∧
-     policy n ys ∧
-     next_sim ys zs ⇒
-     steps_sim w h policy (n+1) xs zs)
-End
-
-Theorem steps_sim_step_thm:
-  steps_sim w h policy n xs ys ⇒
-  ∀zs.
-    frame_borders_none ys ∧
-    policy n ys ∧
-    next_sim ys zs ⇒
-    steps_sim w h policy (n+1) xs zs
-Proof
-  rw [] \\ drule_all steps_sim_step   \\ fs []
-QED
 
 val policy = ‘λn xs. T’
 
