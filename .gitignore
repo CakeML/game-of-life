@@ -1,3 +1,6 @@
+# Automation
+*.rle.txt
+
 # HOL stuff
 *Script
 *Theory.sig
