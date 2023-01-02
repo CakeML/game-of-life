@@ -126,13 +126,13 @@ fun prove_steps_sim_base policy xs = let
   val th = SPEC (mk_list_list xs) th
   val frame_ok_tm = th |> concl |> dest_imp |> fst
   val frame_ok_th = prove(frame_ok_tm,
-    REWRITE_TAC [frame_ok_def,EVAL “200 ≠ 0:num”]
+    rewrite_tac [frame_ok_def,EVAL “200 ≠ 0:num”]
     \\ CONV_TAC (PATH_CONV "lrlr" listLib.LENGTH_CONV)
-    \\ REWRITE_TAC [EVERY_DEF]
+    \\ rewrite_tac [EVERY_DEF]
     \\ rpt strip_tac
     \\ CONV_TAC BETA_CONV
     \\ CONV_TAC (PATH_CONV "lr" listLib.LENGTH_CONV)
-    \\ REWRITE_TAC [])
+    \\ rewrite_tac [])
   in MP th frame_ok_th end
 
 val th = prove_steps_sim_base policy d1
@@ -149,15 +149,22 @@ fun prove_steps_sim_step n th zs = let
   val (borders_tm,x) = x |> dest_conj
   val (policy_tm,next_sim_tm) = x |> dest_conj
   val borders_th = prove(borders_tm,
-    REWRITE_TAC [frame_borders_none_def,HD,LAST_CONS]
-    \\ REWRITE_TAC [EVERY_DEF,combinTheory.o_THM,HD,IS_NONE_DEF,LAST_CONS])
+    rewrite_tac [frame_borders_none_def,HD,LAST_CONS]
+    \\ rewrite_tac [EVERY_DEF,combinTheory.o_THM,HD,IS_NONE_DEF,LAST_CONS])
   val policy_th = prove(policy_tm,EVAL_TAC)
+  fun case_all_goal_vars_tac (asms,goal) = let
+    val vs = free_vars goal
+    fun tac [] = all_tac
+      | tac (v::vs) = tmCases_on v [] THEN tac vs
+    in tac vs (asms,goal) end
   val next_sim_th = prove(next_sim_tm,
-    REWRITE_TAC [next_sim_def,MAP,K_THM]
-    \\ REWRITE_TAC [next_frame_def,next_row_none,bool_def]
-    \\ REWRITE_TAC [next_row_def,MAP,K_THM]
+    rewrite_tac [next_sim_def,MAP,K_THM]
+    \\ rewrite_tac [next_frame_def,next_row_none,bool_def]
+    \\ rewrite_tac [next_row_def,MAP,K_THM]
     \\ rpt conj_tac
-    \\ TRY (REWRITE_TAC [bool_def,gol_simp] \\ NO_TAC))
+    \\ TRY (rewrite_tac [bool_def,gol_simp] \\ NO_TAC)
+    \\ case_all_goal_vars_tac
+    \\ rewrite_tac [bool_def,gol_simp])
   in MP th2 (LIST_CONJ [borders_th,policy_th,next_sim_th]) end;
 
 fun prove_steps policy filename = let
