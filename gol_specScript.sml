@@ -129,8 +129,8 @@ Definition core_pixels_of_def:
       else if ~int_even ib ∧ ~int_even jb then
         decide_corner area ib i jb j
       else
-        interface_pixel ins Sender (x,y) ∨
-        interface_pixel outs Receiver (x,y)
+        interface_pixel ins Receiver (x,y) ∨
+        interface_pixel outs Sender (x,y)
 End
 
 Definition spec_def:
