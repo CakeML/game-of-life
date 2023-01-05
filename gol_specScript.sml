@@ -121,6 +121,14 @@ Definition decide_corner_def:
       (x:int,y:int) ∈ area
 End
 
+Definition decide_border_area_def:
+  decide_border_area area (ib:int) (i:num) (jb:int) (j:num) =
+    if int_even ib then
+      if j < 75 DIV 2 then (ib,jb-1) ∈ area else (ib,jb+1) ∈ area
+    else (* we know: int_even jb *)
+      if i < 75 DIV 2 then (ib-1,jb) ∈ area else (ib+1,jb) ∈ area
+End
+
 Definition core_pixels_of_def:
   core_pixels_of area ins outs (x,y) ⇔
     let (ib,i,jb,j) = pixel_xy x y in
@@ -130,7 +138,9 @@ Definition core_pixels_of_def:
         decide_corner area ib i jb j
       else
         interface_pixel ins Receiver (x,y) ∨
-        interface_pixel outs Sender (x,y)
+        interface_pixel outs Sender (x,y) ∨
+        (ALOOKUP (ins++outs) (ib,jb) = NONE ∧
+         decide_border_area area ib i jb j)
 End
 
 Definition spec_def:
@@ -138,11 +148,90 @@ Definition spec_def:
        (s1:(int # int) set) (ins:intrefaces)
        (s2:(int # int) set) (outs:intrefaces) ⇔
     area_ok area borders ins outs ∧
-    steps60 (s1 ∪ comm_pixels_of ins)
-            (core_pixels_of area ins outs ∪ signal_pixels_of ins)
+    steps60 (s1 ∪ signal_pixels_of ins)
+            (core_pixels_of area ins outs ∪ comm_pixels_of ins)
             (core_pixels_of area ins outs)
-            (core_pixels_of area ins outs ∪ signal_pixels_of outs)
-            (s2 ∪ comm_pixels_of outs)
+            (core_pixels_of area ins outs ∪ comm_pixels_of outs)
+            (s2 ∪ signal_pixels_of outs)
 End
+
+Theorem imp_spec_00:
+  ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
+  EVERY (λ(p,r). MEM p [(0,1);(0,-1);(1,0);(-1,0)]) (ins ++ outs) ∧
+  steps60
+     (s1 ∪ signal_pixels_of ins)
+     (core_pixels_of {(0,0)} ins outs ∪ comm_pixels_of ins)
+     (core_pixels_of {(0,0)} ins outs)
+     (core_pixels_of {(0,0)} ins outs ∪ comm_pixels_of outs)
+     (s2 ∪ signal_pixels_of outs)
+  ⇒
+  spec {(0,0)} ({(0,1);(0,-1);(1,0);(-1,0)} DIFF (xy_of ins UNION (xy_of outs)))
+    s1 ins s2 outs
+Proof
+  rewrite_tac [spec_def,ALL_DISTINCT_APPEND]
+  \\ strip_tac
+  \\ ‘set_every (xy_of ins) (λ(x,y). int_even x ⇎ int_even y) ∧
+      set_every (xy_of outs) (λ(x,y). int_even x ⇎ int_even y)’ by
+   (fs [EVERY_APPEND] \\ fs [EVERY_MEM,set_every_def,FORALL_PROD,xy_of_def]
+    \\ fs [ALOOKUP_NONE,MEM_MAP,EXISTS_PROD]
+    \\ rw [] \\ res_tac \\ fs [int_even_def])
+  \\ asm_rewrite_tac [area_ok_def]
+  \\ rpt strip_tac
+  >- fs [set_every_def,int_even_def]
+  >- (fs [set_every_def,int_even_def] \\ rw [] \\ fs [])
+  >- (fs [IN_DISJOINT] \\ CCONTR_TAC \\ fs [] \\ gvs [])
+  >- (fs [IN_DISJOINT] \\ CCONTR_TAC \\ fs [] \\ gvs [])
+  >- (Cases_on ‘(x,y) ∈ {(0,0)}’ \\ gvs [] >- metis_tac []
+      \\ ‘x = -2’ by intLib.COOPER_TAC \\ gvs [] \\ metis_tac [])
+  >- (Cases_on ‘(x,y) ∈ {(0,0)}’ \\ gvs [] >- metis_tac []
+      \\ ‘y = -2’ by intLib.COOPER_TAC \\ gvs [] \\ metis_tac [])
+  >- (fs [MEM_MAP,EXISTS_PROD,PULL_EXISTS] \\ res_tac \\ gvs [])
+QED
+
+Definition bool_grid_def:
+  bool_grid (x:int) (y:int) w h p =
+    GENLIST (λj. GENLIST (λi. p (x + &i, y + & j) : bool) w) h
+End
+
+Theorem bool_grid_add_height:
+  bool_grid x y w (h1 + h2) p =
+  bool_grid x y w h1 p ++ bool_grid x (y + & h1) w h2 p
+Proof
+  rewrite_tac [bool_grid_def, GENLIST_APPEND |> ONCE_REWRITE_RULE [ADD_COMM]]
+  \\ fs [] \\ rpt (AP_TERM_TAC ORELSE AP_THM_TAC)
+  \\ fs [FUN_EQ_THM] \\ rw [] \\ rpt (AP_TERM_TAC ORELSE AP_THM_TAC)
+  \\ fs [FUN_EQ_THM] \\ rw [] \\ rpt (AP_TERM_TAC ORELSE AP_THM_TAC)
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem bool_grid_add_width:
+  ∀h w1 w2 x y p.
+    bool_grid x y (w1 + w2) h p =
+    MAP2 $++ (bool_grid x y w1 h p) (bool_grid (x + & w1) y w2 h p)
+Proof
+  Induct >- fs [bool_grid_def]
+  \\ fs [GENLIST_CONS,o_DEF,bool_grid_def] \\ rw []
+  \\ rewrite_tac [GENLIST_APPEND |> ONCE_REWRITE_RULE [ADD_COMM]] \\ fs []
+  \\ fs [GSYM integerTheory.INT_ADD,AC INT_ADD_ASSOC INT_ADD_COMM,ADD1]
+  \\ first_x_assum $ qspecl_then [‘w1’,‘w2’,‘x’,‘y+1’,‘p’] mp_tac
+  \\ rewrite_tac [GENLIST_APPEND |> ONCE_REWRITE_RULE [ADD_COMM]] \\ fs []
+  \\ fs [GSYM integerTheory.INT_ADD,AC INT_ADD_ASSOC INT_ADD_COMM,ADD1]
+QED
+
+val bool_grid_split1 =
+  “bool_grid (-75) (-75) w (75 + 75 + 75) p”
+  |> REWRITE_CONV [bool_grid_add_height]
+  |> SIMP_RULE std_ss [INT_ADD_CALCULATE];
+
+val bool_grid_split2 =
+  “bool_grid x y (75 + (75 + 75)) h p”
+  |> REWRITE_CONV [bool_grid_add_width]
+  |> SIMP_RULE std_ss [INT_ADD_CALCULATE];
+
+Theorem bool_grid_225_225 =
+  (“bool_grid (-75) (-75) 225 225 p”
+   |> (REWRITE_CONV [bool_grid_split1] THENC
+       REWRITE_CONV [bool_grid_split2])
+   |> SIMP_RULE std_ss [INT_ADD_CALCULATE]);
 
 val _ = export_theory();
