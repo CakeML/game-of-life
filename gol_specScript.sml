@@ -193,6 +193,39 @@ Definition bool_grid_def:
     GENLIST (λj. GENLIST (λi. p (x + &i, y + & j) : bool) w) h
 End
 
+Definition grid_to_set_def:
+  grid_to_set x y ys (i,j) ⇔
+    y ≤ j ∧ x ≤ i ∧
+    ∃xs. LLOOKUP ys (Num (j - y)) = SOME xs ∧
+         LLOOKUP xs (Num (i - x)) = SOME T
+End
+
+Triviality le_imp_add_exists:
+  x ≤ y ⇒ ∃k. y = x + (& k) :int
+Proof
+  rw []
+  \\ qexists_tac ‘Num (y-x)’
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem grid_to_set_bool_grid:
+  set_every s (λ(i,j). x ≤ i ∧ i < x + & w ∧ y ≤ j ∧ j < y + & h) ⇒
+  grid_to_set x y (bool_grid x y w h s) = s
+Proof
+  fs [EXTENSION,set_every_def,FORALL_PROD]
+  \\ rw [] \\ eq_tac \\ rw []
+
+    gvs [IN_DEF,grid_to_set_def]
+
+  \\ first_x_assum drule
+  \\ gvs [IN_DEF] \\ rw [grid_to_set_def]
+  \\ gvs [oEL_EQ_EL]
+  \\ dxrule le_imp_add_exists
+  \\ dxrule le_imp_add_exists
+  \\ strip_tac \\ strip_tac \\ gvs []
+  \\ fs [bool_grid_def]
+QED
+
 Theorem bool_grid_add_height:
   bool_grid x y w (h1 + h2) p =
   bool_grid x y w h1 p ++ bool_grid x (y + & h1) w h2 p
