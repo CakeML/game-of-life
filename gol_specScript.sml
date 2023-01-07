@@ -299,6 +299,95 @@ Proof
   \\ fs [GSYM integerTheory.INT_ADD,AC INT_ADD_ASSOC INT_ADD_COMM,ADD1]
 QED
 
+Theorem bool_grid_eq:
+  bool_grid x y w h p = bool_grid x y w h q ⇔
+  ∀i j. i < w ∧ j < h ⇒ p (x + &i, y + & j) = q (x + & i, y + & j)
+Proof
+  fs [bool_grid_def,listTheory.GENLIST_FUN_EQ] \\ metis_tac []
+QED
+
+Theorem alookup_filter:
+  ∀xs x. ALOOKUP (FILTER (λ(p,q). p = x) xs) x = ALOOKUP xs x
+Proof
+  Induct \\ fs [FORALL_PROD] \\ rw []
+QED
+
+Theorem bool_grid_n:
+  bool_grid 0 (-75) 75 75
+    (core_pixels_of {(0,0)} ins outs comms) =
+  bool_grid 0 (-75) 75 75
+    (core_pixels_of {(0,0)}
+      (FILTER (λ(p,x). (0,-1) = p) ins)
+      (FILTER (λ(p,x). (0,-1) = p) outs)
+      (FILTER (λ(p,x). (0,-1) = p) comms))
+Proof
+  fs [bool_grid_eq,core_pixels_of_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = 0 ∧ jb = -1’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ fs [interface_pixel_def]
+  \\ fs [alookup_filter,ALOOKUP_APPEND]
+QED
+
+Theorem bool_grid_s:
+  bool_grid 0 75 75 75
+    (core_pixels_of {(0,0)} ins outs comms) =
+  bool_grid 0 75 75 75
+    (core_pixels_of {(0,0)}
+      (FILTER (λ(p,x). (0,1) = p) ins)
+      (FILTER (λ(p,x). (0,1) = p) outs)
+      (FILTER (λ(p,x). (0,1) = p) comms))
+Proof
+  fs [bool_grid_eq,core_pixels_of_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = 0 ∧ jb = 1’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ fs [interface_pixel_def]
+  \\ fs [alookup_filter,ALOOKUP_APPEND]
+QED
+
+Theorem bool_grid_w:
+  bool_grid (-75) 0 75 75
+    (core_pixels_of {(0,0)} ins outs comms) =
+  bool_grid (-75) 0 75 75
+    (core_pixels_of {(0,0)}
+      (FILTER (λ(p,x). (-1,0) = p) ins)
+      (FILTER (λ(p,x). (-1,0) = p) outs)
+      (FILTER (λ(p,x). (-1,0) = p) comms))
+Proof
+  fs [bool_grid_eq,core_pixels_of_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = -1 ∧ jb = 0’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ fs [interface_pixel_def]
+  \\ fs [alookup_filter,ALOOKUP_APPEND]
+QED
+
+Theorem bool_grid_e:
+  bool_grid 75 0 75 75
+    (core_pixels_of {(0,0)} ins outs comms) =
+  bool_grid 75 0 75 75
+    (core_pixels_of {(0,0)}
+      (FILTER (λ(p,x). (1,0) = p) ins)
+      (FILTER (λ(p,x). (1,0) = p) outs)
+      (FILTER (λ(p,x). (1,0) = p) comms))
+Proof
+  fs [bool_grid_eq,core_pixels_of_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = 1 ∧ jb = 0’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ fs [interface_pixel_def]
+  \\ fs [alookup_filter,ALOOKUP_APPEND]
+QED
+
 val bool_grid_split1 =
   “bool_grid (-75) (-75) w (75 + 75 + 75) p”
   |> REWRITE_CONV [bool_grid_add_height]
@@ -355,6 +444,19 @@ Theorem bool_grid_225_225_core =
    |> Q.SPEC ‘core_pixels_of {(0,0)} ins outs comms’
    |> REWRITE_RULE [bool_grid_middle,
                     bool_grid_corner_nw,bool_grid_corner_ne,
-                    bool_grid_corner_sw,bool_grid_corner_se])
+                    bool_grid_corner_sw,bool_grid_corner_se]
+   |> ONCE_REWRITE_RULE [bool_grid_e,bool_grid_w,bool_grid_s,bool_grid_n])
+
+Theorem border_n =
+  EVAL “bool_grid 0 (-75) 75 75 (core_pixels_of {(0,0)} [] [] [])”;
+
+Theorem border_w =
+  EVAL “bool_grid (-75) 0 75 75 (core_pixels_of {(0,0)} [] [] [])”;
+
+Theorem border_e =
+  EVAL “bool_grid 75 0 75 75 (core_pixels_of {(0,0)} [] [] [])”;
+
+Theorem border_s =
+  EVAL “bool_grid 0 75 75 75 (core_pixels_of {(0,0)} [] [] [])”;
 
 val _ = export_theory();
