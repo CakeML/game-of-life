@@ -130,7 +130,7 @@ Definition decide_border_area_def:
 End
 
 Definition core_pixels_of_def:
-  core_pixels_of area ins outs (x,y) ⇔
+  core_pixels_of area ins outs comms (x,y) ⇔
     let (ib,i,jb,j) = pixel_xy x y in
       if int_even ib ∧ int_even jb then
         (ib,jb) ∈ area
@@ -139,6 +139,8 @@ Definition core_pixels_of_def:
       else
         interface_pixel ins Receiver (x,y) ∨
         interface_pixel outs Sender (x,y) ∨
+        interface_pixel comms Shared (x,y) ∨
+        interface_pixel comms Signal (x,y) ∨
         (ALOOKUP (ins++outs) (ib,jb) = NONE ∧
          decide_border_area area ib i jb j)
 End
@@ -149,9 +151,9 @@ Definition spec_def:
        (s2:(int # int) set) (outs:intrefaces) ⇔
     area_ok area borders ins outs ∧
     steps60 (s1 ∪ signal_pixels_of ins)
-            (core_pixels_of area ins outs ∪ comm_pixels_of ins)
-            (core_pixels_of area ins outs)
-            (core_pixels_of area ins outs ∪ comm_pixels_of outs)
+            (core_pixels_of area ins outs ins)
+            (core_pixels_of area ins outs [])
+            (core_pixels_of area ins outs outs)
             (s2 ∪ signal_pixels_of outs)
 End
 
@@ -160,9 +162,9 @@ Theorem imp_spec_00:
   EVERY (λ(p,r). MEM p [(0,1);(0,-1);(1,0);(-1,0)]) (ins ++ outs) ∧
   steps60
      (s1 ∪ signal_pixels_of ins)
-     (core_pixels_of {(0,0)} ins outs ∪ comm_pixels_of ins)
-     (core_pixels_of {(0,0)} ins outs)
-     (core_pixels_of {(0,0)} ins outs ∪ comm_pixels_of outs)
+     (core_pixels_of {(0,0)} ins outs ins)
+     (core_pixels_of {(0,0)} ins outs [])
+     (core_pixels_of {(0,0)} ins outs outs)
      (s2 ∪ signal_pixels_of outs)
   ⇒
   spec {(0,0)} ({(0,1);(0,-1);(1,0);(-1,0)} DIFF (xy_of ins UNION (xy_of outs)))
@@ -214,9 +216,13 @@ Theorem grid_to_set_bool_grid:
 Proof
   fs [EXTENSION,set_every_def,FORALL_PROD]
   \\ rw [] \\ eq_tac \\ rw []
-
-    gvs [IN_DEF,grid_to_set_def]
-
+  >-
+   (gvs [IN_DEF,grid_to_set_def]
+    \\ gvs [oEL_EQ_EL]
+    \\ dxrule le_imp_add_exists
+    \\ dxrule le_imp_add_exists
+    \\ strip_tac \\ strip_tac \\ gvs []
+    \\ gvs [bool_grid_def])
   \\ first_x_assum drule
   \\ gvs [IN_DEF] \\ rw [grid_to_set_def]
   \\ gvs [oEL_EQ_EL]
@@ -224,6 +230,48 @@ Proof
   \\ dxrule le_imp_add_exists
   \\ strip_tac \\ strip_tac \\ gvs []
   \\ fs [bool_grid_def]
+QED
+
+Theorem bounds_core_pixels_of:
+  EVERY (λ(p,r). MEM p [(0,1);(0,-1);(1,0);(-1,0)]) (ins ++ outs ++ comms) ⇒
+  set_every (core_pixels_of {(0,0)} ins outs comms)
+    (λ(i,j). -75 ≤ i ∧ i < -75 + 225 ∧ -75 ≤ j ∧ j < -75 + 225)
+Proof
+  fs [set_every_def,FORALL_PROD]
+  \\ fs [IN_DEF,core_pixels_of_def]
+  \\ strip_tac \\ rpt gen_tac
+  \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ gvs []
+  \\ IF_CASES_TAC >- fs []
+  \\ IF_CASES_TAC >-
+   (gvs [] \\ fs [decide_corner_def]
+    \\ rw [] \\ intLib.COOPER_TAC)
+  \\ pop_assum kall_tac
+  \\ pop_assum kall_tac
+  \\ strip_tac
+  >-
+   (gvs [interface_pixel_def]
+    \\ Cases_on ‘ALOOKUP ins (ib,jb)’ \\ fs []
+    \\ imp_res_tac ALOOKUP_MEM \\ fs [EVERY_MEM]
+    \\ res_tac \\ fs [] \\ intLib.COOPER_TAC)
+  >-
+   (gvs [interface_pixel_def]
+    \\ Cases_on ‘ALOOKUP outs (ib,jb)’ \\ fs []
+    \\ imp_res_tac ALOOKUP_MEM \\ fs [EVERY_MEM]
+    \\ res_tac \\ fs [] \\ intLib.COOPER_TAC)
+  >-
+   (gvs [interface_pixel_def]
+    \\ Cases_on ‘ALOOKUP comms (ib,jb)’ \\ fs []
+    \\ imp_res_tac ALOOKUP_MEM \\ fs [EVERY_MEM]
+    \\ res_tac \\ fs [] \\ intLib.COOPER_TAC)
+  >-
+   (gvs [interface_pixel_def]
+    \\ Cases_on ‘ALOOKUP comms (ib,jb)’ \\ fs []
+    \\ imp_res_tac ALOOKUP_MEM \\ fs [EVERY_MEM]
+    \\ res_tac \\ fs [] \\ intLib.COOPER_TAC)
+  \\ fs [decide_border_area_def]
+  \\ every_case_tac \\ gvs [int_even_def]
+  \\ intLib.COOPER_TAC
 QED
 
 Theorem bool_grid_add_height:
@@ -266,5 +314,47 @@ Theorem bool_grid_225_225 =
    |> (REWRITE_CONV [bool_grid_split1] THENC
        REWRITE_CONV [bool_grid_split2])
    |> SIMP_RULE std_ss [INT_ADD_CALCULATE]);
+
+local
+  val lemma = EVAL “bool_grid (-75) (-75) 75 75 (core_pixels_of {(0,0)} ins outs comms)”
+  val corner_nw_def = Define ‘corner_nw = ^(concl lemma |> rand)’
+in
+  val bool_grid_corner_nw = REWRITE_RULE [GSYM corner_nw_def] lemma;
+end
+
+local
+  val lemma = EVAL “bool_grid 75 (-75) 75 75 (core_pixels_of {(0,0)} ins outs comms)”
+  val corner_ne_def = Define ‘corner_ne = ^(concl lemma |> rand)’
+in
+  val bool_grid_corner_ne = REWRITE_RULE [GSYM corner_ne_def] lemma;
+end
+
+local
+  val lemma = EVAL “bool_grid (-75) 75 75 75 (core_pixels_of {(0,0)} ins outs comms)”
+  val corner_sw_def = Define ‘corner_sw = ^(concl lemma |> rand)’
+in
+  val bool_grid_corner_sw = REWRITE_RULE [GSYM corner_sw_def] lemma;
+end
+
+local
+  val lemma = EVAL “bool_grid 75 75 75 75 (core_pixels_of {(0,0)} ins outs comms)”
+  val corner_se_def = Define ‘corner_se = ^(concl lemma |> rand)’
+in
+  val bool_grid_corner_se = REWRITE_RULE [GSYM corner_se_def] lemma;
+end
+
+local
+  val lemma = EVAL “bool_grid 0 0 75 75 (core_pixels_of {(0,0)} ins outs comms)”
+  val middle_def = Define ‘middle = ^(concl lemma |> rand)’
+in
+  val bool_grid_middle = REWRITE_RULE [GSYM middle_def] lemma;
+end
+
+Theorem bool_grid_225_225_core =
+  (bool_grid_225_225 |> GEN_ALL
+   |> Q.SPEC ‘core_pixels_of {(0,0)} ins outs comms’
+   |> REWRITE_RULE [bool_grid_middle,
+                    bool_grid_corner_nw,bool_grid_corner_ne,
+                    bool_grid_corner_sw,bool_grid_corner_se])
 
 val _ = export_theory();
