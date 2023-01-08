@@ -157,7 +157,7 @@ Definition spec_def:
             (s2 ∪ signal_pixels_of outs)
 End
 
-Theorem imp_spec_00:
+Theorem imp_spec_00_lemma[local]:
   ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
   EVERY (λ(p,r). MEM p [(0,1);(0,-1);(1,0);(-1,0)]) (ins ++ outs) ∧
   steps60
@@ -458,5 +458,155 @@ Theorem border_e =
 
 Theorem border_s =
   EVAL “bool_grid 0 75 75 75 (core_pixels_of {(0,0)} [] [] [])”;
+
+Definition good_interface_def:
+  good_interface shape ⇔
+    LENGTH shape = 75 ∧ EVERY (λl. LENGTH l = 75) shape
+End
+
+Triviality bool_grid_eq_map_map:
+  ∀xs h w x y p q.
+    LENGTH xs = h ∧ EVERY (λl. LENGTH l = w) xs ∧
+    (∀i j. i < w ∧ j < h ⇒ q (EL i (EL j xs)) = p (x + &i, y + &j)) ⇒
+    bool_grid x y w h p = MAP (MAP q) xs
+Proof
+  Induct using SNOC_INDUCT
+  >- fs [bool_grid_def]
+  \\ fs [LENGTH_SNOC,EVERY_SNOC]
+  \\ rw [] \\ rewrite_tac [bool_grid_add_height]
+  \\ match_mp_tac (METIS_PROVE [] “xs = ys ∧ xs1 = ys1 ⇒ xs ++ xs1 = ys ++ ys1”)
+  \\ strip_tac
+  >-
+   (last_x_assum irule \\ fs []
+    \\ rw []
+    \\ first_x_assum $ qspecl_then [‘i’,‘j’] mp_tac
+    \\ fs [SNOC_APPEND,EL_APPEND1])
+  \\ simp [bool_grid_def]
+  \\ simp [GENLIST_eq_MAP]
+  \\ rw []
+  \\ first_x_assum $ qspecl_then [‘i’,‘LENGTH xs’] mp_tac
+  \\ fs [SNOC_APPEND,EL_APPEND2]
+QED
+
+Theorem shape_e:
+  good_interface shape ⇒
+  bool_grid 75 0 75 75 (core_pixels_of {(0,0)} [((1,0),shape,b)] [] []) =
+  MAP (MAP (λx. x = Receiver)) shape ∧
+  bool_grid 75 0 75 75 (core_pixels_of {(0,0)} [((1,0),shape,b)] [] [((1,0),shape,b)]) =
+  MAP (MAP (λx. x = Receiver ∨ x = Shared ∨ x = Signal)) shape ∧
+  bool_grid 75 0 75 75 (core_pixels_of {(0,0)} [] [((1,0),shape,b)] []) =
+  MAP (MAP (λx. x = Sender)) shape ∧
+  bool_grid 75 0 75 75 (core_pixels_of {(0,0)} [] [((1,0),shape,b)] [((1,0),shape,b)]) =
+  MAP (MAP (λx. x = Sender ∨ x = Shared ∨ x = Signal)) shape
+Proof
+  rewrite_tac [good_interface_def]
+  \\ rpt strip_tac
+  \\ irule bool_grid_eq_map_map \\ fs []
+  \\ fs [core_pixels_of_def]
+  \\ rw [] \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = 1 ∧ jb = 0’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ gvs [interface_pixel_def,el_el_def,AllCaseEqs(),miscTheory.LLOOKUP_EQ_EL]
+  \\ gvs [EVERY_EL]
+QED
+
+Theorem shape_w:
+  good_interface shape ⇒
+  bool_grid (-75) 0 75 75 (core_pixels_of {(0,0)} [((-1,0),shape,b)] [] []) =
+  MAP (MAP (λx. x = Receiver)) shape ∧
+  bool_grid (-75) 0 75 75 (core_pixels_of {(0,0)} [((-1,0),shape,b)] [] [((-1,0),shape,b)]) =
+  MAP (MAP (λx. x = Receiver ∨ x = Shared ∨ x = Signal)) shape ∧
+  bool_grid (-75) 0 75 75 (core_pixels_of {(0,0)} [] [((-1,0),shape,b)] []) =
+  MAP (MAP (λx. x = Sender)) shape ∧
+  bool_grid (-75) 0 75 75 (core_pixels_of {(0,0)} [] [((-1,0),shape,b)] [((-1,0),shape,b)]) =
+  MAP (MAP (λx. x = Sender ∨ x = Shared ∨ x = Signal)) shape
+Proof
+  rewrite_tac [good_interface_def]
+  \\ rpt strip_tac
+  \\ irule bool_grid_eq_map_map \\ fs []
+  \\ fs [core_pixels_of_def]
+  \\ rw [] \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = -1 ∧ jb = 0’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ gvs [interface_pixel_def,el_el_def,AllCaseEqs(),miscTheory.LLOOKUP_EQ_EL]
+  \\ gvs [EVERY_EL]
+QED
+
+Theorem shape_n:
+  good_interface shape ⇒
+  bool_grid 0 (-75) 75 75 (core_pixels_of {(0,0)} [((0,-1),shape,b)] [] []) =
+  MAP (MAP (λx. x = Receiver)) shape ∧
+  bool_grid 0 (-75) 75 75 (core_pixels_of {(0,0)} [((0,-1),shape,b)] [] [((0,-1),shape,b)]) =
+  MAP (MAP (λx. x = Receiver ∨ x = Shared ∨ x = Signal)) shape ∧
+  bool_grid 0 (-75) 75 75 (core_pixels_of {(0,0)} [] [((0,-1),shape,b)] []) =
+  MAP (MAP (λx. x = Sender)) shape ∧
+  bool_grid 0 (-75) 75 75 (core_pixels_of {(0,0)} [] [((0,-1),shape,b)] [((0,-1),shape,b)]) =
+  MAP (MAP (λx. x = Sender ∨ x = Shared ∨ x = Signal)) shape
+Proof
+  rewrite_tac [good_interface_def]
+  \\ rpt strip_tac
+  \\ irule bool_grid_eq_map_map \\ fs []
+  \\ fs [core_pixels_of_def]
+  \\ rw [] \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists
+  \\ strip_tac \\ fs []
+  \\ ‘ib = 0 ∧ jb = -1’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ gvs [interface_pixel_def,el_el_def,AllCaseEqs(),miscTheory.LLOOKUP_EQ_EL]
+  \\ gvs [EVERY_EL]
+QED
+
+Theorem shape_s:
+  good_interface shape ⇒
+  bool_grid 0 75 75 75 (core_pixels_of {(0,0)} [((0,1),shape,b)] [] []) =
+  MAP (MAP (λx. x = Receiver)) shape ∧
+  bool_grid 0 75 75 75 (core_pixels_of {(0,0)} [((0,1),shape,b)] [] [((0,1),shape,b)]) =
+  MAP (MAP (λx. x = Receiver ∨ x = Shared ∨ x = Signal)) shape ∧
+  bool_grid 0 75 75 75 (core_pixels_of {(0,0)} [] [((0,1),shape,b)] []) =
+  MAP (MAP (λx. x = Sender)) shape ∧
+  bool_grid 0 75 75 75 (core_pixels_of {(0,0)} [] [((0,1),shape,b)] [((0,1),shape,b)]) =
+  MAP (MAP (λx. x = Sender ∨ x = Shared ∨ x = Signal)) shape
+Proof
+  rewrite_tac [good_interface_def]
+  \\ rpt strip_tac
+  \\ irule bool_grid_eq_map_map \\ fs []
+  \\ fs [core_pixels_of_def]
+  \\ rw [] \\ pairarg_tac \\ fs []
+  \\ drule pixel_xy_exists \\ strip_tac \\ fs []
+  \\ ‘ib = 0 ∧ jb = 1’ by intLib.COOPER_TAC
+  \\ gvs [int_even_def]
+  \\ gvs [interface_pixel_def,el_el_def,AllCaseEqs(),miscTheory.LLOOKUP_EQ_EL]
+  \\ gvs [EVERY_EL]
+QED
+
+Theorem imp_spec_00_lemma2[local]:
+  ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
+  EVERY (λ(p,r). MEM p [(0,1);(0,-1);(1,0);(-1,0)]) (ins ++ outs) ∧
+  steps60
+     (s1 ∪ signal_pixels_of ins)
+     (grid_to_set (-75) (-75)
+        (bool_grid (-75) (-75) 225 225 (core_pixels_of {(0,0)} ins outs ins)))
+     (grid_to_set (-75) (-75)
+        (bool_grid (-75) (-75) 225 225 (core_pixels_of {(0,0)} ins outs [])))
+     (grid_to_set (-75) (-75)
+        (bool_grid (-75) (-75) 225 225 (core_pixels_of {(0,0)} ins outs outs)))
+     (s2 ∪ signal_pixels_of outs)
+  ⇒
+  spec {(0,0)} ({(0,1);(0,-1);(1,0);(-1,0)} DIFF (xy_of ins UNION (xy_of outs)))
+    s1 ins s2 outs
+Proof
+  strip_tac
+  \\ irule imp_spec_00_lemma \\ simp []
+  \\ pop_assum mp_tac
+  \\ DEP_REWRITE_TAC [MATCH_MP grid_to_set_bool_grid
+                        (UNDISCH bounds_core_pixels_of) |> DISCH_ALL] \\ fs []
+QED
+
+Theorem imp_spec_00 =
+  (imp_spec_00_lemma2
+   |> REWRITE_RULE [bool_grid_225_225_core]
+   |> Q.GENL [‘ins’,‘outs’]);
 
 val _ = export_theory();

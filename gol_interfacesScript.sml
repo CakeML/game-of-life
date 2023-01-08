@@ -341,4 +341,38 @@ End
 
 Theorem SOUTH = EVAL “SOUTH”;
 
+Triviality north_ok:
+  good_interface NORTH
+Proof
+  EVAL_TAC
+QED
+
+Triviality south_ok:
+  good_interface SOUTH
+Proof
+  EVAL_TAC
+QED
+
+Triviality east_ok:
+  good_interface EAST
+Proof
+  EVAL_TAC
+QED
+
+Triviality west_ok:
+  good_interface WEST
+Proof
+  EVAL_TAC
+QED
+
+Theorem interface_rewrites =
+  (LIST_CONJ [MATCH_MP shape_w west_ok,
+              MATCH_MP shape_w east_ok,
+              MATCH_MP shape_e west_ok,
+              MATCH_MP shape_e east_ok,
+              MATCH_MP shape_n north_ok,
+              MATCH_MP shape_n south_ok,
+              MATCH_MP shape_s north_ok,
+              MATCH_MP shape_s south_ok] |> REWRITE_RULE [GSYM CONJ_ASSOC]);
+
 val _ = export_theory();
