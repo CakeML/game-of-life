@@ -1,7 +1,7 @@
 (*
   Definition of spec for writing specifications for GOL gates
 *)
-open preamble gol_rulesTheory gol_composeTheory integerTheory;
+open preamble gol_rulesTheory integerTheory;
 
 val _ = new_theory "gol_spec";
 

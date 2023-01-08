@@ -128,10 +128,6 @@ Definition frame_borders_none_def:
     EVERY (IS_NONE o LAST) xs
 End
 
-Definition to_state_def:
-  to_state xs = { p | MEM (p,T) xs } : gol_rules$state
-End
-
 Theorem IN_to_state:
   (x,y) IN to_state xs ⇔ MEM ((x,y),T) xs
 Proof
