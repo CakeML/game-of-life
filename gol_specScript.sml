@@ -1,7 +1,7 @@
 (*
   Definition of spec for writing specifications for GOL gates
 *)
-open preamble gol_rulesTheory integerTheory;
+open preamble gol_rulesTheory integerTheory gol_simulationTheory;
 
 val _ = new_theory "gol_spec";
 
@@ -64,11 +64,11 @@ Definition comm_pixels_of_def:
 End
 
 Definition signal_pixels_of_def:
-  signal_pixels_of is (x,y) ⇔
-    let (ib,i,jb,j) = pixel_xy x y in
-      case ALOOKUP is (ib:int,jb:int) of
-      | SOME (shape,b) => el_el i j shape = SOME Signal ∧ b
-      | _ => F
+  signal_pixels_of [] = ∅ ∧
+  signal_pixels_of (((x,y),(cs,b))::(xs:intrefaces)) =
+    (signal_pixels_of xs ∪
+     to_state (from_frame (75 * x) (75 * y)
+       (MAP (MAP (λc. if c = Signal then SOME b else NONE)) cs)))
 End
 
 (* taking 60 steps inside boundaries for borders *)
@@ -76,7 +76,7 @@ End
 Definition steps_def:
   steps n x s1 s2 ⇔
     FUNPOW step n s1 = s2 ∧
-    ∀k. k ≤ n ⇒ infl (FUNPOW step k s1) ⊆ x
+    ∀k. k < n ⇒ infl (FUNPOW step k s1) ⊆ x
 End
 
 Definition steps60_def:
@@ -604,9 +604,403 @@ Proof
                         (UNDISCH bounds_core_pixels_of) |> DISCH_ALL] \\ fs []
 QED
 
+Theorem steps_sim_frame_ok:
+  ∀n xs ys. steps_sim w h policy n xs ys ⇒ frame_ok (w,h) ys
+Proof
+  Induct \\ rw []
+  \\ pop_assum mp_tac
+  >- (once_rewrite_tac [steps_sim_cases] \\ fs [])
+  \\ simp [Once steps_sim_cases,ADD1]
+  \\ rw [] \\ res_tac
+  \\ drule_all frame_ok_next_sim
+  \\ fs []
+QED
+
+Theorem steps_sim_FUNPOW_step:
+  ∀n xs ys.
+    steps_sim w h policy n xs ys ⇒
+    FUNPOW step n (to_state (from_frame x y xs)) = to_state (from_frame x y ys)
+Proof
+  Induct \\ rw []
+  \\ pop_assum mp_tac
+  >- (once_rewrite_tac [steps_sim_cases] \\ fs [])
+  \\ once_rewrite_tac [steps_sim_cases] \\ fs [GSYM ADD1]
+  \\ rw [] \\ res_tac
+  \\ fs [FUNPOW_SUC]
+  \\ irule step_from_frame
+  \\ fs []
+  \\ imp_res_tac steps_sim_frame_ok
+  \\ first_assum $ irule_at Any \\ fs []
+QED
+
+Theorem steps_sim_suc:
+  ∀n w h policy xs zs.
+    steps_sim w h policy (SUC n) xs zs ⇔
+    ∃ys.
+      frame_ok (w,h) xs ∧ frame_borders_none xs ∧ policy 0 xs ∧
+      next_sim xs ys ∧ steps_sim w h (policy o SUC) n ys zs
+Proof
+  Induct
+  >-
+   (rw [] \\ once_rewrite_tac [steps_sim_cases] \\ fs [GSYM ADD1]
+    \\ once_rewrite_tac [steps_sim_cases] \\ fs [GSYM ADD1]
+    \\ rw [] \\ eq_tac \\ rw [] \\ imp_res_tac frame_ok_next_sim \\ fs [])
+  \\ simp_tac std_ss [Once steps_sim_cases,GSYM ADD1,PULL_EXISTS]
+  \\ pop_assum $ simp o single o Once
+  \\ rw [] \\ eq_tac \\ rw [] \\ fs []
+  >- (simp [Once steps_sim_cases,GSYM ADD1,PULL_EXISTS] \\ metis_tac [])
+  \\ fs [PULL_EXISTS]
+  \\ pop_assum mp_tac
+  \\ simp [Once steps_sim_cases,GSYM ADD1,PULL_EXISTS]
+  \\ rw [] \\ metis_tac []
+QED
+
+Theorem steps_sim_imp_0:
+  ∀n xs ys.
+    steps_sim w h policy n xs ys ⇒
+    steps_sim w h policy 0 xs xs
+Proof
+  Induct \\ rw []
+  \\ pop_assum mp_tac
+  >- (once_rewrite_tac [steps_sim_cases] \\ fs [])
+  \\ simp [Once steps_sim_cases,ADD1]
+  \\ rw [] \\ res_tac
+QED
+
+Theorem steps_sim_add:
+  ∀m n xs ys policy.
+    steps_sim w h policy (m + n) xs ys ⇒
+    ∃zs.
+      steps_sim w h policy m xs zs ∧
+      steps_sim w h (λk. policy (k + m)) n zs ys
+Proof
+  Induct \\ fs [SF ETA_ss]
+  >-
+   (rw [] \\ first_assum (irule_at Any)
+    \\ imp_res_tac steps_sim_imp_0 \\ fs [])
+  \\ fs [] \\ rewrite_tac []
+  \\ simp [GSYM ADD1,ADD_CLAUSES,PULL_EXISTS]
+  \\ rpt strip_tac
+  \\ simp [Once steps_sim_suc]
+  \\ pop_assum mp_tac
+  \\ simp [Once steps_sim_suc]
+  \\ strip_tac
+  \\ first_x_assum drule
+  \\ strip_tac
+  \\ fs [combinTheory.o_DEF,PULL_EXISTS]
+  \\ metis_tac []
+QED
+
+Theorem steps_sim_bound:
+  ∀n xs ys policy.
+    steps_sim w h policy n xs ys ⇔
+    steps_sim w h (λk. if k < n then policy k else ARB) n xs ys
+Proof
+  once_rewrite_tac [EQ_SYM_EQ]
+  \\ Induct \\ fs []
+  \\ once_rewrite_tac [steps_sim_cases] \\ fs []
+  \\ fs [GSYM ADD1,PULL_EXISTS]
+  \\ pop_assum $ once_rewrite_tac o single o GSYM
+  \\ fs []
+QED
+
+Definition check_mask_row_def:
+  check_mask_row
+    (b11::b12::b13::bs1)
+    (b21::b22::b23::bs2)
+    (b31::b32::b33::bs3) (r::rs) =
+    (if (IS_SOME r ⇒ b11 ∧ b12 ∧ b13 ∧ b21 ∧ b22 ∧ b23 ∧ b31 ∧ b32 ∧ b33)
+     then
+       check_mask_row
+        (b12::b13::bs1)
+        (b22::b23::bs2)
+        (b32::b33::bs3) rs
+     else F) ∧
+  check_mask_row _ _ _ _ = T
+End
+
+Definition check_mask_rows_def:
+  check_mask_rows (x1::x2::x3::xs) (n::ns) =
+    (check_mask_row x1 x2 x3 (TL n) ∧
+     check_mask_rows (x2::x3::xs) ns) ∧
+  check_mask_rows _ _ = T
+End
+
+Definition check_mask_def:
+  check_mask xs [] = T ∧
+  check_mask xs (r::rs) = check_mask_rows xs rs
+End
+
+Triviality to_state_nones_append:
+  ∀ns x y. EVERY IS_NONE ns ⇒ to_state (from_row x y ns ++ xs) = to_state xs
+Proof
+  Induct \\ fs [from_row_def]
+QED
+
+Theorem to_state_append:
+  ∀xs ys. to_state (xs ++ ys) = to_state xs ∪ to_state ys
+Proof
+  fs [to_state_def,EXTENSION]
+QED
+
+Theorem to_state_cons:
+  to_state (((x,y),b)::xs) = (if b then {(x,y)} else {}) ∪ to_state xs
+Proof
+  fs [to_state_def,EXTENSION,FORALL_PROD] \\ rw [] \\ fs []
+QED
+
+Theorem grid_to_set_rw0:
+  grid_to_set x y (z::ys) =
+  grid_to_set x y [z] ∪ grid_to_set x (y+1) ys
+Proof
+  rw [grid_to_set_def,EXTENSION,FORALL_PROD]
+  \\ fs [IN_DEF,grid_to_set_def,oEL_def,AllCaseEqs()]
+  \\ rw [] \\ eq_tac \\ rw [] \\ fs []
+  \\ ‘Num (p_2 − (y + 1)) = Num (p_2 − y) − 1’ by intLib.COOPER_TAC \\ gvs []
+  >- intLib.COOPER_TAC
+  >- intLib.COOPER_TAC
+  \\ Cases_on ‘Num (p_2 − y)’ \\ gvs []
+  \\ ‘F’ by intLib.COOPER_TAC
+QED
+
+Theorem grid_to_set_rw1:
+  grid_to_set x y (z::q::ys) =
+  grid_to_set x y [z] ∪ grid_to_set x (y+1) (q::ys)
+Proof
+  simp [Once grid_to_set_rw0]
+QED
+
+Theorem grid_to_set_rw2:
+  grid_to_set x y [a::xs] =
+  (if a then {(x,y)} else {}) ∪ grid_to_set (x+1) y [xs]
+Proof
+  rw [grid_to_set_def,EXTENSION,FORALL_PROD]
+  \\ fs [IN_DEF,grid_to_set_def,oEL_def,AllCaseEqs()]
+  \\ rw [] \\ eq_tac \\ rw [] \\ fs []
+  >- (CCONTR_TAC \\ fs [] \\ intLib.COOPER_TAC)
+  >- (‘Num (p_1 − x) − 1 = Num (p_1 − (x + 1))’ by intLib.COOPER_TAC
+      \\ fs [] \\ intLib.COOPER_TAC)
+  >- intLib.COOPER_TAC
+  >- (Cases_on ‘Num (p_1 − x)’ \\ fs []
+      \\ ‘Num (p_1 − x) − 1 = Num (p_1 − (x + 1))’ by intLib.COOPER_TAC
+      \\ gvs [])
+  >- intLib.COOPER_TAC
+  >- (‘Num (p_1 − x) − 1 = Num (p_1 − (x + 1))’ by intLib.COOPER_TAC \\ fs [])
+  >- intLib.COOPER_TAC
+  >- intLib.COOPER_TAC
+  >- (‘Num (p_1 − x) − 1 = Num (p_1 − (x + 1))’ by intLib.COOPER_TAC \\ fs [])
+QED
+
+Triviality grid_to_set_add1:
+  grid_to_set (x + 1) y [b::c::xs1; e::f::xs2; h::i::xs3] ⊆
+  grid_to_set x y [a::b::c::xs1; d::e::f::xs2; g::h::i::xs3]
+Proof
+  rewrite_tac [grid_to_set_rw1]
+  \\ CONV_TAC (RAND_CONV $ ONCE_REWRITE_CONV [grid_to_set_rw2])
+  \\ rw [] \\ fs [SUBSET_DEF] \\ rw [] \\ fs []
+QED
+
+Triviality check_mask_row_thm:
+  ∀n ts x y a.
+    check_mask_row (GENLIST (λi. mask1 (x + &i,y)) n)
+                   (GENLIST (λi. mask1 (x + &i,y + 1)) n)
+                   (GENLIST (λi. mask1 (x + &i,y + 2)) n) ts ∧
+    SUC (LENGTH ts) = n ∧
+    LAST (a::ts) = NONE ⇒
+    infl (to_state (from_row (x + 1) (y + 1) ts)) ⊆
+    grid_to_set x y
+          (GENLIST (λi. mask1 (x + &i,y)) n::
+           GENLIST (λi. mask1 (x + &i,y + 1)) n::
+           GENLIST (λi. mask1 (x + &i,y + 2)) n::[])
+Proof
+  simp [] \\ Induct_on ‘ts’ \\ fs []
+  >- fs [from_row_def,to_state_def,infl_thm,SUBSET_DEF,FORALL_PROD]
+  \\ Cases_on ‘ts’ \\ fs []
+  >- fs [from_row_def,to_state_def,infl_thm,SUBSET_DEF,FORALL_PROD]
+  \\ fs [GENLIST_CONS,combinTheory.o_DEF,ADD1]
+  \\ fs [check_mask_row_def]
+  \\ rw []
+  \\ last_x_assum $ qspecl_then [‘x+1’,‘y’] mp_tac
+  \\ impl_tac >-
+   (fs [GSYM INT_ADD_ASSOC]
+    \\ ‘∀a. y + (1 + &(a + 2)) = y + &(a + 3)’ by intLib.COOPER_TAC \\ fs [])
+  \\ fs [GSYM INT_ADD_ASSOC]
+  \\ ‘∀a. y + (1 + &(a + 2)) = y + &(a + 3)’ by intLib.COOPER_TAC \\ fs []
+  \\ strip_tac
+  \\ rename [‘from_row (x + 1) (y + 1) (hx::h::t)’]
+  \\ Cases_on ‘hx’ \\ fs [from_row_def]
+  \\ fs [GSYM INT_ADD_ASSOC]
+  >-
+   (irule SUBSET_TRANS
+    \\ first_x_assum $ irule_at Any
+    \\ irule grid_to_set_add1)
+  \\ gvs []
+  \\ rewrite_tac [to_state_cons,infl_union] \\ fs []
+  \\ reverse conj_tac
+  >-
+   (irule SUBSET_TRANS
+    \\ first_x_assum $ irule_at Any
+    \\ irule grid_to_set_add1)
+  \\ simp [SUBSET_DEF,FORALL_PROD,infl_thm]
+  \\ IF_CASES_TAC \\ fs []
+  \\ rw [] \\ fs []
+  \\ gvs [grid_to_set_def,IN_DEF,integerTheory.INT_EQ_SUB_RADD]
+  \\ ‘∀y. y + 1 + 1 − y = 2:int’ by intLib.COOPER_TAC \\ gvs []
+  \\ fs [oEL_def]
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem check_mask_thm:
+  frame_ok (w,h) xs1 ∧
+  frame_borders_none xs1 ∧
+  check_mask (bool_grid x y w h mask1) xs1 ⇒
+  infl (to_state (from_frame x y xs1)) ⊆
+  grid_to_set x y (bool_grid x y w h mask1)
+Proof
+  Cases_on ‘xs1’
+  \\ fs [frame_ok_def,frame_borders_none_def] \\ rw []
+  \\ fs [from_frame_def,to_state_nones_append,GSYM ADD1,check_mask_def]
+  \\ qsuff_tac
+    ‘∀ts (hs:(bool option) list) x y h mask1.
+        check_mask_rows (bool_grid x y (LENGTH hs) (SUC (LENGTH ts)) mask1) ts ∧
+        EVERY (λx. LENGTH x = LENGTH hs) ts ∧
+        EVERY IS_NONE (LAST (h::ts)) ∧
+        EVERY (IS_NONE ∘ HD) ts ∧
+        EVERY (IS_NONE ∘ LAST) ts ⇒
+        infl (to_state (from_frame x (y + 1) ts)) ⊆
+        grid_to_set x y (bool_grid x y (LENGTH hs) (SUC (LENGTH ts)) mask1)’
+  >- (disch_then drule_all \\ fs [])
+  \\ rpt $ pop_assum kall_tac
+  \\ Induct
+  >- fs [from_frame_def,to_state_def,infl_def,SUBSET_DEF,infl_thm,FORALL_PROD]
+  \\ fs []
+  \\ Cases_on ‘ts’ \\ fs [from_frame_def]
+  \\ fs [to_state_nones_append |> Q.INST [‘xs’|->‘[]’] |> SIMP_RULE std_ss [APPEND_NIL]]
+  >- fs [from_frame_def,to_state_def,infl_def,SUBSET_DEF,infl_thm,FORALL_PROD]
+  \\ fs [bool_grid_def,GENLIST_CONS]
+  \\ fs [check_mask_rows_def,combinTheory.o_DEF,ADD1]
+  \\ rpt gen_tac \\ strip_tac
+  \\ last_x_assum $ qspecl_then [‘hs’,‘x’,‘y+1’,‘mask1’] mp_tac
+  \\ impl_tac >-
+   (fs [GSYM INT_ADD_ASSOC]
+    \\ ‘∀a. y + (1 + &(a + 2)) = y + &(a + 3)’ by intLib.COOPER_TAC \\ fs [])
+  \\ strip_tac
+  \\ rewrite_tac [GSYM APPEND_ASSOC]
+  \\ simp [Once to_state_append,infl_union]
+  \\ reverse conj_tac
+  >-
+   (irule SUBSET_TRANS
+    \\ first_x_assum $ irule_at Any
+    \\ fs [GSYM INT_ADD_ASSOC]
+    \\ ‘∀a. y + (1 + &(a + 2)) = y + &(a + 3)’ by intLib.COOPER_TAC \\ fs []
+    \\ CONV_TAC (RAND_CONV $ ONCE_REWRITE_CONV [grid_to_set_rw1])
+    \\ simp [SUBSET_DEF])
+  \\ Cases_on ‘h'’ \\ fs []
+  >- fs [from_frame_def,to_state_def,infl_def,SUBSET_DEF,infl_thm,FORALL_PROD,from_row_def]
+  \\ gvs [from_row_def]
+  \\ irule SUBSET_TRANS
+  \\ irule_at Any check_mask_row_thm
+  \\ first_x_assum $ irule_at Any
+  \\ first_x_assum $ irule_at Any
+  \\ first_x_assum $ irule_at Any
+  \\ once_rewrite_tac [grid_to_set_rw0]
+  \\ once_rewrite_tac [grid_to_set_rw0]
+  \\ once_rewrite_tac [grid_to_set_rw0]
+  \\ once_rewrite_tac [grid_to_set_rw0]
+  \\ once_rewrite_tac [grid_to_set_rw0]
+  \\ fs [SUBSET_DEF]
+QED
+
+Theorem steps_suc:
+  steps (SUC n) x s1 s2 ⇔
+  infl s1 ⊆ x ∧ steps n x (step s1) s2
+Proof
+  fs [steps_def,FUNPOW]
+  \\ rw [] \\ eq_tac \\ rw []
+  >- (pop_assum $ qspec_then ‘0’ mp_tac \\ fs [])
+  >- (first_x_assum $ qspec_then ‘SUC k’ mp_tac \\ fs [FUNPOW])
+  \\ Cases_on ‘k’ \\ fs []
+  \\ fs [FUNPOW]
+QED
+
+Theorem steps_sim_check_mask:
+  ∀n xs1 xs2.
+    steps_sim w h (λk. check_mask (bool_grid x y w h mask1)) n xs1 xs2 ⇒
+    steps n (grid_to_set x y (bool_grid x y w h mask1))
+      (to_state (from_frame x y xs1)) (to_state (from_frame x y xs2))
+Proof
+  Induct
+  >- (fs [steps_def] \\ simp [Once steps_sim_cases])
+  \\ simp [steps_sim_suc] \\ rw []
+  \\ fs [combinTheory.o_DEF]
+  \\ simp [steps_suc]
+  \\ drule_all step_from_frame
+  \\ strip_tac \\ fs []
+  \\ irule check_mask_thm \\ fs []
+QED
+
+Theorem steps_sim_steps60:
+  steps_sim w h policy 60 xs ys ⇒
+  policy = (λk. if k < 20 then check_mask (bool_grid x y w h mask1) else
+                if k < 40 then check_mask (bool_grid x y w h mask2) else
+                               check_mask (bool_grid x y w h mask3)) ⇒
+  steps60
+    (to_state (from_frame x y xs))
+    (grid_to_set x y (bool_grid x y w h mask1))
+    (grid_to_set x y (bool_grid x y w h mask2))
+    (grid_to_set x y (bool_grid x y w h mask3))
+    (to_state (from_frame x y ys))
+Proof
+  fs [steps60_def]
+  \\ rewrite_tac [GSYM (EVAL “20+20+20:num”)]
+  \\ strip_tac
+  \\ dxrule steps_sim_add \\ strip_tac
+  \\ dxrule steps_sim_add \\ strip_tac
+  \\ fs [] \\ rpt $ pop_assum mp_tac
+  \\ rename [‘steps_sim w h policy 20 xs1 xs2’,
+             ‘steps_sim w h (λk. policy (k + 20)) 20 xs2 xs3’,
+             ‘steps_sim w h (λk. policy (k + 40)) 20 xs3 xs4’]
+  \\ rw []
+  \\ qexists_tac ‘to_state (from_frame x y xs2)’
+  \\ qexists_tac ‘to_state (from_frame x y xs3)’
+  \\ rpt $ pop_assum mp_tac \\ fs []
+  \\ once_rewrite_tac [steps_sim_bound] \\ fs []
+  \\ simp [GSYM steps_sim_bound]
+  \\ rw [] \\ irule steps_sim_check_mask \\ fs []
+QED
+
+Theorem imp_spec_00_lemma3:
+  ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
+  EVERY (λ(p,r). MEM p [(0,1);(0,-1);(1,0);(-1,0)]) (ins ++ outs) ∧
+  steps_sim 225 225
+    (λk. if k < 20 then check_mask
+           (bool_grid (-75) (-75) 225 225 (core_pixels_of {(0,0)} ins outs ins)) else
+         if k < 40 then check_mask
+           (bool_grid (-75) (-75) 225 225 (core_pixels_of {(0,0)} ins outs [])) else
+         check_mask
+           (bool_grid (-75) (-75) 225 225 (core_pixels_of {(0,0)} ins outs outs)))
+    60 xs ys ∧
+  to_state (from_frame (-75) (-75) xs) =
+  to_state (from_frame (-75) (-75) xs1) ∪ signal_pixels_of ins ∧
+  to_state (from_frame (-75) (-75) ys) =
+  to_state (from_frame (-75) (-75) ys1) ∪ signal_pixels_of outs
+  ⇒
+  spec {(0,0)} ({(0,1);(0,-1);(1,0);(-1,0)} DIFF (xy_of ins UNION (xy_of outs)))
+    (to_state (from_frame (-75) (-75) xs1)) ins
+    (to_state (from_frame (-75) (-75) ys1)) outs
+Proof
+  strip_tac
+  \\ irule imp_spec_00_lemma2
+  \\ asm_rewrite_tac []
+  \\ pop_assum $ mp_tac o GSYM
+  \\ pop_assum $ mp_tac o GSYM
+  \\ rpt strip_tac \\ asm_rewrite_tac []
+  \\ irule steps_sim_steps60 \\ fs []
+QED
+
 Theorem imp_spec_00 =
-  (imp_spec_00_lemma2
+  (imp_spec_00_lemma3
    |> REWRITE_RULE [bool_grid_225_225_core]
-   |> Q.GENL [‘ins’,‘outs’]);
+   |> Q.GENL [‘ins’,‘outs’,‘xs’,‘ys’,‘xs1’,‘ys1’]);
 
 val _ = export_theory();

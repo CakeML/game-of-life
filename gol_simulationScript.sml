@@ -588,6 +588,14 @@ Proof
   rw [] \\ drule_all step_from_frame \\ fs []
 QED
 
+Theorem step_from_frame_225_225:
+  ∀xs ys.
+    next_sim xs ys ∧ frame_borders_none xs ∧ frame_ok (225,225) xs ⇒
+    step (to_state (from_frame (-75) (-75) xs)) = to_state (from_frame (-75) (-75) ys)
+Proof
+  rw [] \\ drule_all step_from_frame \\ fs []
+QED
+
 Theorem next_row_none:
   next_row (NONE::NONE::NONE::xs)
            (NONE::NONE::NONE::ys)

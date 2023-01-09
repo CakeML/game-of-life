@@ -89,12 +89,11 @@ Proof
 QED
 
 Theorem infl_union:
-  DISJOINT (infl s) (infl s') ⇒ infl (s ∪ s') = infl s ∪ infl s'
+  infl (s ∪ s') = infl s ∪ infl s'
 Proof
   fs [EXTENSION,IN_DISJOINT,FORALL_PROD] \\ rw []
   \\ eq_tac \\ fs [infl_thm]
-  THEN1 (rw [] \\ fs [])
-  \\ CCONTR_TAC \\ fs [] \\ res_tac \\ fs []
+  \\ rw [] \\ fs []
 QED
 
 (* list to set *)
