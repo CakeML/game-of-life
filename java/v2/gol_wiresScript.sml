@@ -1,4 +1,5 @@
-open preamble gol_simulationTheory gol_coreTheory;
+open preamble gol_simulationTheory gol_coreTheory gol_specTheory;
+open gol_interfacesTheory;
 
 val _ = new_theory "gol_wires";
 
@@ -60,9 +61,9 @@ fun mk_list_list d = let
   fun some tm = optionSyntax.mk_some tm
   fun lookup [] (x:int * int) = none
     | lookup ((y,b)::xs) x = if x = y then some b else lookup xs x
-  fun list200 f = List.tabulate (200,fn i => f (i-100));
+  fun list225 f = List.tabulate (225,fn i => f (i-100));
   fun mk_list tms = listSyntax.mk_list(tms,type_of (hd tms))
-  val d = map (fn ((i,j),x) => ((i-75,j),x)) d
+  val d = map (fn ((i,j),x) => ((i-63,j+12),x)) d
   val dx = map (fst o fst) d
   val dx_min = list_min dx
   val dx_max = list_max dx
@@ -70,21 +71,18 @@ fun mk_list_list d = let
   val dy_min = list_min dy
   val dy_max = list_max dy
   val _ = print "\n----\n"
-  val _ = print ("x-min/max: " ^ int_to_string dx_min ^ ", " ^ int_to_string dx_max ^ "\n")
-  val _ = print ("y-min/max: " ^ int_to_string dy_min ^ ", " ^ int_to_string dy_max ^ "\n")
-  val _ = print "----\n"
-  in mk_list (list200 (fn j => mk_list (list200 (fn i => lookup d (i,j))))) end
+  in mk_list (list225 (fn j => mk_list (list225 (fn i => lookup d (i,j))))) end
 
 val policy = ‘λn xs. T’
 
 val xs = d1
 
 fun prove_steps_sim_base policy xs = let
-  val th = steps_sim_base |> Q.SPECL [‘200’,‘200’,policy]
+  val th = steps_sim_base |> Q.SPECL [‘225’,‘225’,policy]
   val th = SPEC (mk_list_list xs) th
   val frame_ok_tm = th |> concl |> dest_imp |> fst
   val frame_ok_th = prove(frame_ok_tm,
-    rewrite_tac [frame_ok_def,EVAL “200 ≠ 0:num”]
+    rewrite_tac [frame_ok_def,EVAL “225 ≠ 0:num”]
     \\ CONV_TAC (PATH_CONV "lrlr" listLib.LENGTH_CONV)
     \\ rewrite_tac [EVERY_DEF]
     \\ rpt strip_tac
@@ -97,8 +95,9 @@ val th = prove_steps_sim_base policy d1
 
 val zs = d2
 val n = 1
+val policy_def = TRUTH
 
-fun prove_steps_sim_step n th zs = let
+fun prove_steps_sim_step policy_def n th zs = let
   val _ = print (int_to_string n ^ " ")
   val th1 = MATCH_MP steps_sim_step_thm th
   val th2 = SPEC (mk_list_list zs) th1
@@ -109,7 +108,56 @@ fun prove_steps_sim_step n th zs = let
   val borders_th = prove(borders_tm,
     rewrite_tac [frame_borders_none_def,HD,LAST_CONS]
     \\ rewrite_tac [EVERY_DEF,combinTheory.o_THM,HD,IS_NONE_DEF,LAST_CONS])
-  val policy_th = prove(policy_tm,EVAL_TAC)
+(*
+  set_goal([],policy_tm)
+*)
+  val policy_rw =
+    policy_tm
+    |> ONCE_REWRITE_CONV [policy_def]
+    |> CONV_RULE (PATH_CONV "rlllr" EVAL)
+    |> CONV_RULE (PATH_CONV "rlrllr" EVAL)
+    |> CONV_RULE (RAND_CONV $ REWRITE_CONV [])
+
+  val (tm,y) = dest_comb (policy_rw |> concl |> rand)
+  val (_,tm) = dest_comb tm
+val a =
+  listSyntax.dest_list tm |> fst |> map (fst o listSyntax.dest_list) |>
+    map (map (aconv T))
+val b =
+  listSyntax.dest_list y |> fst |> map (fst o listSyntax.dest_list) |>
+    map (map optionSyntax.is_some)
+  fun b2n true = 1 | b2n _ = 0
+  val _ = print "\n"
+  val _ = map2 (map2 (fn b1 => fn b2 => b2n b1 + b2n b2)) a b
+    |> filter (fn xs => mem 2 xs)
+    |> map (fn xs => List.drop(xs,length xs - 70))
+    |> map (fn xs => concat (map int_to_string xs) ^ "\n")
+    |> concat |> print
+  val policy_th = prove(policy_tm,
+    (* ONCE_REWRITE_TAC [policy_def]
+    \\ REWRITE_TAC [EVAL “0<20:num”]
+    \\ REWRITE_TAC [EVAL “0<20:num”,check_mask_def,check_mask_rows_def,TL]
+    \\ EVAL_TAC \\ *) cheat)
+(*
+val tm = top_goal() |> snd
+val (tm,y) = dest_comb tm
+val (_,tm) = dest_comb tm
+
+val a =
+  listSyntax.dest_list tm |> fst |> map (fst o listSyntax.dest_list) |>
+    map (map (aconv T))
+
+val b =
+  listSyntax.dest_list y |> fst |> map (fst o listSyntax.dest_list) |>
+    map (map optionSyntax.is_some)
+
+fun b2n true = 1 | b2n _ = 0
+
+  map2 (map2 (fn b1 => fn b2 => b2n b1 + b2n b2)) a b
+  |> filter (fn xs => mem 2 xs)
+  |> map (fn xs => concat (map int_to_string xs) ^ "\n")
+  |> concat |> print
+*)
   fun case_all_goal_vars_tac (asms,goal) = let
     val vs = free_vars goal
     fun tac [] = all_tac
@@ -125,19 +173,58 @@ fun prove_steps_sim_step n th zs = let
     \\ rewrite_tac [bool_def,gol_simp])
   in MP th2 (LIST_CONJ [borders_th,policy_th,next_sim_th]) end;
 
-fun prove_steps policy filename = let
+fun prove_steps policy policy_def filename = let
   val _ = print ("Reading " ^ filename ^ " ... ")
   val data = parse_file filename
   val _ = print "done.\n"
   val _ = print "Simulating steps: "
   val th0 = prove_steps_sim_base policy (hd data)
+(*
+  val th = th0
+  val n = 1
+  val (d::_) = tl data
+*)
   fun steps n th0 [] = th0
-    | steps n th0 (d::ds) = steps (n+1) (prove_steps_sim_step n th0 d) ds
+    | steps n th0 (d::ds) = steps (n+1) (prove_steps_sim_step policy_def n th0 d) ds
   val th = steps 1 th0 (tl data)
   val _ = print "done.\n"
   in th end;
 
-Theorem wire_e_e = prove_steps policy "lwss-wire-e-e.rle.txt";
-Theorem and_ns_w = prove_steps policy "lwss-and-ns-w.rle.txt";
+(*
+Theorem wire_e_e = prove_steps policy policy_def "lwss-wire-e-e.rle.txt";
+Theorem and_ns_w = prove_steps policy policy_def "lwss-and-ns-w.rle.txt";
+*)
+
+  val lemma = gol_specTheory.imp_spec_00 |> SPEC_ALL |> Q.GENL [‘ins’,‘outs’]
+              |> REWRITE_RULE [GSYM AND_IMP_INTRO]
+  val ins = “[((-1:int,0:int),(EAST,a:bool))]”
+  val outs = “[((1:int,0:int),(EAST,b:bool))]”
+
+  val th = SPECL [ins,outs] lemma |> REWRITE_RULE [MAP,APPEND,FST]
+  val th = th |> CONV_RULE (PATH_CONV "lr" EVAL) |> (fn th => MP th TRUTH)
+  val c = SIMP_CONV std_ss [EVERY_DEF,MEM]
+  val th = th |> CONV_RULE (PATH_CONV "lr" c) |> (fn th => MP th TRUTH)
+  val c = REWRITE_CONV [FILTER,UNCURRY] THENC
+          DEPTH_CONV BETA_CONV THENC
+          REWRITE_CONV [PAIR_EQ,EVAL “1=0:int”,EVAL “-1=0:int”,EVAL “-1=1:int”,
+                                EVAL “0=1:int”,EVAL “0=-1:int”,EVAL “1=-1:int”,
+                                interface_rewrites]
+  val th = th |> CONV_RULE (PATH_CONV "lr" c)
+  val tm = th |> concl |> dest_imp |> fst |> rator |> rator |> rator |> rand
+  val policy_def = zDefine ‘policy = ^tm’
+  val th = th |> REWRITE_RULE [GSYM policy_def]
+  val policy_def = policy_def
+    |> CONV_RULE (REWRITE_CONV [border_e, border_w, border_n, border_s])
+    |> CONV_RULE (RAND_CONV EVAL)
+    |> ONCE_REWRITE_RULE [FUN_EQ_THM]
+    |> SPEC_ALL
+    |> CONV_RULE $ RAND_CONV BETA_CONV
+  val policy = policy_def |> concl |> dest_eq |> fst |> rator |> ANTIQUOTE |> single
+  val lemma = prove_steps policy policy_def filename
+  val th = MATCH_MP th lemma
+
+(*
+max_print_depth := 10
+*)
 
 val _ = export_theory();
