@@ -108,56 +108,31 @@ fun prove_steps_sim_step policy_def n th zs = let
   val borders_th = prove(borders_tm,
     rewrite_tac [frame_borders_none_def,HD,LAST_CONS]
     \\ rewrite_tac [EVERY_DEF,combinTheory.o_THM,HD,IS_NONE_DEF,LAST_CONS])
+  val policy_rw = policy_tm
+                  |> ONCE_REWRITE_CONV [policy_def]
+                  |> CONV_RULE (PATH_CONV "rlllr" EVAL)
+                  |> CONV_RULE (PATH_CONV "rlrllr" EVAL)
+                  |> CONV_RULE (RAND_CONV $ REWRITE_CONV [])
 (*
   set_goal([],policy_tm)
 *)
-  val policy_rw =
-    policy_tm
-    |> ONCE_REWRITE_CONV [policy_def]
-    |> CONV_RULE (PATH_CONV "rlllr" EVAL)
-    |> CONV_RULE (PATH_CONV "rlrllr" EVAL)
-    |> CONV_RULE (RAND_CONV $ REWRITE_CONV [])
-
-  val (tm,y) = dest_comb (policy_rw |> concl |> rand)
-  val (_,tm) = dest_comb tm
-val a =
-  listSyntax.dest_list tm |> fst |> map (fst o listSyntax.dest_list) |>
-    map (map (aconv T))
-val b =
-  listSyntax.dest_list y |> fst |> map (fst o listSyntax.dest_list) |>
-    map (map optionSyntax.is_some)
-  fun b2n true = 1 | b2n _ = 0
-  val _ = print "\n"
-  val _ = map2 (map2 (fn b1 => fn b2 => b2n b1 + b2n b2)) a b
-    |> filter (fn xs => mem 2 xs)
-    |> map (fn xs => List.drop(xs,length xs - 70))
-    |> map (fn xs => concat (map int_to_string xs) ^ "\n")
-    |> concat |> print
   val policy_th = prove(policy_tm,
-    (* ONCE_REWRITE_TAC [policy_def]
-    \\ REWRITE_TAC [EVAL “0<20:num”]
-    \\ REWRITE_TAC [EVAL “0<20:num”,check_mask_def,check_mask_rows_def,TL]
-    \\ EVAL_TAC \\ *) cheat)
-(*
-val tm = top_goal() |> snd
-val (tm,y) = dest_comb tm
-val (_,tm) = dest_comb tm
-
-val a =
-  listSyntax.dest_list tm |> fst |> map (fst o listSyntax.dest_list) |>
-    map (map (aconv T))
-
-val b =
-  listSyntax.dest_list y |> fst |> map (fst o listSyntax.dest_list) |>
-    map (map optionSyntax.is_some)
-
-fun b2n true = 1 | b2n _ = 0
-
-  map2 (map2 (fn b1 => fn b2 => b2n b1 + b2n b2)) a b
-  |> filter (fn xs => mem 2 xs)
-  |> map (fn xs => concat (map int_to_string xs) ^ "\n")
-  |> concat |> print
-*)
+    ONCE_REWRITE_TAC [policy_rw]
+    \\ REWRITE_TAC [check_mask_def,check_mask_rows_def,TL,check_mask_row_simp])
+    handle HOL_ERR e => let
+      val (tm,y) = dest_comb (policy_rw |> concl |> rand)
+      val (_,tm) = dest_comb tm
+      val a =
+        listSyntax.dest_list tm |> fst |> map (fst o listSyntax.dest_list) |>
+          map (map (aconv T))
+      val b =
+        listSyntax.dest_list y |> fst |> map (fst o listSyntax.dest_list) |>
+          map (map optionSyntax.is_some)
+      val _ = print "\n"
+      val _ = map2 (map2 (fn b1 => fn b2 => if b2 then "@" else if b1 then "_" else ".")) a b
+        |> map (fn xs => concat xs ^ "\n")
+        |> concat |> print
+      in failwith "proof of policy failed" end
   fun case_all_goal_vars_tac (asms,goal) = let
     val vs = free_vars goal
     fun tac [] = all_tac
@@ -224,7 +199,17 @@ Theorem and_ns_w = prove_steps policy policy_def "lwss-and-ns-w.rle.txt";
   val th = MATCH_MP th lemma
 
 (*
-max_print_depth := 10
+  “signal_pixels_of [((-1,0),EAST,a)]”
+  |> REWRITE_CONV [signal_pixels_of_def]
+
+to_state_cons
+to_state_append
+
+*)
+
+
+(*
+  max_print_depth := 10
 *)
 
 val _ = export_theory();

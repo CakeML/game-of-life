@@ -1003,4 +1003,37 @@ Theorem imp_spec_00 =
    |> REWRITE_RULE [bool_grid_225_225_core]
    |> Q.GENL [‘ins’,‘outs’,‘xs’,‘ys’,‘xs1’,‘ys1’]);
 
+
+Theorem check_mask_row_simp:
+  check_mask_row
+    (x1::x2::x3::xs)
+    (y1::y2::y3::ys)
+    (z1::z2::z3::zs)
+    (NONE::rs)
+  =
+  check_mask_row
+    (x2::x3::xs)
+    (y2::y3::ys)
+    (z2::z3::zs)
+    rs ∧
+  check_mask_row
+    (T::T::T::xs)
+    (T::T::T::ys)
+    (T::T::T::zs)
+    (SOME r::rs)
+  =
+  check_mask_row
+    (T::T::xs)
+    (T::T::ys)
+    (T::T::zs)
+    rs ∧
+  check_mask_row
+    (x1::x2::[])
+    (y1::y2::[])
+    (z1::z2::[])
+    rs = T
+Proof
+  fs [check_mask_row_def]
+QED
+
 val _ = export_theory();
