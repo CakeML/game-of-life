@@ -16,11 +16,19 @@ public class GridView extends JPanel implements MouseListener, MouseMotionListen
     private int dragX = 0;
     private int dragY = 0;
 
+    private String displayTextString = null;
+    private int displayTextX = 0;
+    private int displayTextY = 0;
+
     public GridView(GridModel m, GridViewListener l) {
         this.m = m;
         this.l = l;
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
+        Font font = getFont();
+        font = new Font(font.getName(), Font.PLAIN, font.getSize()+20);
+        this.setFont(font);
+
     }
 
     public void paintComponent(Graphics g) {
@@ -44,6 +52,29 @@ public class GridView extends JPanel implements MouseListener, MouseMotionListen
                            cellWidth,cellWidth);
             }
         }
+        if (displayTextString != null) {
+            int x = dragX + navX + midX + displayTextX * cellWidth;
+            int y = dragY + navY + midY + displayTextY * cellWidth;
+            String text = displayTextString;
+            int newWidth = this.getFontMetrics(g.getFont()).stringWidth(text);
+            int newHeight = g.getFont().getSize() - 10;
+            g.setColor(Color.BLACK);
+            g.fillRect(x-10-2,y+23-2,newWidth+20+4,newHeight+20+4);
+            g.setColor(Color.WHITE);
+            g.fillRect(x-10,y+23,newWidth+20,newHeight+20);
+            g.setColor(Color.BLACK);
+            g.drawString(text,x-10+10,y+23+10+newHeight);
+        }
+    }
+
+    public void clearDisplayText() {
+        displayTextString = null;
+    }
+
+    public void setDisplayText(int x, int y, String s) {
+        displayTextX = x;
+        displayTextY = y;
+        displayTextString = s;
     }
 
     // div but with truncating towards negative infinity for negative i

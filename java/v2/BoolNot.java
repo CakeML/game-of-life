@@ -27,7 +27,7 @@ public class BoolNot implements BoolExp {
     }
 
     public String toString() {
-        return "(~" + e1.toString() + ")";
+        return "(¬" + e1.toString() + ")";
     }
 
     public boolean equals(Object o) {

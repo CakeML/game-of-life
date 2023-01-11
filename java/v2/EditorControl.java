@@ -12,10 +12,10 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
     private boolean mouseInWindow = false;
     private int mouseX = -1000;
     private int mouseY = -1000;
-    private EditorMode mode = EditorMode.SET_00;
+    private EditorMode mode = EditorMode.INSPECT;
 
     private enum EditorMode {
-        NONE, SET_00, GATE_IN, GATE_OUT
+        INSPECT, NONE, SET_00, GATE_IN, GATE_OUT
     }
 
     public EditorControl(String name,String input) {
@@ -27,6 +27,11 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
         w = new GridView(this,this);
         p.add(w,BorderLayout.CENTER);
         JPanel buttons = new JPanel();
+        JButton inspect = new JButton("inspect");
+        inspect.addActionListener((ActionEvent e) -> {
+                mode = EditorMode.INSPECT;
+            });
+        buttons.add(inspect);
         JButton set = new JButton("set (0,0)");
         set.addActionListener((ActionEvent e) -> {
                 mode = EditorMode.SET_00;
@@ -174,8 +179,14 @@ public class EditorControl extends JFrame implements GridModel, GridViewListener
     public void mouseMoved(int x, int y) {
         mouseX = x;
         mouseY = y;
+        String s = model.cellInfo(x,y);
+        if (mouseInWindow && mode == EditorMode.INSPECT && !s.equals("") && !s.equals("F")) {
+            w.setDisplayText(x,y,s);
+        } else {
+            w.clearDisplayText();
+        }
+        setStatus("("+x+","+y+"): " + s);
         w.repaint();
-        setStatus("("+x+","+y+"): " + model.cellInfo(x,y));
     }
 
     public void mouseExited() {
