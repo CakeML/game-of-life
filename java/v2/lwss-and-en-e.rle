@@ -1,7 +1,7 @@
-x = 133, y = 89, rule = B3/S23
-47b2o$48bo$48bobo$49b2o$52b2o$52bobo$52bo8$o2$o$bo2$67b2o$67bobo$67bo
-13$82b2o$82bobo$82bo13$97b2o$97bobo$97bo2$86b2o$85bo2bo$88bo$88bo$86bo
-bo11bo3b3o$86bobo11b2o2bo$87bo11bobo3bo3$84b2o3b2o$84bo5bo21bo2bo8bo$
-112bo10bobo$85bo3bo2b2o14bo2bo3b2o5bo3b2o$86b3o4b2o10b4o3b2obobo4bo3b
-2o3b2o$92bo11b4o14bo3b2o3b2o$97b2o5bo2bo8b2o5bobo$97b2o5b4o16bo$105b4o
-$108bo2$89bo$87b2ob2o2$86bo5bo2$86b2obob2o9$88b2o$88b2o!
+x = 133, y = 146, rule = B3/S23
+o57$47b2o$48bo$48bobo$49b2o$52b2o$52bobo$52bo8$o2$o$bo2$67b2o$67bobo$
+67bo13$82b2o$82bobo$82bo13$97b2o$97bobo$97bo2$86b2o$85bo2bo$88bo$88bo$
+86bobo11bo3b3o$86bobo11b2o2bo$87bo11bobo3bo3$84b2o3b2o$84bo5bo21bo2bo
+8bo$112bo10bobo$85bo3bo2b2o14bo2bo3b2o5bo3b2o$86b3o4b2o10b4o3b2obobo4b
+o3b2o3b2o$92bo11b4o14bo3b2o3b2o$97b2o5bo2bo8b2o5bobo$97b2o5b4o16bo$
+105b4o$108bo2$89bo$87b2ob2o2$86bo5bo2$86b2obob2o9$88b2o$88b2o!
