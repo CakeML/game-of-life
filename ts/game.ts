@@ -231,9 +231,23 @@ circuits.forEach((optionText) => {
     option.textContent = optionText.name;
     dropdown.appendChild(option);
 });
-
-// Add the dropdown to the document
 document.body.appendChild(dropdown);
+
+const step_button = document.createElement('step');
+step_button.textContent = 'step';
+step_button.id = 'step_button';
+document.body.appendChild(step_button);
+
+const run_button = document.createElement('run');
+run_button.textContent = 'run';
+run_button.id = 'run_button';
+document.body.appendChild(run_button);
+
+const stop_button = document.createElement('stop');
+stop_button.textContent = 'stop';
+stop_button.id = 'stop_button';
+document.body.appendChild(stop_button);
+
 // New line
 document.body.appendChild(document.createElement('br'));
 
@@ -262,6 +276,7 @@ let background: string[][] = [];
 let inputs: CoordinateDirectionPair[] = [];
 let outputs: CoordinateDirectionPair[] = [];
 let stepCount: number = 0;
+let allowRun: boolean = false;
 
 // Function to reset grid
 function resetGrids() {
@@ -449,11 +464,13 @@ function countAliveNeighbors(row: number, col: number): number {
 let lastUpdateTime = 0; // Timestamp of the last update
 function gameLoop(timestamp: number) {
     if (timestamp - lastUpdateTime >= updateInterval) {
-        drawGrid(); // Draw the current state
-        computeNextState(); // Compute the next state
+        computeNextState(); 
+        drawGrid(); 
         lastUpdateTime = timestamp; // Update the timestamp
     }
-    requestAnimationFrame(gameLoop); // Loop the animation
+    if (allowRun) {
+        requestAnimationFrame(gameLoop); // Loop the animation
+    }
 }
 
 function colourBox(x: number, y: number, w: number, h: number, colour: string) {
@@ -493,10 +510,21 @@ function handleDropdownChange(event: Event) {
             outputs = circuit.output;
             updateBackground();
             initializeFromRLE(rleContent, 10, 10); // Initialize grid with the RLE pattern
-            requestAnimationFrame(gameLoop); // Start the simulation
+            drawGrid();     
+            //requestAnimationFrame(gameLoop); // Start the simulation
         }
     });
 }
 
-// Add event listener for change event
 dropdown.addEventListener('change', handleDropdownChange);
+step_button.addEventListener('click', () => {
+    computeNextState(); 
+    drawGrid(); 
+});
+run_button.addEventListener('click', () => {
+    allowRun = true;
+    requestAnimationFrame(gameLoop);
+});
+stop_button.addEventListener('click', () => {
+    allowRun = false;
+});
