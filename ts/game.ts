@@ -203,6 +203,24 @@ $23b2o62b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o15bo3bo$85b3o10$85b
 2o$85b2o!
 `,
     },
+    {
+        name: "Wire - E - E",
+        input: [[[-1,0],"E"]],
+        output: [[[1,0],"E"]],
+        content: "!",
+    },
+    {
+        name: "Cross - EN - EN",
+        input: [[[-1,0],"E"],[[0,1],"N"]],
+        output: [[[1,0],"E"],[[0,-1],"N"]],
+        content: "!",
+    },
+    {
+        name: "Cross - ES - ES",
+        input: [[[-1,0],"E"],[[0,-1],"S"]],
+        output: [[[1,0],"E"],[[0,1],"S"]],
+        content: "!",
+    },
 ];
 
 // Create the dropdown menu
@@ -235,21 +253,24 @@ const rows = 170; // Number of rows
 const cols = 170; // Number of columns
 const cellSize = canvas.width / cols; // Size of each cell
 const updateInterval = 25; // Update interval in milliseconds
+const black = '#000000';
 
 // Create two grids (current and next state)
 let grid: number[][] = [];
 let nextGrid: number[][] = [];
+let background: string[][] = [];
 let inputs: CoordinateDirectionPair[] = [];
 let outputs: CoordinateDirectionPair[] = [];
 let stepCount: number = 0;
 
-// Function to reset both grids
+// Function to reset grid
 function resetGrids() {
     stepCount = 0;
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-            grid[row][col] = 0; // Clear the grid
-            nextGrid[row][col] = 0; // Clear the next grid
+            grid[row][col] = 0; 
+            nextGrid[row][col] = 0; 
+            background[row][col] = black;
         }
     }
 }
@@ -258,9 +279,11 @@ function resetGrids() {
 for (let row = 0; row < rows; row++) {
     grid[row] = [];
     nextGrid[row] = [];
+    background[row] = [];
     for (let col = 0; col < cols; col++) {
         grid[row][col] = 0; // Initially dead
         nextGrid[row][col] = 0; // Initially empty
+        background[row][col] = black;
     }
 }
 
@@ -316,7 +339,7 @@ function drawGrid() {
             if (grid[row][col] === 1) {
                 ctx.fillStyle = '#FFFFFF'; // Alive cells
             } else {
-                ctx.fillStyle = '#000000'; // Dead cells
+                ctx.fillStyle = background[row][col]; // Dead cells
             }
             ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
             if (grid[row][col] === 1) {
@@ -433,6 +456,32 @@ function gameLoop(timestamp: number) {
     requestAnimationFrame(gameLoop); // Loop the animation
 }
 
+function colourBox(x: number, y: number, w: number, h: number, colour: string) {
+    for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+            const real_x = toX(x+i);
+            const real_y = toY(y+j);
+            if (0 <= real_y && real_y < rows && 0 <= real_x && real_x < cols) {
+                background[real_y][real_x] = colour;
+            }
+        }
+    }
+}
+
+function updateBackground() {
+    colourBox(-75,-75,150,150,'#301934');
+    outputs.forEach((output) => {
+        const x = output[0][0];
+        const y = output[0][1];
+        colourBox(75*x-5, 75*y-5, 10, 10, '#483248');
+    });
+    inputs.forEach((input) => {
+        const x = input[0][0];
+        const y = input[0][1];
+        colourBox(75*x-5, 75*y-5, 10, 10, '#483248');
+    });
+}
+
 // Function to handle dropdown changes
 function handleDropdownChange(event: Event) {
     const selectedValue = (event.target as HTMLSelectElement).value;
@@ -442,6 +491,7 @@ function handleDropdownChange(event: Event) {
             const rleContent = circuit.content;
             inputs = circuit.input;
             outputs = circuit.output;
+            updateBackground();
             initializeFromRLE(rleContent, 10, 10); // Initialize grid with the RLE pattern
             requestAnimationFrame(gameLoop); // Start the simulation
         }
