@@ -515,6 +515,11 @@ stop_button.textContent = 'stop';
 stop_button.id = 'stop_button';
 document.body.appendChild(stop_button);
 
+const rotate_button = document.createElement('button');
+rotate_button.textContent = 'rotate';
+rotate_button.id = 'rotate_button';
+document.body.appendChild(rotate_button);
+
 // New line
 document.body.appendChild(document.createElement('br'));
 
@@ -546,6 +551,7 @@ let inputs: CoordinateDirectionPair[] = [];
 let outputs: CoordinateDirectionPair[] = [];
 let stepCount: number = 0;
 let allowRun: boolean = false;
+let lastLoadedCircut = circuits[0];
 
 // Function to initialize the grid from an RLE string
 function initializeFromRLE(rle: string, startRow: number = 0, startCol: number = 0) {
@@ -602,10 +608,6 @@ function drawGrid() {
                 ctx.fillStyle = background[row][col]; // Dead cells
             }
             ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-            if (grid[row][col] === 1) {
-                ctx.strokeStyle = '#CCCCCC'; // Grid lines
-                ctx.strokeRect(col * cellSize, row * cellSize, cellSize, cellSize);
-            }   
         }
     }
 }
@@ -622,7 +624,7 @@ function deleteBox(x:number, y:number, w:number, h:number) {
 }
 
 // Compute the next state of the grid
-function computeNextState() {
+function computeNextState(ignoreInput: boolean = false) {
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
             const aliveNeighbors = countAliveNeighbors(row, col);
@@ -647,19 +649,21 @@ function computeNextState() {
                 deleteBox(75*x-5, 75*y-5, 10, 10);
             }
         });
-        inputs.forEach((input) => {
-            if (input[1] == "E") {
-                const x = input[0][0];
-                const y = input[0][1];
-                initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(75*y-5),toX(75*x-5));
-            }
-            if (input[1] == "W") {
-                const x = input[0][0];
-                const y = input[0][1];
-                initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(75*y-5),toX(75*x-5));
-            }
-        });
-    }   
+        if (!ignoreInput) {
+            inputs.forEach((input) => {
+                if (input[1] == "E") {
+                    const x = input[0][0];
+                    const y = input[0][1];
+                    initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(75*y-5),toX(75*x-5));
+                }
+                if (input[1] == "W") {
+                    const x = input[0][0];
+                    const y = input[0][1];
+                    initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(75*y-5),toX(75*x-5));
+                }
+            });
+        }
+    }
     if (stepCount == 29) {
         outputs.forEach((output) => {
             if (output[1] == "N" || output[1] == "S") {
@@ -668,19 +672,21 @@ function computeNextState() {
                 deleteBox(75*x-5, 75*y-5, 10, 10);
             }
         });
-        inputs.forEach((input) => {
-            if (input[1] == "N") {
-                const x = input[0][0];
-                const y = input[0][1];
-                initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(75*y-5),toX(75*x-5));
-            }
-            if (input[1] == "S") {
-                const x = input[0][0];
-                const y = input[0][1];
-                initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(75*y-5),toX(75*x-5));
-            }
-        });
-    }   
+        if (!ignoreInput) {
+            inputs.forEach((input) => {
+                if (input[1] == "N") {
+                    const x = input[0][0];
+                    const y = input[0][1];
+                    initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(75*y-5),toX(75*x-5));
+                }
+                if (input[1] == "S") {
+                    const x = input[0][0];
+                    const y = input[0][1];
+                    initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(75*y-5),toX(75*x-5));
+                }
+            });
+        }
+    }
     stepCount = (stepCount+1) % 60;
 
 }
@@ -709,8 +715,8 @@ function countAliveNeighbors(row: number, col: number): number {
 let lastUpdateTime = 0; // Timestamp of the last update
 function gameLoop(timestamp: number) {
     if (timestamp - lastUpdateTime >= updateInterval) {
-        computeNextState(); 
-        drawGrid(); 
+        computeNextState();
+        drawGrid();
         lastUpdateTime = timestamp; // Update the timestamp
     }
     if (allowRun) {
@@ -755,11 +761,11 @@ function updateBackground() {
 function resizeGrid(width: number, height: number) {
     blockWidth = width;
     blockHeight = height;
-    rows = height * 150 + 20; 
-    cols = width * 150 + 20; 
+    rows = height * 150 + 20;
+    cols = width * 150 + 20;
     canvas.width = cols * 5;
     canvas.height = rows * 5;
-    cellSize = canvas.width / cols; 
+    cellSize = canvas.width / cols;
     grid = [];
     nextGrid = [];
     background = [];
@@ -769,21 +775,22 @@ function resizeGrid(width: number, height: number) {
         nextGrid[row] = [];
         background[row] = [];
         for (let col = 0; col < cols; col++) {
-            grid[row][col] = 0; 
-            nextGrid[row][col] = 0; 
+            grid[row][col] = 0;
+            nextGrid[row][col] = 0;
             background[row][col] = black;
         }
     }
 }
 
 function loadCircuit(circuit) {
+    lastLoadedCircut = circuit;
     const rleContent = circuit.content;
     inputs = circuit.input;
     outputs = circuit.output;
     resizeGrid(circuit.width, circuit.height);
     updateBackground();
-    initializeFromRLE(rleContent, 10, 10); 
-    drawGrid();     
+    initializeFromRLE(rleContent, 10, 10);
+    drawGrid();
 }
 
 // Function to handle dropdown changes
@@ -800,8 +807,8 @@ loadCircuit(circuits[0]);
 
 dropdown.addEventListener('change', handleDropdownChange);
 step_button.addEventListener('click', () => {
-    computeNextState(); 
-    drawGrid(); 
+    computeNextState();
+    drawGrid();
 });
 run_button.addEventListener('click', () => {
     allowRun = true;
@@ -809,4 +816,35 @@ run_button.addEventListener('click', () => {
 });
 stop_button.addEventListener('click', () => {
     allowRun = false;
+});
+function rotateDir(dir: string) : string {
+    if (dir == "E") { return "S" }
+    if (dir == "S") { return "W" }
+    if (dir == "W") { return "N" }
+    return "E";
+}
+rotate_button.addEventListener('click', () => {
+    if (stepCount > 0) {
+        loadCircuit(lastLoadedCircut);
+    }
+    let tempGrid: number[][] = [];
+    for (let i = 0; i < cols; i++) {
+        tempGrid[i] = [];
+        for (let j = 0; j < rows; j++) {
+            tempGrid[i][j] = grid[(rows-1)-j][i];
+        }
+    }
+    inputs = inputs.map((elem) =>
+                [[2*(blockHeight-1)-elem[0][1],elem[0][0]],rotateDir(elem[1])]);
+    outputs = outputs.map((elem) =>
+                [[2*(blockHeight-1)-elem[0][1],elem[0][0]],rotateDir(elem[1])]);
+    resizeGrid(blockHeight, blockWidth);
+    updateBackground();
+    grid = tempGrid;
+    for (let k = 0; k < 30; k++) {
+        computeNextState(true);
+    }
+    stepCount = 0;
+    allowRun = false;
+    drawGrid();
 });
