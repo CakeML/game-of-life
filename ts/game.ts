@@ -547,30 +547,6 @@ let outputs: CoordinateDirectionPair[] = [];
 let stepCount: number = 0;
 let allowRun: boolean = false;
 
-// Function to reset grid
-function resetGrids() {
-    stepCount = 0;
-    for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-            grid[row][col] = 0; 
-            nextGrid[row][col] = 0; 
-            background[row][col] = black;
-        }
-    }
-}
-
-// Initialize grids with zeros
-for (let row = 0; row < rows; row++) {
-    grid[row] = [];
-    nextGrid[row] = [];
-    background[row] = [];
-    for (let col = 0; col < cols; col++) {
-        grid[row][col] = 0; // Initially dead
-        nextGrid[row][col] = 0; // Initially empty
-        background[row][col] = black;
-    }
-}
-
 // Function to initialize the grid from an RLE string
 function initializeFromRLE(rle: string, startRow: number = 0, startCol: number = 0) {
     const lines = rle.split('\n');
