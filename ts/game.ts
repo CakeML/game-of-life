@@ -752,8 +752,8 @@ const updateInterval = 25; // Update interval in milliseconds
 const black = '#000000';
 
 // Create two grids (current and next state)
-let grid: number[][] = [];
-let nextGrid: number[][] = [];
+let grid: BExp[][] = [];
+let nextGrid: BExp[][] = [];
 let background: string[][] = [];
 let inputs: CoordinateDirectionPair[] = [];
 let outputs: CoordinateDirectionPair[] = [];
@@ -782,7 +782,7 @@ function initializeFromRLE(rle: string, startRow: number = 0, startCol: number =
                 const aliveCount = count;
                 for (let i = 0; i < aliveCount; i++) {
                     if (row < rows && col < cols) {
-                        grid[row][col] = 1;
+                        grid[row][col] = True;
                     }
                     col++;
                 }
@@ -807,13 +807,15 @@ function initializeFromRLE(rle: string, startRow: number = 0, startCol: number =
 // Draw the grid on the canvas
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-            if (grid[row][col] === 1) {
-                ctx.fillStyle = '#FFFFFF'; // Alive cells
+            const cell : BExp = grid[row][col];
+            if (isTrue(cell)) {
+                ctx.fillStyle = '#FFFFFF';
+            } else if (isFalse(cell)) {
+                ctx.fillStyle = background[row][col];
             } else {
-                ctx.fillStyle = background[row][col]; // Dead cells
+                ctx.fillStyle = '#AAAAAA';
             }
             ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
         }
@@ -826,8 +828,16 @@ function toY(y:number) :number { return y+75+10; }
 function deleteBox(x:number, y:number, w:number, h:number) {
     for (let i = 0; i < w; i++) {
         for (let j = 0; j < h; j++) {
-            grid[toY(y+j)][toX(x+i)] = 0;
+            grid[toY(y+j)][toX(x+i)] = False;
         }
+    }
+}
+
+function getCell(row : number, col : number) : BExp {
+    if (0 <= row && row < rows && 0 <= col && col < cols) {
+        return grid[row][col];
+    } else {
+        return False;
     }
 }
 
@@ -835,15 +845,17 @@ function deleteBox(x:number, y:number, w:number, h:number) {
 function computeNextState(ignoreInput: boolean = false) {
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-            const aliveNeighbors = countAliveNeighbors(row, col);
-
-            if (grid[row][col] === 1) {
-                // Any live cell with 2 or 3 live neighbors survives
-                nextGrid[row][col] = aliveNeighbors === 2 || aliveNeighbors === 3 ? 1 : 0;
-            } else {
-                // Any dead cell with exactly 3 live neighbors becomes alive
-                nextGrid[row][col] = aliveNeighbors === 3 ? 1 : 0;
-            }
+            const ns : BExp8 = {
+                y1 : getCell(row-1,col+1),
+                y2 : getCell(row-1,col),
+                y3 : getCell(row-1,col-1),
+                y4 : getCell(row,col+1),
+                y5 : getCell(row,col-1),
+                y6 : getCell(row+1,col+1),
+                y7 : getCell(row+1,col),
+                y8 : getCell(row+1,col-1),
+            };
+            nextGrid[row][col] = golCell(getCell(row,col), ns);
         }
     }
     // Swap grids (nextGrid becomes the current grid)
@@ -899,6 +911,7 @@ function computeNextState(ignoreInput: boolean = false) {
 
 }
 
+/*
 // Count alive neighbors for a cell
 function countAliveNeighbors(row: number, col: number): number {
     let count = 0;
@@ -918,6 +931,7 @@ function countAliveNeighbors(row: number, col: number): number {
 
     return count;
 }
+*/
 
 // Animation loop with controlled update interval
 let lastUpdateTime = 0; // Timestamp of the last update
@@ -983,8 +997,8 @@ function resizeGrid(width: number, height: number) {
         nextGrid[row] = [];
         background[row] = [];
         for (let col = 0; col < cols; col++) {
-            grid[row][col] = 0;
-            nextGrid[row][col] = 0;
+            grid[row][col] = False;
+            nextGrid[row][col] = False;
             background[row][col] = black;
         }
     }
@@ -1035,7 +1049,7 @@ rotate_button.addEventListener('click', () => {
     if (stepCount > 0) {
         loadCircuit(lastLoadedCircut);
     }
-    let tempGrid: number[][] = [];
+    let tempGrid: BExp[][] = [];
     for (let i = 0; i < cols; i++) {
         tempGrid[i] = [];
         for (let j = 0; j < rows; j++) {
