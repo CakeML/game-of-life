@@ -571,6 +571,8 @@ function getBVars(x: BExp, acc: BVar[]) : BVar[] {
 
 function isTrue(x: BExp) : boolean { return (x.type === 'True'); }
 function isFalse(x: BExp) : boolean { return (x.type === 'False'); }
+function isVarA(x: BExp) : boolean { return (x.type === 'Var') && x.name === 'a'; }
+function isVarB(x: BExp) : boolean { return (x.type === 'Var') && x.name === 'b'; }
 function buildVar(n: string, g: number) : BExp {
     return { type : 'Var', name : n, generation : g };
 }
@@ -758,11 +760,12 @@ let background: string[][] = [];
 let inputs: CoordinateDirectionPair[] = [];
 let outputs: CoordinateDirectionPair[] = [];
 let stepCount: number = 0;
+let genCount: number = 0;
 let allowRun: boolean = false;
 let lastLoadedCircut = circuits[0];
 
 // Function to initialize the grid from an RLE string
-function initializeFromRLE(rle: string, startRow: number = 0, startCol: number = 0) {
+function initializeFromRLE(rle: string, startRow: number = 0, startCol: number = 0, fill : BExp = True) {
     const lines = rle.split('\n');
     let row = startRow;
     let col = startCol;
@@ -782,7 +785,7 @@ function initializeFromRLE(rle: string, startRow: number = 0, startCol: number =
                 const aliveCount = count;
                 for (let i = 0; i < aliveCount; i++) {
                     if (row < rows && col < cols) {
-                        grid[row][col] = True;
+                        grid[row][col] = fill;
                     }
                     col++;
                 }
@@ -814,8 +817,12 @@ function drawGrid() {
                 ctx.fillStyle = '#FFFFFF';
             } else if (isFalse(cell)) {
                 ctx.fillStyle = background[row][col];
+            } else if (isVarA(cell)) {
+                ctx.fillStyle = '#FF0000';
+            } else if (isVarB(cell)) {
+                ctx.fillStyle = '#00FF00';
             } else {
-                ctx.fillStyle = '#AAAAAA';
+                ctx.fillStyle = '#BF40BF';
             }
             ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
         }
@@ -840,6 +847,8 @@ function getCell(row : number, col : number) : BExp {
         return False;
     }
 }
+
+const varNames : string[] = ["a","b","c","d"];
 
 // Compute the next state of the grid
 function computeNextState(ignoreInput: boolean = false) {
@@ -870,16 +879,18 @@ function computeNextState(ignoreInput: boolean = false) {
             }
         });
         if (!ignoreInput) {
-            inputs.forEach((input) => {
+            inputs.forEach((input,index) => {
                 if (input[1] == "E") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(75*y-5),toX(75*x-5));
+                    const v : BExp = buildVar(varNames[index], genCount); 
+                    initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(75*y-5),toX(75*x-5),v);
                 }
                 if (input[1] == "W") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(75*y-5),toX(75*x-5));
+                    const v : BExp = buildVar(varNames[index], genCount); 
+                    initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(75*y-5),toX(75*x-5),v);
                 }
             });
         }
@@ -893,45 +904,26 @@ function computeNextState(ignoreInput: boolean = false) {
             }
         });
         if (!ignoreInput) {
-            inputs.forEach((input) => {
+            inputs.forEach((input,index) => {
                 if (input[1] == "N") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(75*y-5),toX(75*x-5));
+                    const v : BExp = buildVar(varNames[index], genCount); 
+                    initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(75*y-5),toX(75*x-5),v);
                 }
                 if (input[1] == "S") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(75*y-5),toX(75*x-5));
+                    const v : BExp = buildVar(varNames[index], genCount); 
+                    initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(75*y-5),toX(75*x-5),v);
                 }
             });
         }
     }
     stepCount = (stepCount+1) % 60;
+    if (stepCount === 0) { genCount++; }
 
 }
-
-/*
-// Count alive neighbors for a cell
-function countAliveNeighbors(row: number, col: number): number {
-    let count = 0;
-
-    for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue; // Skip the cell itself
-            const r = row + dr;
-            const c = col + dc;
-
-            // Check if the neighbor is within bounds and alive
-            if (r >= 0 && r < rows && c >= 0 && c < cols && grid[r][c] === 1) {
-                count++;
-            }
-        }
-    }
-
-    return count;
-}
-*/
 
 // Animation loop with controlled update interval
 let lastUpdateTime = 0; // Timestamp of the last update
@@ -959,23 +951,24 @@ function colourBox(x: number, y: number, w: number, h: number, colour: string) {
 }
 
 function updateBackground() {
-    colourBox(-75,-75,150 * blockWidth,150 * blockHeight,'#301934');
+    colourBox(-75,-75,150 * blockWidth,150 * blockHeight,'#000000');
+    const port : string = '#111111';
     outputs.forEach((output) => {
         const x = output[0][0];
         const y = output[0][1];
         if (x % 2 === 0) {
-            colourBox(75*x-5, 75*y-6, 10, 12, '#483248');
+            colourBox(75*x-5, 75*y-6, 10, 12, port);
         } else {
-            colourBox(75*x-6, 75*y-5, 12, 10, '#483248');
+            colourBox(75*x-6, 75*y-5, 12, 10, port);
         }
     });
     inputs.forEach((input) => {
         const x = input[0][0];
         const y = input[0][1];
         if (x % 2 === 0) {
-            colourBox(75*x-5, 75*y-6, 10, 12, '#483248');
+            colourBox(75*x-5, 75*y-6, 10, 12, port);
         } else {
-            colourBox(75*x-6, 75*y-5, 12, 10, '#483248');
+            colourBox(75*x-6, 75*y-5, 12, 10, port);
         }
     });
 }
@@ -992,6 +985,7 @@ function resizeGrid(width: number, height: number) {
     nextGrid = [];
     background = [];
     stepCount = 0;
+    genCount = 0;
     for (let row = 0; row < rows; row++) {
         grid[row] = [];
         nextGrid[row] = [];
@@ -999,7 +993,7 @@ function resizeGrid(width: number, height: number) {
         for (let col = 0; col < cols; col++) {
             grid[row][col] = False;
             nextGrid[row][col] = False;
-            background[row][col] = black;
+            background[row][col] = '#111111';
         }
     }
 }
@@ -1072,6 +1066,7 @@ rotate_button.addEventListener('click', () => {
         deleteBox(75*x-5, 75*y-5, 10, 10);
     });
     stepCount = 0;
+    genCount = 0;
     allowRun = false;
     drawGrid();
 });
