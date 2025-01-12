@@ -671,13 +671,28 @@ function golEval(vars : BVar[], env: BExpEnv, x: BExp, ys: BExp8) : BExp {
     }
 }
 
+function countFalses(x: BExp, ys: BExp8) : number {
+    let count : number = 0;
+    if (isFalse(x)) { count++; };
+    if (isFalse(ys.y1)) { count++; };
+    if (isFalse(ys.y2)) { count++; };
+    if (isFalse(ys.y3)) { count++; };
+    if (isFalse(ys.y4)) { count++; };
+    if (isFalse(ys.y5)) { count++; };
+    if (isFalse(ys.y6)) { count++; };
+    if (isFalse(ys.y7)) { count++; };
+    if (isFalse(ys.y8)) { count++; };
+    return count;
+}
+
 function golCell(x: BExp, ys: BExp8) : BExp {
+    if (countFalses(x,ys) >= 7) { return False; }
     let vars : BVar[] = getBVars(x,getBVars8(ys));
     return golEval(vars,[],x,ys);
 }
 
-console.log(golCell(True,{y1 : buildVar("b",2), y2 : buildVar("a",4), y3 : False, y4 : False,
-                          y5 : False, y6 : False, y7 : False, y8 : False}));
+//console.log(golCell(True,{y1 : buildVar("b",2), y2 : buildVar("a",4), y3 : False, y4 : False,
+//                           y5 : False, y6 : False, y7 : False, y8 : False}));
 
 // ************************************************************************* //
 //  Rest
