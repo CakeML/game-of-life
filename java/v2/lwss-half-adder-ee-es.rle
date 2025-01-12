@@ -1,14 +1,14 @@
-x = 302, y = 253, rule = B3/S23
-101b2o$101b2o5$78b2o$78b2o2$100b3o$99bo3bo$79bo18bo5bo$78bobo17b2obob
-2o$77bo3bo$78b3o$76b2o3b2o18bo$100bobo$100bobo$101b2o$103bo$77bo24b3o$
-77bo23bo3bo$77bob3o18bob3obo$96bo4b5o$82bo11b2o$79bob2o12b2o$79b2o3$
-74b2o3b2o7bo114b2o$74b2o3b2o7b2o113bo2bo$75b5o6bobobo116bo9bobo$76bobo
-5b3o2b2o100bo15bo7bo3bo$188b4o15bo7bo$76b3o24b2o74bo7b4o12bo2bo7bo4bo
-8b2o$103b2o73bobo6bo2bo12b2o10bo12b2o$177bo3b2o4b4o24bo3bo$163bo2b2o9b
-o3b2o5b4o14bobo8bobo$161b3o2b2o9bo3b2o8bo14b2o$95bo64bo17bobo26bo$76b
-2o15bobo64b2o17bo31b2o9b2o$76b2o16b2o51b2o39bobo19bo2bo7bo2bo$148bo40b
-2o19b3o9b3o$148bobo38bo23b9o$149b2o49bo11bo2b5o2bo$157b2o39b2o12b2o2b
-3o2b2o$156bo2bo39b2o$157b2o$o29bo2bo26bo2bo26bo2bo26bo2bo26bo2bo42bo
+x = 302, y = 276, rule = B3/S23
+o23$101b2o$101b2o5$78b2o$78b2o2$100b3o$99bo3bo$79bo18bo5bo$78bobo17b2o
+bob2o$77bo3bo$78b3o$76b2o3b2o18bo$100bobo$100bobo$101b2o$103bo$77bo24b
+3o$77bo23bo3bo$77bob3o18bob3obo$96bo4b5o$82bo11b2o$79bob2o12b2o$79b2o
+3$74b2o3b2o7bo114b2o$74b2o3b2o7b2o113bo2bo$75b5o6bobobo116bo9bobo$76bo
+bo5b3o2b2o100bo15bo7bo3bo$188b4o15bo7bo$76b3o24b2o74bo7b4o12bo2bo7bo4b
+o8b2o$103b2o73bobo6bo2bo12b2o10bo12b2o$177bo3b2o4b4o24bo3bo$163bo2b2o
+9bo3b2o5b4o14bobo8bobo$161b3o2b2o9bo3b2o8bo14b2o$95bo64bo17bobo26bo$
+76b2o15bobo64b2o17bo31b2o9b2o$76b2o16b2o51b2o39bobo19bo2bo7bo2bo$148bo
+40b2o19b3o9b3o$148bobo38bo23b9o$149b2o49bo11bo2b5o2bo$157b2o39b2o12b2o
+2b3o2b2o$156bo2bo39b2o$157b2o$o29bo2bo26bo2bo26bo2bo26bo2bo26bo2bo42bo
 13bo2bo26bo2bo26bo2bo26bo$34bo29bo29bo29bo29bo42b2o15bo29bo29bo$o29bo
 3bo25bo3bo25bo3bo25bo3bo25bo3bo41b2o12bo3bo25bo3bo25bo3bo25bo$bo29b4o
 26b4o26b4o26b4o26b4o45b3o8b4o26b4o26b4o26bo$160b2o40bo$160bo30bo9bo$
