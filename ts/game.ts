@@ -844,6 +844,11 @@ rotate_button.addEventListener('click', () => {
     for (let k = 0; k < 30; k++) {
         computeNextState(true);
     }
+    outputs.forEach((output) => {
+        const x = output[0][0];
+        const y = output[0][1];
+        deleteBox(75*x-5, 75*y-5, 10, 10);
+    });
     stepCount = 0;
     allowRun = false;
     drawGrid();
