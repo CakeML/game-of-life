@@ -1,3 +1,7 @@
+// ************************************************************************* //
+//  Circuits
+// ************************************************************************* //
+
 type Coordinate = [number, number];
 type Direction = string;
 type CoordinateDirectionPair = [Coordinate, Direction];
@@ -489,6 +493,195 @@ o7b3o39bo7b2o40bo8bo40bo7b3o137b3o$26b3o47b3o9bo37b3o47b3o47b3o9bo37b
         content: "!",
     },
 ];
+
+// ************************************************************************* //
+//  Symbolic computation
+// ************************************************************************* //
+
+type BExp =
+    | { type: 'False' }
+    | { type: 'True' }
+    | { type: 'Var'; name : string; generation: number }
+    | { type: 'Not'; op: BExp }
+    | { type: 'And'; op1: BExp; op2: BExp }
+    | { type: 'Or'; op1: BExp; op2: BExp }
+
+const False : BExp = { type: 'False' };
+const True : BExp = { type: 'True' };
+
+type BExpEnv = { name : string; generation: number; value: boolean }[];
+type BVar = { name : string; generation: number };
+type BExp8 = { y1 : BExp, y2 : BExp, y3 : BExp, y4 : BExp,
+               y5 : BExp, y6 : BExp, y7 : BExp, y8 : BExp };
+
+function evalBExp(x: BExp, env: BExpEnv) : boolean {
+    switch (x.type) {
+        case 'False':
+            return false;
+        case 'True':
+            return true;
+        case 'Not':
+            return !(evalBExp(x.op,env));
+        case 'And':
+            return (evalBExp(x.op1,env) && evalBExp(x.op2,env));
+        case 'Or':
+            return (evalBExp(x.op1,env) || evalBExp(x.op2,env));
+        case 'Var':
+            const v: string = x.name;
+            const g: number = x.generation;
+            let val = env.filter((elem) => elem.name == v && elem.generation == g);
+            return val[0].value;
+    }
+}
+
+function addToSortedArray(arr: BVar[], v: BVar): BVar[] {
+    let insertIndex = arr.length;
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i].name === v.name &&
+            arr[i].generation === v.generation) {
+            return arr;
+        }
+        if (arr[i].name > v.name ||
+            (arr[i].name === v.name &&
+             arr[i].generation > v.generation)) {
+            insertIndex = i;
+            break;
+        }
+    }
+    arr.splice(insertIndex, 0, v);
+    return arr;
+}
+
+function getBVars(x: BExp, acc: BVar[]) : BVar[] {
+    switch (x.type) {
+        case 'False':
+            return acc;
+        case 'True':
+            return acc;
+        case 'Not':
+            return getBVars(x.op,acc);
+        case 'And':
+            return getBVars(x.op1,getBVars(x.op2,acc));
+        case 'Or':
+            return getBVars(x.op1,getBVars(x.op2,acc));
+        case 'Var':
+            return addToSortedArray(acc, { name : x.name, generation : x.generation });
+    }
+}
+
+function isTrue(x: BExp) : boolean { return (x.type === 'True'); }
+function isFalse(x: BExp) : boolean { return (x.type === 'False'); }
+function buildVar(n: string, g: number) : BExp {
+    return { type : 'Var', name : n, generation : g };
+}
+function buildAnd(x: BExp, y: BExp) : BExp {
+    return { type : 'And', op1 : x, op2 : y };
+}
+function buildOr(x: BExp, y: BExp) : BExp {
+    return { type : 'Or', op1 : x, op2 : y };
+}
+function buildNot(x: BExp) : BExp {
+    if (x.type === 'Not') {
+        return x.op;
+    } else {
+        return { type : 'Not', op : x };
+    }
+}
+
+function equalBExp(x : BExp, y: BExp) : boolean {
+    switch (x.type) {
+        case 'False':
+            return isFalse(y);
+        case 'True':
+            return isTrue(y);
+        case 'Not':
+            if (y.type == 'Not') {
+                return equalBExp(x.op,y.op);
+            } else {
+                return false;
+            }
+        case 'And':
+            if (y.type == 'And') {
+                return equalBExp(x.op1,y.op1) && equalBExp(x.op2,y.op2);
+            } else {
+                return false;
+            }
+        case 'Or':
+            if (y.type == 'Or') {
+                return equalBExp(x.op1,y.op1) && equalBExp(x.op2,y.op2);
+            } else {
+                return false;
+            }
+        case 'Var':
+            if (y.type == 'Var') {
+                return x.name == y.name && x.generation == y.generation;
+            } else {
+                return false;
+            }
+    }
+}
+
+function buildIfThenElse(x: BExp, y: BExp, z: BExp) : BExp {
+    if (equalBExp(y,z)) { return y; }
+    if (isTrue(y) && isFalse(z)) { return x; }
+    if (isFalse(y) && isTrue(z)) { return buildNot(x); }
+    if (isFalse(z)) { return buildAnd(x,y); }
+    if (isTrue(y)) { return buildOr(x,z); }
+    if (isTrue(z)) { return buildOr(y,buildNot(x)); }
+    if (isFalse(y)) { return buildAnd(z,buildNot(x)); }
+    return buildOr(buildAnd(x,y),buildAnd(buildNot(x),z));
+}
+
+function getBVars8(ys: BExp8) {
+    return getBVars(ys.y1,getBVars(ys.y2,getBVars(ys.y3,getBVars(ys.y4,
+        getBVars(ys.y5,getBVars(ys.y6,getBVars(ys.y7,getBVars(ys.y8,[]))))))));
+}
+
+function evalBExp8(ys: BExp8, env: BExpEnv) : number {
+    let count : number = 0;
+    if (evalBExp(ys.y1, env)) { count++; };
+    if (evalBExp(ys.y2, env)) { count++; };
+    if (evalBExp(ys.y3, env)) { count++; };
+    if (evalBExp(ys.y4, env)) { count++; };
+    if (evalBExp(ys.y5, env)) { count++; };
+    if (evalBExp(ys.y6, env)) { count++; };
+    if (evalBExp(ys.y7, env)) { count++; };
+    if (evalBExp(ys.y8, env)) { count++; };
+    return count;
+}
+
+function golEval(vars : BVar[], env: BExpEnv, x: BExp, ys: BExp8) : BExp {
+    if (vars.length === 0) {
+        const neighbors : number = evalBExp8(ys, env);
+        const mid : boolean = evalBExp(x, env);
+        let res : boolean = false;
+        if (mid) {
+            if (neighbors === 2 || neighbors === 3) { res = true; }
+        } else {
+            if (neighbors === 3) { res = true; }
+        }
+        return res ? True : False;
+    } else {
+        const newVars = vars.slice(1);
+        const v = vars[0];
+        const w : BExp = { type: 'Var', name : v.name, generation: v.generation } ;
+        const envT = env.concat({ name : v.name, generation: v.generation, value : true });
+        const envF = env.concat({ name : v.name, generation: v.generation, value : false });
+        return buildIfThenElse(w,golEval(newVars,envT,x,ys),golEval(newVars,envF,x,ys));
+    }
+}
+
+function golCell(x: BExp, ys: BExp8) : BExp {
+    let vars : BVar[] = getBVars(x,getBVars8(ys));
+    return golEval(vars,[],x,ys);
+}
+
+console.log(golCell(True,{y1 : buildVar("b",2), y2 : buildVar("a",4), y3 : False, y4 : False,
+                          y5 : False, y6 : False, y7 : False, y8 : False}));
+
+// ************************************************************************* //
+//  Rest
+// ************************************************************************* //
 
 // Create the dropdown menu
 const dropdown = document.createElement('select');
