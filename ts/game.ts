@@ -534,6 +534,33 @@ function evalBExp(x: BExp, env: BExpEnv) : boolean {
     }
 }
 
+function stringOfBExp(x: BExp, parent: string = "") : string {
+    switch (x.type) {
+        case 'False':
+            return "false";
+        case 'True':
+            return "true";
+        case 'Not':
+            return "¬ " + stringOfBExp(x.op, x.type);
+        case 'And':
+            const s1 = stringOfBExp(x.op1,x.type);
+            const s2 = stringOfBExp(x.op2,x.type);
+            const and_res = s1 + " ∧ " + s2;
+            if (parent == '' || parent == x.type) { return and_res; }
+            return "(" + and_res + ")";
+        case 'Or':
+            const t1 = stringOfBExp(x.op1,x.type);
+            const t2 = stringOfBExp(x.op2,x.type);
+            const or_res = t1 + " ∨ " + t2;
+            if (parent == '' || parent == x.type) { return or_res; }
+            return "(" + or_res + ")";
+        case 'Var':
+            const v: string = x.name;
+            const g: number = x.generation;
+            return `${v}${g}`;
+    }
+}
+
 function addToSortedArray(arr: BVar[], v: BVar): BVar[] {
     let insertIndex = arr.length;
     for (let i = 0; i < arr.length; i++) {
@@ -583,6 +610,8 @@ function buildOr(x: BExp, y: BExp) : BExp {
     return { type : 'Or', op1 : x, op2 : y };
 }
 function buildNot(x: BExp) : BExp {
+    if (isFalse(x)) { return True; }
+    if (isTrue(x)) { return False; }
     if (x.type === 'Not') {
         return x.op;
     } else {
@@ -715,6 +744,11 @@ step_button.textContent = 'step';
 step_button.id = 'step_button';
 document.body.appendChild(step_button);
 
+const step60_button = document.createElement('button');
+step60_button.textContent = 'step 60';
+step60_button.id = 'step60_button';
+document.body.appendChild(step60_button);
+
 const run_button = document.createElement('button');
 run_button.textContent = 'run';
 run_button.id = 'run_button';
@@ -763,6 +797,7 @@ let stepCount: number = 0;
 let genCount: number = 0;
 let allowRun: boolean = false;
 let lastLoadedCircut = circuits[0];
+let latestClick : {x:number, y:number} = { x: -500, y: -500 };
 
 // Function to initialize the grid from an RLE string
 function initializeFromRLE(rle: string, startRow: number = 0, startCol: number = 0, fill : BExp = True) {
@@ -807,6 +842,31 @@ function initializeFromRLE(rle: string, startRow: number = 0, startCol: number =
     }
 }
 
+function drawTextBox(x: number, y: number, text: string) {
+    const padding = 10;
+    const arrowHeight = 20;
+    ctx.font = '16px Arial';
+    const textMetrics = ctx.measureText(text);
+    const textWidth = textMetrics.width;
+    const textHeight = 16; // Approximate line height
+    const bubbleWidth = textWidth + 2 * padding;
+    const bubbleHeight = textHeight + 2 * padding;
+    const bubbleX = x - bubbleWidth / 2;
+    const bubbleY = y - bubbleHeight - arrowHeight;
+    ctx.beginPath();
+    ctx.rect(bubbleX, bubbleY, bubbleWidth, bubbleHeight);
+    ctx.moveTo(x - 10, bubbleY + bubbleHeight);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + 10, bubbleY + bubbleHeight);
+    ctx.closePath();
+    ctx.fillStyle = 'yellow';
+    ctx.fill();
+    ctx.strokeStyle = 'yellow';
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText(text, bubbleX + padding, bubbleY + padding + textHeight * 0.85);
+}
+
 // Draw the grid on the canvas
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
@@ -826,6 +886,13 @@ function drawGrid() {
             }
             ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
         }
+    }
+    if (latestClick.x > -200) {
+        const x : number = Math.floor(latestClick.x / cellSize);
+        const y : number = Math.floor(latestClick.y / cellSize);
+        //const text = `x: ${x}, y: ${y}`;
+        const text = stringOfBExp(grid[y][x]);
+        drawTextBox(latestClick.x, latestClick.y, text);
     }
 }
 
@@ -883,13 +950,13 @@ function computeNextState(ignoreInput: boolean = false) {
                 if (input[1] == "E") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    const v : BExp = buildVar(varNames[index], genCount); 
+                    const v : BExp = buildVar(varNames[index], genCount);
                     initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(75*y-5),toX(75*x-5),v);
                 }
                 if (input[1] == "W") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    const v : BExp = buildVar(varNames[index], genCount); 
+                    const v : BExp = buildVar(varNames[index], genCount);
                     initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(75*y-5),toX(75*x-5),v);
                 }
             });
@@ -908,13 +975,13 @@ function computeNextState(ignoreInput: boolean = false) {
                 if (input[1] == "N") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    const v : BExp = buildVar(varNames[index], genCount); 
+                    const v : BExp = buildVar(varNames[index], genCount);
                     initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(75*y-5),toX(75*x-5),v);
                 }
                 if (input[1] == "S") {
                     const x = input[0][0];
                     const y = input[0][1];
-                    const v : BExp = buildVar(varNames[index], genCount); 
+                    const v : BExp = buildVar(varNames[index], genCount);
                     initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(75*y-5),toX(75*x-5),v);
                 }
             });
@@ -1026,8 +1093,15 @@ step_button.addEventListener('click', () => {
     computeNextState();
     drawGrid();
 });
+step60_button.addEventListener('click', () => {
+    for (let k = 0; k < 60; k++) {
+        computeNextState();
+    }
+    drawGrid();
+});
 run_button.addEventListener('click', () => {
     allowRun = true;
+    latestClick = { x: -500, y: -500 };
     requestAnimationFrame(gameLoop);
 });
 stop_button.addEventListener('click', () => {
@@ -1068,5 +1142,28 @@ rotate_button.addEventListener('click', () => {
     stepCount = 0;
     genCount = 0;
     allowRun = false;
+    drawGrid();
+});
+
+canvas.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    latestClick = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+    };
+    drawGrid();
+});
+
+canvas.addEventListener('click', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    latestClick = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+    };
+    drawGrid();
+});
+
+canvas.addEventListener('mouseleave', (event) => {
+    latestClick = { x : -500, y : -500 };
     drawGrid();
 });
