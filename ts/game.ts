@@ -843,6 +843,7 @@ function initializeFromRLE(rle: string, startRow: number = 0, startCol: number =
 }
 
 function drawTextBox(x: number, y: number, text: string) {
+    if (!ctx) { return; }
     const padding = 10;
     const arrowHeight = 20;
     ctx.font = '16px Arial';
@@ -869,6 +870,7 @@ function drawTextBox(x: number, y: number, text: string) {
 
 // Draw the grid on the canvas
 function drawGrid() {
+    if (!ctx) { return; }
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
