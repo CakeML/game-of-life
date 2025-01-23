@@ -368,7 +368,6 @@ $23b2o62b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o15bo3bo$85b3o10$85b
         height: 1,
         width: 4,
         content: `
-x = 634, y = 269, rule = B3/S23
 o5$89bo49bo49bo49bo49bo49bo49bo49bo49bo49bo$89b3o9bo37b3o47b3o47b3o9bo
 37b3o47b3o47b3o9bo37b3o47b3o47b3o9bo$92bo8bo40bo7b3o39bo7b2o40bo8bo40b
 o7b3o39bo7b2o40bo8bo40bo7b3o39bo7b2o40bo8bo$91b2o7bob2obo35b2o11bo36b

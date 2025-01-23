@@ -270,6 +270,8 @@ val inputs = ref ([] : io_port list);
 val outputs = ref ([] : io_port list);
 val the_grid = ref (new_grid 10 10);
 val the_next_grid = ref (new_grid 10 10);
+val block_height = ref 1;
+val block_width = ref 1;
 
 fun compute_next_state ignore_input =
   let
@@ -350,6 +352,40 @@ fun run_to_fixpoint () =
   in
     res
   end
+
+fun rotate_dir E = S
+  | rotate_dir S = W
+  | rotate_dir W = N
+  | rotate_dir N = E;
+
+fun rotate () =
+  let
+    val _ = (!step_count = 0 andalso !gen_count = 0) orelse
+            failwith("Can only rotate newly loaded grid")
+    val original_grid = !the_grid
+    val (cols,rows) = get_width_height original_grid
+    val grid = new_grid rows cols
+    val next_grid = new_grid rows cols
+    val _ = for_loop 0 cols (fn i =>
+              for_loop 0 rows (fn j =>
+                update_cell i j grid (get_cell ((rows-1)-j) i original_grid)))
+    val b_h = !block_height
+    val b_w = !block_width
+    val _ = (inputs :=
+      map (fn ((x,y),d) => ((2*(b_h-1)-y,x),rotate_dir d)) (!inputs))
+    val _ = (outputs :=
+      map (fn ((x,y),d) => ((2*(b_h-1)-y,x),rotate_dir d)) (!outputs))
+    val _ = (block_height := b_w)
+    val _ = (block_width := b_h)
+    val _ = (the_grid := grid)
+    val _ = (the_next_grid := next_grid)
+    val _ = for_loop 0 30 (fn i => compute_next_state true)
+    val _ = List.app
+              (fn ((x,y),d) => delete_box (75*x-5) (75*y-5) 10 10 grid)
+              (!outputs)
+    val _ = (step_count := 0)
+    val _ = (gen_count := 0)
+  in () end
 
 type gate =
   { filename : string ,
@@ -469,6 +505,8 @@ fun load ({ filename = f, inputs = ins, outputs = outs, height = h, width = w } 
    the_grid := new_grid (w * 150 + 20) (h * 150 + 20);
    the_next_grid := new_grid (w * 150 + 20) (h * 150 + 20);
    init_from_rle (read_file f) 10 10 True (!the_grid);
+   block_height := h;
+   block_width := w;
    inputs := ins;
    outputs := outs);
 
@@ -489,3 +527,12 @@ val _ = (load cross_en_en ; run_to_fixpoint ());
 val _ = (load half_adder_ee_es ; run_to_fixpoint ());
 val _ = (load half_adder_ee_ee ; run_to_fixpoint ());
 val _ = (load slow_wire_e_e ; run_to_fixpoint ());
+
+(*
+val _ = load and_en_e;
+val _ = rotate();
+val _ = rotate();
+val _ = rotate();
+val _ = run_to_fixpoint ();
+val _ = grid_to_svg (!the_grid) "rot.svg"
+*)
