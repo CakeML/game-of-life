@@ -295,7 +295,7 @@ fun compute_next_state ignore_input =
                let
                  val _ = List.app (fn ((x,y),dir) =>
                            if dir = E orelse dir = W then
-                             delete_box (75*x-5) (75*y-5) 10 10 next_grid
+                             delete_box (75*x-6) (75*y-6) 12 12 next_grid
                            else ()) (!outputs)
                in
                  if ignore_input then [] else
@@ -314,7 +314,7 @@ fun compute_next_state ignore_input =
                let
                  val _ = List.app (fn ((x,y),dir) =>
                            if dir = N orelse dir = S then
-                             delete_box (75*x-5) (75*y-5) 10 10 next_grid
+                             delete_box (75*x-6) (75*y-6) 12 12 next_grid
                            else ()) (!outputs)
                in
                  if ignore_input then [] else
@@ -381,7 +381,7 @@ fun rotate () =
     val _ = (the_next_grid := next_grid)
     val _ = for_loop 0 30 (fn i => compute_next_state true)
     val _ = List.app
-              (fn ((x,y),d) => delete_box (75*x-5) (75*y-5) 10 10 grid)
+              (fn ((x,y),d) => delete_box (75*x-6) (75*y-6) 12 12 grid)
               (!outputs)
     val _ = (step_count := 0)
     val _ = (gen_count := 0)

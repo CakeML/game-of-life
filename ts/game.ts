@@ -63,24 +63,24 @@ o83b2o$37bo98b2o$38bo2bo94bo$41bo92bobo$33b2o5bo16b2o13b3o28b2o25bo3b
 2o$o2bo28bo2bo5b3o13b2o13bo2bo27bobo23bobo$4bo29bo8bo28bo30bo25b2o$o3b
 o26bo2bo37bo46bo8bo2bo$b4o68bobo43bobo6b2ob2o$31b2o31b2o53b2o7bo3bo12b
 4o$63bobo63b3o13bo3bo$63bobob2o76bo$64bobobo54b2o21bo2bo$66bo57bo$54b
-2obob2o4b2o54b3o$4b2o58b3o54bo$4b2o48bo5bo3b3o58bob2o$64b3o56b3ob2o2b
+2obob2o4b2o54b3o$64b3o54bo$3b2o49bo5bo3b3o58bob2o$3b2o59b3o56b3ob2o2b
 2o3b2o$19b2o34b2ob2o5b2o55bo8bo2bo2bo$20b2o35bo8bo5b3o43b2o3b3ob2o3b5o
-$19bo44bobobo2bo2bo5b2o36bobo4bobo$31b2o30bobob2o5bo5b2o36bo6bobo3bob
-2o$31b2o30bobo8bo51bo4b2obo$64b2o5bobo$83bo18b2o43bo$12bo17b3o27bo21bo
-18bobo41b3o$2b2o3b2o3b2o4b2o10b3o21b3o4b2o19bo18bo42bo$11bobo4bobo32bo
-3bo2b2o38b2o42b2o$3bo3bo10bo$4b3o45bo5bo19b2o3b2o$4b3o21b2o3b2o17b2o3b
-2o22bo$29b5o40b2o2bo5bo$30b3o41bobo2b2ob2o58bo$7bo23bo35bobo4bo5bobo
-58b3o$6b3o16b3o40b2o11bo51b2o5b5o$5bo3bo15bo42bo3bo8bo51bobo3bobobobo$
-7bo18bo45b2o59bo5b2o3b2o$4bo5bo60bobo46bo$4bo5bo108b2o$5bo3bo69bo23b2o
-13b2o4b2o2b2o12bo$6b3o69b3o22b3o11b3o4b2o2b2o11bobo$77bo3bo12b2o9b2obo
-9b2o4b2o15bo$28b3o24b2o3b2o14bob3obo11bo5bo4bo2bo10b2o21bo2bo$56b5o3b
-2o11b5o17bo5b2obo11bo24bo$28bobo25b2ob2o4b2o28bo3bo3b3o10bo27bo$27b5o
-24b2ob2o3bo32bo5b2o9bobo28b3o$26b2o3b2o24b3o55b2o30bo$26b2o3b2o2$6b2o$
-6b2o21bo101bo$27b2o30b3o61bo7b2o$59b3o62bo5bobo$26bo31bo3bo59b3o$57bo
-5bo14b2o$27bo2bo27bo3bo15b2o$29b2o28b3o2$123b2o$124b2o$123bo$112b2o$
-111bo3bo$110bo5bo7bo$100b2o8bo3bob2o4bobo$100b2o8bo5bo3b2o$60b2o49bo3b
-o4b2o12b2o$60b2o50b2o6b2o12b2o$122bobo$124bo$60b2o$61bo$61bobo$62b2o
-10$149bo!
+$19bo44bobobo2bo2bo5b2o36bobo4bobo$63bobob2o5bo5b2o36bo6bobo3bob2o$30b
+2o31bobo8bo51bo4b2obo$29bobo32b2o5bobo$28b3o52bo18b2o43bo$12bo15b2o30b
+o21bo18bobo41b3o$4bo7b2o2b2o10b2o24b3o4b2o19bo18bo42bo$3b3o5bobo2bobo
+10bobo21bo3bo2b2o38b2o42b2o$2b5o9bo13bo$b2o3b2o44bo5bo19b2o3b2o$2b5o
+45b2o3b2o22bo$2b5o20b2o3b2o40b2o2bo5bo$3bo2bo20b2o3b2o40bobo2b2ob2o58b
+o$3bo3bo59bobo4bo5bobo58b3o$7bo15b3o3b3o36b2o11bo51b2o5b5o$4b2obo15bo
+5b3o36bo3bo8bo51bobo3bobobobo$6bo17bo5bo41b2o59bo5b2o3b2o$71bobo46bo$
+119b2o$3b2o3b2o69bo23b2o13b2o4b2o2b2o12bo$3bo5bo68b3o22b3o11b3o4b2o2b
+2o11bobo$77bo3bo12b2o9b2obo9b2o4b2o15bo$4bo3bo18b3o25b2o3b2o14bob3obo
+11bo5bo4bo2bo10b2o21bo2bo$5b3o19b3o26b5o3b2o11b5o17bo5b2obo11bo24bo$
+26bo3bo25b2ob2o4b2o28bo3bo3b3o10bo27bo$56b2ob2o3bo32bo5b2o9bobo28b3o$
+25b2o3b2o25b3o55b2o30bo4$5b2o124bo$5b2o52b3o61bo7b2o$59b3o62bo5bobo$
+58bo3bo59b3o$57bo5bo14b2o$58bo3bo15b2o$28b2o29b3o$28b2o$123b2o$124b2o$
+123bo$112b2o$111bo3bo$110bo5bo7bo$100b2o8bo3bob2o4bobo$100b2o8bo5bo3b
+2o$60b2o49bo3bo4b2o12b2o$60b2o50b2o6b2o12b2o$122bobo$124bo$60b2o$61bo$
+61bobo$62b2o10$149bo!
 `,
     },
     {
@@ -943,7 +943,7 @@ function computeNextState(ignoreInput: boolean = false) {
             if (output[1] == "E" || output[1] == "W") {
                 const x = output[0][0];
                 const y = output[0][1];
-                deleteBox(75*x-5, 75*y-5, 10, 10);
+                deleteBox(75*x-6, 75*y-6, 12, 12);
             }
         });
         if (!ignoreInput) {
@@ -968,7 +968,7 @@ function computeNextState(ignoreInput: boolean = false) {
             if (output[1] == "N" || output[1] == "S") {
                 const x = output[0][0];
                 const y = output[0][1];
-                deleteBox(75*x-5, 75*y-5, 10, 10);
+                deleteBox(75*x-6, 75*y-6, 12, 12);
             }
         });
         if (!ignoreInput) {
@@ -1024,20 +1024,13 @@ function updateBackground() {
     outputs.forEach((output) => {
         const x = output[0][0];
         const y = output[0][1];
-        if (x % 2 === 0) {
-            colourBox(75*x-5, 75*y-6, 10, 12, port);
-        } else {
-            colourBox(75*x-6, 75*y-5, 12, 10, port);
-        }
+        colourBox(75*x-6, 75*y-6, 12, 12, port);
     });
     inputs.forEach((input) => {
         const x = input[0][0];
         const y = input[0][1];
-        if (x % 2 === 0) {
-            colourBox(75*x-5, 75*y-6, 10, 12, port);
-        } else {
-            colourBox(75*x-6, 75*y-5, 12, 10, port);
-        }
+        colourBox(75*x-6, 75*y-6, 12, 12, port);
+
     });
 }
 
@@ -1138,7 +1131,7 @@ rotate_button.addEventListener('click', () => {
     outputs.forEach((output) => {
         const x = output[0][0];
         const y = output[0][1];
-        deleteBox(75*x-5, 75*y-5, 10, 10);
+        deleteBox(75*x-6, 75*y-6, 12, 12);
     });
     stepCount = 0;
     genCount = 0;
