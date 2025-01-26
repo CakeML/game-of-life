@@ -536,3 +536,37 @@ val _ = rotate();
 val _ = run_to_fixpoint ();
 val _ = grid_to_svg (!the_grid) "rot.svg"
 *)
+
+(* I/O gates *)
+
+fun array_to_list a = Array.foldr (fn (s,t) => s :: t) [] a;
+
+fun grid_to_bool_list grid =
+  let
+    val res = array_to_list grid |> map array_to_list
+              |> map (map (fn x => if x = True then "T" else "F"))
+              |> map (fn xs => "[" ^ String.concatWith ";" xs ^ "]")
+              |> String.concatWith ";\n    "
+  in
+    print ("\n\n   [" ^ res ^ "]\n\n\n")
+  end
+
+(* E *)
+val grid = new_grid 10 10
+val _ = init_from_rle "$5bo2bo$9bo$5bo3bo$6b4o!" 0 0 True grid;
+val _ = grid_to_bool_list grid
+
+(* W *)
+val grid = new_grid 10 10
+val _ = init_from_rle "5$4o$o3bo$o$bo2bo!" 0 0 True grid;
+val _ = grid_to_bool_list grid
+
+(* N *)
+val grid = new_grid 10 10
+val _ = init_from_rle "2b3o$bo2bo$4bo$4bo$bobo!" 0 0 True grid;
+val _ = grid_to_bool_list grid
+
+(* S *)
+val grid = new_grid 10 10
+val _ = init_from_rle "5$6bobo$5bo$5bo$5bo2bo$5b3o!" 0 0 True grid;
+val _ = grid_to_bool_list grid
