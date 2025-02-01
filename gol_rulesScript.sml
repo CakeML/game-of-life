@@ -51,6 +51,16 @@ Definition infl_def: (* influence *)
   infl s (i,j) ⇔ live_adj s i j ≠ 0 ∨ (i,j) ∈ s
 End
 
+Theorem IMP_infl_subset:
+  s ⊆ COMPL (infl (COMPL t)) ⇒ infl s ⊆ t
+Proof
+  gvs [SUBSET_DEF] \\ gvs [IN_DEF, infl_def, FORALL_PROD]
+  \\ gvs [live_adj_def,IN_DEF] \\ rw []
+  \\ Cases_on ‘s (p_1,p_2)’ \\ gvs []
+  \\ last_x_assum drule \\ gvs [integerTheory.INT_SUB_ADD]
+  \\ gvs [intLib.COOPER_PROVE “m + k - k:int = m”]
+QED
+
 Theorem infl_compose:
   infl s ∩ infl t = ∅ ⇒
   step (s ∪ t) = step s ∪ step t
@@ -425,6 +435,14 @@ Datatype:
   dir = N | S | W | E
 End
 
+Definition is_ns_def:
+  is_ns ((x,y),d,r) = (d = N ∨ d = S)
+End
+
+Definition is_ew_def:
+  is_ew ((x,y),d,r) = (d = E ∨ d = W)
+End
+
 Definition circ_mod_wf_def:
   circ_mod_wf area ins outs as ⇔
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
@@ -531,16 +549,20 @@ End
 
 Definition lwss_at_def:
   lwss_at n ((x,y),d,r) =
-    if d ∈ {E; W} ∧ n MOD 60 = 59 ∧ r (n DIV 60) then
-      lwss_as_set (75 * x - 5, 75 * y - 5) d
-    else if d ∈ {N; S} ∧ n MOD 60 = 29 ∧ r (n DIV 60) then
+    if r (n DIV 60) then
       lwss_as_set (75 * x - 5, 75 * y - 5) d
     else
       {}
 End
 
 Definition circ_io_lwss_def:
-  circ_io_lwss ins n = U (IMAGE (lwss_at n) ins )
+  circ_io_lwss ins n =
+    if n MOD 60 = 29 then
+      U (IMAGE (lwss_at n) (ins ∩ is_ns) )
+    else if n MOD 60 = 59 then
+      U (IMAGE (lwss_at n) (ins ∩ is_ew) )
+    else
+      {}
 End
 
 Definition circ_mod_def:
@@ -574,10 +596,25 @@ Definition circuit_def:
     ALL_DISTINCT (MAP FST as)
 End
 
+Theorem mod_steps_add:
+  ∀k c n s1 s2.
+    mod_steps (l + k) c n s1 s2 ⇔
+    ∃s3. mod_steps k c n s1 s3 ∧ mod_steps l c (n + k) s3 s2
+Proof
+  Induct_on ‘k’ \\ gvs []
+  \\ once_rewrite_tac [mod_steps_def] \\ gvs [ADD_CLAUSES]
+  \\ gvs [mod_steps_def] \\ gvs [PULL_EXISTS,ADD1]
+  \\ metis_tac []
+QED
+
 Theorem run_to_le:
   ∀k k0 c s t. run_to k c s t ∧ k0 ≤ k ⇒ ∃u. run_to k0 c s u
 Proof
-  cheat
+  rw [] \\ gvs [LESS_EQ_EXISTS,run_to_def]
+  \\ pop_assum mp_tac
+  \\ once_rewrite_tac [ADD_COMM]
+  \\ rewrite_tac [mod_steps_add] \\ rw []
+  \\ first_x_assum $ irule_at Any
 QED
 
 Theorem run_to_imp_run:
@@ -591,10 +628,81 @@ Proof
   \\ pop_assum $ irule_at Any \\ gvs []
 QED
 
+Datatype:
+  var = A | B
+End
+
+Datatype:
+  bexp = True | False | Var string num
+       | Not bexp | And bexp bexp | Or bexp bexp
+End
+
+Definition eval_def[simp]:
+  eval env True      = T ∧
+  eval env False     = F ∧
+  eval env (Var v n) = env (v,n) ∧
+  eval env (Not x)   = ~(eval env x) ∧
+  eval env (And x y) = (eval env x ∧ eval env y) ∧
+  eval env (And x y) = (eval env x ∨ eval env y)
+End
+
+Definition age_def[simp]:
+  age k env (v,n) = env (v,n+k:num)
+End
+
 Definition eval_io_def:
   eval_io env ins =
     MAP (λ((x,y),d,e). ((x,y),d, λn. eval (age n env) e)) ins
 End
+
+Theorem MAP_FST_eval_io[simp]:
+  MAP FST (eval_io env ins) = MAP FST ins
+Proof
+  Induct_on ‘ins’ \\ gvs [eval_io_def,FORALL_PROD]
+QED
+
+Theorem mod_steps_age:
+  ∀k c n s t. mod_steps k c n s t ⇔ mod_steps k (λl. c (l + n)) 0 s t
+Proof
+  Induct
+  \\ once_rewrite_tac [mod_steps_def] >- simp []
+  \\ pop_assum $ once_rewrite_tac o single \\ gvs []
+QED
+
+Theorem circ_area_age:
+  circ_area (set area) (set (eval_io (age 1 env) ins))
+            (set (eval_io (age 1 env) outs)) l =
+  circ_area (set area) (set (eval_io env ins))
+            (set (eval_io env outs)) (l + 60)
+Proof
+  gvs [circ_area_def,eval_io_def,MEM_MAP,EXISTS_PROD,PULL_EXISTS]
+QED
+
+Theorem circ_io_area_age:
+  circ_io_area (set (eval_io (age 1 env) outs)) l =
+  circ_io_area (set (eval_io env outs)) (l + 60)
+Proof
+  gvs [circ_io_area_def,eval_io_def,MEM_MAP,EXISTS_PROD,PULL_EXISTS]
+QED
+
+Theorem age_age:
+  age n (age k x) = age (n + k) x
+Proof
+  gvs [age_def,FUN_EQ_THM,FORALL_PROD]
+QED
+
+Theorem circ_io_lwss_age:
+  circ_io_lwss (set (eval_io (age 1 env) ins)) l =
+  circ_io_lwss (set (eval_io env ins)) (l + 60)
+Proof
+  simp [EXTENSION]
+  \\ gvs [circ_io_lwss_def,eval_io_def] \\ rw []
+  \\ gvs [MEM_MAP,EXISTS_PROD,PULL_EXISTS,lwss_at_def,age_age]
+  \\ ‘0 < 60:num’ by gvs []
+  \\ drule arithmeticTheory.ADD_DIV_ADD_DIV
+  \\ disch_then $ qspec_then ‘1’ assume_tac \\ gvs []
+  \\ gvs [IN_DEF,is_ns_def,is_ew_def]
+QED
 
 Theorem imp_circuit:
   (∀env.
@@ -606,32 +714,319 @@ Theorem imp_circuit:
       (from_rows (x,y) (MAP (MAP (eval env)) rows))
       (from_rows (x,y) (MAP (MAP (eval (age 1 env))) rows)))
   ⇒
+  ALL_DISTINCT (MAP FST ins) ∧
+  ALL_DISTINCT (MAP FST outs) ∧
+  ALL_DISTINCT area ∧
+  circ_mod_wf (set area) (set (eval_io env ins)) (set (eval_io env outs)) ∅
+  ⇒
   circuit
     area
     (eval_io env ins)
-    (eval_io env ins)
+    (eval_io env outs)
     []
     (from_rows (x,y) (MAP (MAP (eval env)) rows))
+Proof
+  rpt strip_tac
+  \\ simp [circuit_def,circuit_run_def]
+  \\ irule run_to_imp_run
+  \\ qexists_tac ‘60’ \\ simp []
+  \\ pop_assum kall_tac
+  \\ qid_spec_tac ‘env’
+  \\ Induct_on ‘n’
+  >- gvs [run_to_def,mod_steps_def]
+  \\ rpt strip_tac
+  \\ gvs [run_to_def,mod_steps_def,MULT_CLAUSES]
+  \\ simp [mod_steps_add]
+  \\ last_x_assum $ qspec_then ‘env’ $ irule_at Any
+  \\ first_x_assum $ qspec_then ‘age 1 env’ strip_assume_tac
+  \\ once_rewrite_tac [mod_steps_age]
+  \\ qsuff_tac
+     ‘circ_mod (set area) (set (eval_io (age 1 env) ins))
+        (set (eval_io (age 1 env) outs)) ∅  =
+      λl. circ_mod (set area) (set (eval_io env ins))
+                   (set (eval_io env outs)) ∅  (l + 60)’
+  >- (rw [] \\ qexists_tac ‘t’ \\ gvs [])
+  \\ gvs [FUN_EQ_THM,circ_mod_def]
+  \\ gvs [circ_area_def,circ_io_lwss_age,circ_area_age,circ_io_area_age]
+QED
+
+Definition gol_step_rows_def: (* TODO *)
+  gol_step_rows rows = rows
+End
+
+Definition check_mask_def:
+  check_mask rows mask = T
+End
+
+Definition gol_checked_steps_def:
+  gol_checked_steps 0 rows mask = SOME rows ∧
+  gol_checked_steps (SUC n) rows mask =
+    if check_mask rows mask then
+      gol_checked_steps n (gol_step_rows rows) mask
+    else NONE
+End
+
+Definition inc_vars_def:
+  inc_vars rows = rows
+End
+
+Definition tabulate_def:
+  tabulate (f:int -> int -> 'a) rows =
+    MAPi (λy row. MAPi (λx u. f (& x) (& y)) row) rows
+End
+
+Definition mask_cell_def:
+  mask_cell phase1 area ins outs x y ⇔
+    (x, y) ∈ infl (COMPL (circ_area (set area) (set ins) (set outs) (if phase1 then 0 else 30)))
+End
+
+Definition io_area_cell_def:
+  io_area_cell phase1 outs x y ⇔
+    (x, y) ∈  circ_io_area (set outs) (if phase1 then 29 else 59)
+End
+
+Definition diff_rows_def:
+  diff_rows rows bools = rows
+End
+
+Definition union_rows_def:
+  union_rows rows bexps = rows
+End
+
+Definition inter_rows_def:
+  inter_rows rows bexps = rows
+End
+
+Definition or_lwss_def:
+  or_lwss rows ins = SOME rows
+End
+
+Definition make_area_def:
+  make_area w h = FLAT (GENLIST (λy. GENLIST (λx. (&x:int, &y:int)) w) h)
+End
+
+Definition add_margin_def:
+  add_margin fill n xss =
+    let ys = REPLICATE n fill in
+    let yss = MAP (λxs. ys ++ xs ++ ys) xss in
+    let l = (case yss of (row::_) => LENGTH row | _ => n+n) in
+    let ts = REPLICATE n (REPLICATE l fill) in
+      ts ++ yss ++ ts
+End
+
+Definition make_base_area_def:
+  make_base_area w h =
+    let trues = REPLICATE (h * 150) (REPLICATE (w * 150) T) in
+      add_margin F 10 trues
+End
+
+Definition shrink_def:
+  shrink xs = xs
+End
+
+Definition or_io_areas_def:
+  or_io_areas xs t = t
+End
+
+Definition or_def:
+  or xs ys = xs
+End
+
+Definition diff_def:
+  diff xs ys = xs
+End
+
+Definition masks_def:
+  masks w h ins outs =
+    let bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) in
+    let ins_ns = or_io_areas (FILTER is_ns ins) bools in
+    let ins_ew = or_io_areas (FILTER is_ew ins) bools in
+    let outs_ns = or_io_areas (FILTER is_ns outs) bools in
+    let outs_ew = or_io_areas (FILTER is_ew outs) bools in
+      (shrink (or outs_ns (or ins_ew (diff (diff base_area ins_ns) outs_ew))),
+       shrink (or outs_ew (or ins_ns (diff (diff base_area ins_ew) outs_ns))))
+End
+
+Definition simulation_ok_def:
+  simulation_ok w h ins outs rows ⇔
+    LENGTH rows = 150 * h + 20 ∧
+    EVERY (λrow. LENGTH row = 150 * w + 20) rows ∧
+    let base_area = make_base_area w h in
+    let bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) in
+    let (m1,m2) = masks w h ins outs in
+    let del1 = or_io_areas (FILTER is_ns outs) bools in
+    let del2 = or_io_areas (FILTER is_ew outs) bools in
+    let ins1 = FILTER is_ns ins in
+    let ins2 = FILTER is_ew ins in
+    let outs1 = FILTER is_ns outs in
+    let outs2 = FILTER is_ew outs in
+    let empty = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) False) in
+      case gol_checked_steps 30 rows m1 of
+      | NONE => F
+      | SOME rows1 =>
+        if or_lwss empty outs1 ≠ SOME (inter_rows rows1 del1) then F else
+          case or_lwss (diff_rows rows1 del1) ins1 of
+          | NONE => F
+          | SOME rowsA =>
+            case gol_checked_steps 30 rowsA m2 of
+            | NONE => F
+            | SOME rows2 =>
+                if or_lwss empty outs2 ≠ SOME (inter_rows rows2 del2) then F else
+                  case or_lwss (diff_rows rows2 del2) ins2 of
+                  | NONE => F
+                  | SOME rowsB =>
+                     inc_vars rows = rowsB
+End
+
+Theorem opt_bool =
+  “option_CASE x F h = T” |> SCONV [AllCaseEqs()] |> SRULE [];
+
+Definition steps_def:
+  steps s1 t s2 ⇔
+    s2 = FUNPOW step 30 s1 ∧
+    ∀n. n < 30 ⇒ infl (FUNPOW step n s1) ⊆ t
+End
+
+Theorem mod_steps_FUNPOW:
+  ∀k n s cc.
+    (∀i. i < k ⇒
+         infl (FUNPOW step i s) ⊆ (cc (i + n)).area ∧
+         (cc (i + n)).assert_area = {} ∧
+         (cc (i + n)).assert_content = {} ∧
+         (cc (i + n)).deletions = {} ∧
+         (cc (i + n)).insertions = {}) ⇒
+    mod_steps k cc n s (FUNPOW step k s)
+Proof
+  Induct \\ gvs [mod_steps_def] \\ rw [] \\ gvs [FUNPOW]
+  \\ last_x_assum $ irule_at Any \\ conj_tac
+  >- (gen_tac \\ strip_tac
+      \\ last_x_assum $ qspec_then ‘SUC i’ mp_tac \\ gvs [FUNPOW,ADD1])
+  \\ gvs [mod_step_def]
+  \\ pop_assum $ qspec_then ‘0’ assume_tac \\ gvs []
+QED
+
+Theorem circ_io_lwss_empty:
+  i < 29 ⇒ circ_io_lwss ins i = ∅ ∧ circ_io_lwss ins (i + 30) = ∅
+Proof
+  simp [EXTENSION]
+  \\ gvs [circ_io_lwss_def]
+  \\ gvs [FORALL_PROD]
+  \\ gvs [lwss_at_def]
+  \\ CCONTR_TAC \\ gvs []
+QED
+
+Triviality run_to_60_lemma:
+  (∃s1 s2 s3.
+    steps s (circ_area area ins outs 0) s1 ∧
+    s1 ∩ circ_io_area (outs ∪ as) 29 = circ_io_lwss (outs ∪ as) 29 ∧
+    s2 = circ_io_lwss ins 29 ∪ (s1 DIFF circ_io_area outs 29) ∧
+    steps s2 (circ_area area ins outs 30) s3 ∧
+    s3 ∩ circ_io_area (outs ∪ as) 59 = circ_io_lwss (outs ∪ as) 59 ∧
+    t = circ_io_lwss ins 59 ∪ (s3 DIFF circ_io_area outs 59))
+  ⇒
+  run_to 60 (circ_mod area ins outs as) s t
+Proof
+  strip_tac
+  \\ gvs [run_to_def]
+  \\ rewrite_tac [EVAL “30 + 30:num” |> GSYM]
+  \\ rewrite_tac [mod_steps_add] \\ gvs []
+  \\ qexists_tac ‘circ_io_lwss ins 29 ∪ (s1 DIFF circ_io_area outs 29)’
+  \\ conj_tac
+  >-
+   (ntac 2 (pop_assum kall_tac) \\ gvs [steps_def]
+    \\ simp [mod_steps_def]
+    \\ rewrite_tac [EVAL “1 + 29:num” |> GSYM]
+    \\ rewrite_tac [mod_steps_add] \\ gvs []
+    \\ qexists_tac ‘FUNPOW step 29 s’
+    \\ conj_tac
+    >- (irule mod_steps_FUNPOW \\ gvs [circ_mod_def,circ_area_def]
+        \\ gvs [circ_io_area_def,circ_io_lwss_empty])
+    \\ ntac 2 $ simp [Once (oneline mod_steps_def)]
+    \\ gvs [mod_step_def,circ_mod_def,SF SFY_ss]
+    \\ ‘step (FUNPOW step 29 s) = FUNPOW step 30 s’
+         by rewrite_tac [EVAL “SUC 29” |> GSYM, FUNPOW_SUC]
+    \\ gvs [] \\ gvs [circ_area_def])
+  \\ last_x_assum kall_tac
+  \\ last_x_assum kall_tac
+  \\ qabbrev_tac ‘t5 = circ_io_lwss ins 29 ∪ (s1 DIFF circ_io_area outs 29)’
+  \\ pop_assum kall_tac
+  \\ rewrite_tac [EVAL “1 + 29:num” |> GSYM]
+  \\ rewrite_tac [mod_steps_add] \\ gvs []
+  \\ qexists_tac ‘FUNPOW step 29 t5’
+  \\ gvs [steps_def]
+  \\ conj_tac
+  >- (irule mod_steps_FUNPOW \\ gvs [circ_mod_def,circ_area_def]
+      \\ gvs [circ_io_area_def,circ_io_lwss_empty])
+  \\ ntac 2 $ simp [Once (oneline mod_steps_def)]
+  \\ gvs [mod_step_def,circ_mod_def,SF SFY_ss]
+  \\ ‘step (FUNPOW step 29 t5) = FUNPOW step 30 t5’
+    by rewrite_tac [EVAL “SUC 29” |> GSYM, FUNPOW_SUC]
+  \\ gvs [] \\ gvs [circ_area_def]
+QED
+
+Theorem gol_checked_steps_1:
+  gol_checked_steps 30 rows m1 = SOME rows1 ∧
+  masks w h ins outs = (m1,m2) ⇒
+  steps (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+          (circ_area (set (make_area w h)) (set (eval_io env ins))
+             (set (eval_io env outs)) 0)
+          (from_rows (-85,-85) (MAP (MAP (eval env)) rows1))
 Proof
   cheat
 QED
 
+Theorem gol_checked_steps_2:
+  gol_checked_steps 30 rows m2 = SOME rows1 ∧
+  masks w h ins outs = (m1,m2) ∧
+  from_rows (-85,-85) (MAP (MAP (eval env)) rows) = x ∧
+  from_rows (-85,-85) (MAP (MAP (eval env)) rows1) = y ⇒
+  steps x (circ_area (set (make_area w h)) (set (eval_io env ins))
+                   (set (eval_io env outs)) 30) y
+Proof
+  cheat
+QED
 
+Theorem or_lwss_imp:
+  or_lwss xs ins = SOME ys ⇒
+  from_rows (-85,-85) (MAP (MAP (eval env)) xs) ∪
+  circ_io_lwss (set (eval_io env ins)) 29 =
+  from_rows (-85,-85) (MAP (MAP (eval env)) ys)
+Proof
+  cheat
+QED
 
+Theorem set_INTER:
+  set xs ∩ p = set (FILTER p xs)
+Proof
+  simp [EXTENSION,MEM_FILTER]
+  \\ simp [IN_DEF,AC CONJ_COMM CONJ_ASSOC]
+QED
 
+Theorem simulation_ok_thm:
+  simulation_ok w h ins outs rows ⇒
+  (∀env.
+    run_to 60
+      (circ_mod (set (make_area w h))
+                (set (eval_io env ins))
+                (set (eval_io env outs))
+                {})
+      (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+      (from_rows (-85,-85) (MAP (MAP (eval (age 1 env))) rows)))
+Proof
+  rw [] \\ gvs [simulation_ok_def] \\ gvs [opt_bool]
+  \\ pairarg_tac \\ gvs []
+  \\ irule run_to_60_lemma \\ gvs [GSYM make_area_def]
+  \\ qexists_tac ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows1)’
+  \\ qexists_tac ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows2)’
+  \\ conj_tac >- gvs [gol_checked_steps_1]
+  \\ irule_at Any gol_checked_steps_2
+  \\ first_assum $ irule_at $ Pos hd \\ gvs []
+  \\ gvs [circ_io_lwss_def,set_INTER]
+  \\ imp_res_tac or_lwss_imp
+  \\ cheat
+QED
 
-(*
-params:
- - inputs
- - outputs
- - asserts
- - init state
-sets:
- - area
- - insertions
- - deletions
- - state s
- - assertions
-*)
+Theorem simulation_ok_IMP_circuit =
+  MATCH_MP imp_circuit (UNDISCH simulation_ok_thm) |> DISCH_ALL;
 
 val _ = export_theory();
