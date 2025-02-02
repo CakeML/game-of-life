@@ -5,7 +5,7 @@ open preamble;
 
 val _ = new_theory "gol_rules";
 
-Overload "U"[local] = “BIGUNION”;
+Overload "U" = “BIGUNION”;
 
 (* There is an unbounded 2D plane of cells *)
 Type state[pp] = “:(int # int) set”;
@@ -107,12 +107,6 @@ Proof
   \\ eq_tac \\ fs [infl_thm]
   \\ rw [] \\ fs []
 QED
-
-(* list to set *)
-
-Definition to_state_def:
-  to_state xs = { p | MEM (p,T) xs } : state
-End
 
 (* runs *)
 
@@ -408,7 +402,7 @@ Proof
 QED
 
 (*
-  translate by dx dy
+  TODO: translate by dx dy
 *)
 
 (*
@@ -1329,12 +1323,13 @@ QED
 
 Theorem simulation_ok_IMP_circuit:
   simulation_ok w h ins outs rows ⇒
-  circuit (make_area w h)
-          (eval_io env ins)
-          (eval_io env outs) []
-          (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+  ∀env.
+    circuit (make_area w h)
+            (eval_io env ins)
+            (eval_io env outs) []
+            (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
 Proof
-  strip_tac
+  strip_tac \\ gen_tac
   \\ irule imp_circuit
   \\ simp [PULL_FORALL] \\ gen_tac
   \\ irule_at Any simulation_ok_thm \\ simp []
@@ -1349,5 +1344,23 @@ Proof
   \\ gvs [MEM_MAP,PULL_EXISTS,FORALL_PROD]
   \\ metis_tac [ALL_DISTINCT_MAP_FST,PAIR_EQ]
 QED
+
+(* --- examples --- *)
+
+Definition set_env_def:
+  set_env a b (A,n:num) = (a n):bool ∧
+  set_env a b (B,n:num) = (b n):bool
+End
+
+Theorem wire_e_e_sim[local]: (* fake *)
+  simulation_ok 1 1 [((-1,0),E,Var A 5)] [((1,0),E,Var A 0)] [ (* ... *) ]
+Proof
+  cheat
+QED
+
+Theorem wire_e_e_raw =
+  MATCH_MP simulation_ok_IMP_circuit wire_e_e_sim
+  |> Q.SPEC ‘set_env a b’
+  |> SRULE [eval_io_def,EVAL “make_area 1 1”, set_env_def, SF ETA_ss];
 
 val _ = export_theory();
