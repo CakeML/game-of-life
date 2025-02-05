@@ -542,6 +542,15 @@ Definition from_rows_def:
   from_rows (x,y) (row :: rows) = from_row (x,y) row ∪ from_rows (x,y+1) rows
 End
 
+Theorem from_rows_EMPTY:
+  ∀x y.
+    EVERY (EVERY (λx. x = F)) bools ⇒
+    from_rows (x,y) bools = ∅
+Proof
+  Induct_on ‘bools’ \\ gvs [from_rows_def,SF SFY_ss]
+  \\ Induct \\ gvs [from_row_def]
+QED
+
 Definition lwss_as_set_def:
   lwss_as_set (x,y) d = from_rows (x,y) (io_gate d)
 End
@@ -801,6 +810,12 @@ Definition build_Or_def:
     if y = False then x else
       Or x y
 End
+
+Theorem eval_build_Or[simp]:
+  eval env (build_Or x y) = eval env (Or x y)
+Proof
+  rw [build_Or_def]
+QED
 
 Definition get_bvars8_def:
   get_bvars8 (y1,y2,y3,y4,y5,y6,y7,y8) =
@@ -1305,12 +1320,109 @@ Proof
   cheat
 QED
 
-Theorem or_lwss_rectangle:
-  or_lwss xs ins = SOME ys ∧
-  rectangle w h xs ⇒
-  rectangle w h ys
+Theorem or_at_length:
+  ∀x y xs ys. LIST_REL (λa b. LENGTH a = LENGTH b) (or_at x y xs ys) ys
 Proof
-  cheat
+  ho_match_mp_tac or_at_ind
+  \\ gvs [or_at_def] \\ rw []
+  \\ gvs [LIST_REL_EL_EQN]
+  \\ qid_spec_tac ‘x’
+  \\ qid_spec_tac ‘p’
+  \\ Induct_on ‘row’ \\ gvs [or_row_def,FORALL_PROD]
+  \\ Cases_on ‘p’ \\ gvs [or_row_def] \\ rw [] \\ gvs []
+QED
+
+Theorem or_lwss_rectangle:
+  ∀ins xs ys.
+    or_lwss xs ins = SOME ys ∧
+    rectangle w h xs ⇒
+    rectangle w h ys
+Proof
+  Induct \\ gvs [or_lwss_def,FORALL_PROD,CaseEq"option"]
+  \\ rw [] \\ last_x_assum drule \\ rw []
+  \\ gvs [rectangle_def,EVERY_MEM]
+  \\ rename [‘or_at x y ts us’]
+  \\ qspecl_then [‘x’,‘y’,‘ts’,‘us’] mp_tac or_at_length
+  \\ gvs [MEM_EL,PULL_EXISTS,LIST_REL_EL_EQN]
+QED
+
+Theorem from_row_or_row:
+  ∀m p row x y.
+    m + LENGTH p < LENGTH row ⇒
+    from_row (x,y) (MAP (eval env) (or_row m p row)) =
+    from_row (x,y) (MAP (eval env) row) ∪
+    from_row (x + &m,y) (MAP (eval env) p)
+Proof
+  ho_match_mp_tac or_row_ind \\ gvs [] \\ rw []
+  \\ gvs [or_row_def,from_row_def] \\ rw []
+  \\ gvs [from_row_def]
+  \\ Cases_on ‘eval env r’ \\ gvs [from_row_def]
+  >-
+   (Cases_on ‘eval env p’ \\ gvs [from_row_def]
+    \\ gvs [EXTENSION]
+    \\ rw [] \\ eq_tac \\ rw [] \\ gvs [])
+  >-
+   (Cases_on ‘eval env p’ \\ gvs [from_row_def]
+    \\ gvs [AC UNION_COMM UNION_ASSOC])
+  \\ Cases_on ‘m’ \\ gvs [ADD1]
+  \\ gvs [ADD1,intLib.COOPER_PROVE “& (m + n) = & n + & m:int”]
+  \\ gvs [AC UNION_COMM UNION_ASSOC,
+          AC integerTheory.INT_ADD_COMM integerTheory.INT_ADD_ASSOC]
+QED
+
+Theorem from_rows_or_at:
+  ∀m n ds rows1 x y.
+    n + LENGTH ds < LENGTH rows1 ∧
+    EVERY (λrow. EVERY (λd. m + LENGTH d < LENGTH row) ds) rows1 ⇒
+    from_rows (x,y) (MAP (MAP (eval env)) (or_at m n ds rows1)) =
+    from_rows (x,y) (MAP (MAP (eval env)) rows1) ∪
+    from_rows (x + &m,y + &n) (MAP (MAP (eval env)) ds)
+Proof
+  ho_match_mp_tac or_at_ind \\ rw []
+  >- gvs [from_rows_def,or_at_def]
+  \\ gvs [or_at_def]
+  \\ IF_CASES_TAC \\ gvs []
+  \\ gvs [from_rows_def]
+  >-
+   (last_x_assum (fn th => DEP_REWRITE_TAC [th])
+    \\ conj_tac >- gvs [EVERY_MEM]
+    \\ gvs [from_row_or_row, AC UNION_COMM UNION_ASSOC])
+  \\ Cases_on ‘n’
+  \\ gvs [ADD1,intLib.COOPER_PROVE “& (m + n) = & n + & m:int”]
+  \\ gvs [from_row_or_row, AC UNION_COMM UNION_ASSOC,
+          AC integerTheory.INT_ADD_COMM integerTheory.INT_ADD_ASSOC]
+QED
+
+Theorem io_gate_lenth:
+  LENGTH (io_gate d) = 10 ∧
+  ∀row. MEM row (io_gate d) ⇒ LENGTH row = 10
+Proof
+  Cases_on ‘d’ \\ gvs [io_gate_def, SF DNF_ss]
+QED
+
+Theorem age_0[simp]:
+  age 0 = I
+Proof
+  gvs [FUN_EQ_THM,FORALL_PROD]
+QED
+
+Theorem from_rows_io_gate:
+  -1 ≤ x ∧ -1 ≤ y ⇒
+  from_rows (-85 + &Num (x * 75 − 5 + 85),-85 + &Num (y * 75 − 5 + 85))
+    (MAP (MAP (λb. eval env (if b then r else False))) (io_gate d)) =
+  lwss_at 0 ((x,y),d,(λn. eval (age n env) r))
+Proof
+  gvs [lwss_at_def] \\ reverse $ rw []
+  >-
+   (irule from_rows_EMPTY
+    \\ gvs [EVERY_MEM,MEM_MAP,PULL_EXISTS]
+    \\ CCONTR_TAC \\ gvs []
+    \\ Cases_on ‘b’ \\ gvs [])
+  \\ gvs [lwss_as_set_def]
+  \\ irule (METIS_PROVE [] “x1 = x2 ∧ y1 = y2 ⇒ f x1 y1 = f x2 y2”)
+  \\ conj_tac
+  >- (gvs [] \\ intLib.COOPER_TAC)
+  \\ gvs [MAP_EQ_ID] \\ rw [] \\ rw []
 QED
 
 Theorem or_lwss_imp:
@@ -1336,7 +1448,18 @@ Proof
        (gvs [EVERY_MEM,simple_checks_def] \\ res_tac \\ fs [])
   \\ qpat_x_assum ‘_ ∨ _’ kall_tac
   \\ rw [] \\ gvs []
-  \\ cheat
+  \\ DEP_REWRITE_TAC [from_rows_or_at]
+  \\ drule_all or_lwss_rectangle \\ strip_tac
+  \\ conj_tac
+  >-
+   (gvs [EVERY_MEM,MEM_MAP,PULL_EXISTS,io_gate_lenth,rectangle_def]
+    \\ rw [] \\ res_tac
+    \\ gvs [io_gate_lenth, SF SFY_ss] \\ intLib.COOPER_TAC)
+  \\ gvs [GSYM UNION_ASSOC]
+  \\ AP_TERM_TAC
+  \\ gvs [MAP_MAP_o,o_DEF,SF ETA_ss]
+  \\ gvs [eval_io_def]
+  \\ gvs [from_rows_io_gate, AC UNION_COMM UNION_ASSOC]
 QED
 
 Theorem set_INTER:
@@ -1366,15 +1489,6 @@ Proof
   gvs [inc_vars_def,MAP_MAP_o,MAP_EQ_f] \\ rw []
   \\ qsuff_tac ‘∀e env. eval env (inc e) ⇔ eval (age 1 env) e’ \\ gvs []
   \\ Induct \\ gvs [inc_def]
-QED
-
-Theorem from_rows_EMPTY:
-  ∀x y.
-    EVERY (EVERY (λx. x = F)) bools ⇒
-    from_rows (x,y) bools = ∅
-Proof
-  Induct_on ‘bools’ \\ gvs [from_rows_def,SF SFY_ss]
-  \\ Induct \\ gvs [from_row_def]
 QED
 
 Theorem box_SUC:
