@@ -220,7 +220,12 @@ End
 Theorem infl_bigunion:
   infl (U ss) = U { infl s | s ∈ ss }
 Proof
-  cheat
+  rw [Once SET_EQ_SUBSET, BIGUNION_SUBSET]
+  >-
+   (fs [SUBSET_DEF, FORALL_PROD, infl_thm]
+    \\ simp [GSYM EXISTS_OR_THM, GSYM RIGHT_AND_OVER_OR, GSYM infl_thm]
+    \\ metis_tac [])
+  \\ metis_tac [SUBSET_BIGUNION_I, infl_mono]
 QED
 
 Theorem infl_compose_bigunion:
