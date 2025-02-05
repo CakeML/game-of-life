@@ -881,11 +881,17 @@ End
 
 Definition gol_rows_def:
   gol_rows prev (row :: rest) =
-    gol_row False False prev
-            False False row
-            False False (case rest of
+    (case row of
+     | [] => []
+     | (r::rs) =>
+       let next = (case rest of
                          | [] => REPLICATE (LENGTH row) False
-                         | (x::_) => x)
+                         | (x::_) => x) in
+       let (p,ps) = case prev of [] => (False,[]) | (p::ps) => (p,ps) in
+       let (n,ns) = case next of [] => (False,[]) | (n::ns) => (n,ns) in
+         gol_row False p ps
+                 False r rs
+                 False n ns)
     :: gol_rows row rest ∧
   gol_rows prev [] = []
 End
@@ -999,9 +1005,65 @@ Definition shrink_def:
   shrink xs = xs
 End
 
-Definition or_io_areas_def:
-  or_io_areas xs t = t
+Definition or_box_row_def:
+  or_box_row x w [] = [] ∧
+  or_box_row x w (r::rs) =
+    if x = 0:num then if w = 0:num then r :: rs else T :: or_box_row x (w-1) rs
+    else r :: or_box_row (x-1) w rs
 End
+
+Definition or_box_def:
+  or_box x y w h [] = [] ∧
+  or_box x y w h (r::rs) =
+    if y = 0:num then
+      if h = 0:num then r :: rs else
+        or_box_row x w r :: or_box x y w (h-1) rs
+    else
+      r :: or_box x (y-1) w h rs
+End
+
+Definition or_io_areas_def:
+  or_io_areas [] t = t ∧
+  or_io_areas (((x,y),r)::rest) t =
+    or_box (Num (85 + 75 * x - 6)) (Num (85 + 75 * y - 6)) 12 12
+      (or_io_areas rest t)
+End
+
+Definition rectangle_def:
+  rectangle w h rows ⇔
+    LENGTH rows = 150 * h + 20 ∧
+    EVERY (λrow. LENGTH row = 150 * w + 20) rows
+End
+
+Theorem or_box_row_length:
+  ∀xs x m. LENGTH (or_box_row x m xs) = LENGTH xs
+Proof
+  Induct \\ gvs [or_box_row_def] \\ rw []
+QED
+
+Theorem LIST_REL_or_box:
+  ∀xs ys x y m n.
+    LIST_REL (λx y. LENGTH x = LENGTH y) xs ys ⇒
+    LIST_REL (λx y. LENGTH x = LENGTH y) (or_box x y m n xs) ys
+Proof
+  Induct \\ gvs [or_box_def,PULL_EXISTS,SF SFY_ss] \\ rw []
+  \\ gvs [or_box_row_length]
+QED
+
+Theorem or_io_areas_rectangle:
+  or_io_areas xs t = res ∧
+  rectangle w h t ⇒
+  rectangle w h res
+Proof
+  rw [] \\ gvs [rectangle_def]
+  \\ qsuff_tac ‘LIST_REL (λx y. LENGTH x = LENGTH y) (or_io_areas xs t) t’
+  >- gvs [LIST_REL_EL_EQN,EVERY_MEM,MEM_EL,PULL_EXISTS,SF SFY_ss]
+  \\ rpt $ pop_assum kall_tac
+  \\ qid_spec_tac ‘t’
+  \\ Induct_on ‘xs’ \\ gvs [or_io_areas_def,FORALL_PROD]
+  >- gvs [LIST_REL_EL_EQN]
+  \\ rw [] \\ irule LIST_REL_or_box \\ gvs []
+QED
 
 Definition or_def:
   or xss yss =
@@ -1027,19 +1089,13 @@ Definition masks_def:
        shrink (or outs_ew (or ins_ns (diff (diff base_area_bools ins_ew) outs_ns))))
 End
 
-Definition rectangle_def:
-  rectangle w h rows ⇔
-    LENGTH rows = 150 * h + 20 ∧
-    EVERY (λrow. LENGTH row = 150 * w + 20) rows
-End
-
 Definition simple_checks_def:
   simple_checks w h ins outs rows ⇔
     rectangle w h rows ∧
     ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
     EVERY (λ((x,y),r).
              (x % 2 = 0 ⇎ y % 2 = 0) ∧
-             -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w + 1 ∧ y ≤ 2 * &h + 1)
+             -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1)
           (ins ++ outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
@@ -1168,9 +1224,62 @@ Proof
   \\ gvs [] \\ gvs [circ_area_def]
 QED
 
+Theorem length_gol_row:
+  ∀xs ys zs x1 x2 y1 y2 z1 z2.
+    LENGTH xs = LENGTH ys ∧ LENGTH zs = LENGTH ys ⇒
+    LENGTH (gol_row x1 x2 xs y1 y2 ys z1 z2 zs) = LENGTH ys + 1
+Proof
+  Induct \\ gvs [gol_row_def]
+  \\ Cases_on ‘ys’ \\ gvs []
+  \\ Cases_on ‘zs’ \\ gvs []
+  \\ gvs [SF SFY_ss,gol_row_def]
+QED
+
+Theorem gol_rows_length:
+  ∀rows prev.
+    EVERY (λrow. LENGTH row = LENGTH prev) rows ⇒
+    LIST_REL (λx y. LENGTH x = LENGTH y) rows (gol_rows prev rows)
+Proof
+  Induct \\ gvs [gol_rows_def] \\ rw []
+  \\ DEP_REWRITE_TAC [length_gol_row] \\ gvs []
+  \\ Cases_on ‘rows’ \\ gvs []
+  \\ Cases_on ‘h’ \\ gvs []
+  \\ Cases_on ‘prev’ \\ gvs []
+  \\ DEP_REWRITE_TAC [length_gol_row] \\ gvs []
+  \\ Cases_on ‘h'’ \\ gvs []
+  \\ DEP_REWRITE_TAC [length_gol_row] \\ gvs []
+QED
+
+Theorem gol_step_rows_length:
+  ∀rows k.
+    EVERY (λrow. LENGTH row = k) rows ⇒
+    LIST_REL (λx y. LENGTH x = LENGTH y) rows (gol_step_rows rows)
+Proof
+  gen_tac \\ Cases_on ‘rows = []’ \\ gvs [gol_step_rows_def]
+  \\ ‘gol_step_rows rows = gol_rows (REPLICATE (LENGTH (HD rows)) False) rows’ by
+       (Cases_on ‘rows’ \\ gvs [gol_step_rows_def])
+  \\ gvs [] \\ rw []
+  \\ irule gol_rows_length \\ gvs []
+  \\ Cases_on ‘rows’ \\ gvs []
+QED
+
+Theorem gol_checked_steps_rectangle:
+  ∀n rows m1 rows1.
+    gol_checked_steps n rows m1 = SOME rows1 ∧
+    rectangle w h rows ⇒
+    rectangle w h rows1
+Proof
+  Induct \\ gvs [gol_checked_steps_def] \\ rw []
+  \\ last_x_assum $ drule_then irule
+  \\ gvs [rectangle_def]
+  \\ qspec_then ‘rows’ drule gol_step_rows_length
+  \\ gvs [LIST_REL_EL_EQN,MEM_EL,PULL_EXISTS,EVERY_MEM]
+QED
+
 Theorem gol_checked_steps_1:
   gol_checked_steps 30 rows m1 = SOME rows1 ∧
-  masks w h ins outs = (m1,m2) ⇒
+  masks w h ins outs = (m1,m2) ∧
+  rectangle w h rows ⇒
   steps (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
         (circ_area (set (make_area w h)) (set (eval_io env ins))
                    (set (eval_io env outs)) 0)
@@ -1182,6 +1291,7 @@ QED
 Theorem gol_checked_steps_2:
   gol_checked_steps 30 rows m2 = SOME rows1 ∧
   masks w h ins outs = (m1,m2) ∧
+  rectangle w h rows ⇒
   from_rows (-85,-85) (MAP (MAP (eval env)) rows) = x ∧
   from_rows (-85,-85) (MAP (MAP (eval env)) rows1) = y ⇒
   steps x (circ_area (set (make_area w h)) (set (eval_io env ins))
@@ -1190,13 +1300,38 @@ Proof
   cheat
 QED
 
+Theorem or_lwss_rectangle:
+  or_lwss xs ins = SOME ys ∧
+  rectangle w h xs ⇒
+  rectangle w h ys
+Proof
+  cheat
+QED
+
 Theorem or_lwss_imp:
-  or_lwss xs ins = SOME ys ⇒
+  or_lwss xs ins = SOME ys ∧ rectangle w h xs ∧
+  simple_checks w h ins1 outs1 (rows:bexp list list) ∧
+  set ins ⊆ set (ins1 ++ outs1) ⇒
   from_rows (-85,-85) (MAP (MAP (eval env)) ys) =
   from_rows (-85,-85) (MAP (MAP (eval env)) xs) ∪
   U (IMAGE (lwss_at 0) (set (eval_io env ins)))
 Proof
-  cheat
+  strip_tac
+  \\ last_x_assum mp_tac
+  \\ qid_spec_tac ‘ys’
+  \\ Induct_on ‘ins’
+  \\ gvs [or_lwss_def]
+  >- (rw [] \\ gvs [EXTENSION,eval_io_def])
+  \\ PairCases
+  \\ rename [‘((x,y),d,r)::_’]
+  \\ simp [GSYM AND_IMP_INTRO,or_lwss_def,CaseEq"option"]
+  \\ Cases_on ‘set ins ⊆ set ins1 ∪ set outs1’ \\ gvs []
+  \\ disch_then assume_tac
+  \\ ‘-1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1’ by
+       (gvs [EVERY_MEM,simple_checks_def] \\ res_tac \\ fs [])
+  \\ qpat_x_assum ‘_ ∨ _’ kall_tac
+  \\ rw [] \\ gvs []
+  \\ cheat
 QED
 
 Theorem set_INTER:
@@ -1237,24 +1372,249 @@ Proof
   \\ Induct \\ gvs [from_row_def]
 QED
 
-Theorem diff_rows_thm:
-  bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) ⇒
-  from_rows (-85,-85) (MAP (MAP (eval env))
-                           (diff_rows rows1 (or_io_areas outs bools))) =
-  from_rows (-85,-85) (MAP (MAP (eval env)) rows1) DIFF
-  circ_io_area (set (eval_io env outs))
+Theorem box_SUC:
+  box (x,y) (w,SUC n) =
+  box (x,y) (w,1) ∪ box (x,y+1) (w,n)
 Proof
-  cheat
+  gvs [box_def,EXTENSION] \\ rw[] \\ eq_tac \\ rw []
+  >- (Cases_on ‘j’ \\ gvs [] \\ qexists_tac ‘n'’ \\ gvs []
+      \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘0’ \\ gvs [])
+  \\ qexists_tac ‘SUC j’ \\ gvs [] \\ intLib.COOPER_TAC
+QED
+
+Theorem from_row_or_box_row:
+  ∀h m w x y.
+    m + w ≤ LENGTH h ⇒
+    from_row (x,y) (or_box_row m w h) =
+    from_row (x,y) h ∪ box (x + &m,y) (w,1)
+Proof
+  Induct
+  \\ gvs [or_box_row_def,from_row_def,box_def]
+  \\ rpt strip_tac
+  \\ reverse $ Cases_on ‘m’ \\ gvs []
+  >-
+   (Cases_on ‘h'’ \\ rw [from_row_def]
+    \\ gvs [AC UNION_COMM UNION_ASSOC, ADD1,
+            intLib.COOPER_PROVE “&(m + n:num) :int = & m + & n”]
+    \\ gvs [AC integerTheory.INT_ADD_COMM integerTheory.INT_ADD_ASSOC])
+  \\ Cases_on ‘w’ \\ gvs [from_row_def]
+  \\ ‘{(x + &i,y + &j) | i < SUC n ∧ j = 0} =
+      {(x,y)} ∪ {(x + 1 + &i,y + &j) | i < n ∧ j = 0}’ by
+   (gvs [EXTENSION] \\ rw [] \\ eq_tac \\ rw []
+    >- (Cases_on ‘i’ \\ gvs [] \\ pop_assum $ irule_at Any
+        \\ intLib.COOPER_TAC)
+    >- (qexists_tac ‘0’ \\ gvs [])
+    >- (qexists_tac ‘SUC i’ \\ gvs [] \\ intLib.COOPER_TAC))
+  \\ gvs []
+  \\ Cases_on ‘h'’ \\ rw [from_row_def]
+  \\ gvs [AC UNION_COMM UNION_ASSOC]
+  \\ gvs [EXTENSION] \\ rw [] \\ eq_tac \\ rw [] \\ gvs []
+QED
+
+Theorem from_rows_or_box:
+  ∀rest x y m n w h.
+    EVERY (λrow. m + w ≤ LENGTH row) rest ∧
+    n + h ≤ LENGTH rest ⇒
+    from_rows (x,y) (or_box m n w h rest) =
+    box (x + & m, y + & n) (w, h) ∪ from_rows (x,y) rest
+Proof
+  Induct
+  >- gvs [box_def,or_box_def,from_rows_def]
+  \\ rw [or_box_def,from_rows_def]
+  >- gvs [box_def]
+  >-
+   (DEP_REWRITE_TAC [from_row_or_box_row]
+    \\ gvs [] \\ Cases_on ‘h'’
+    \\ gvs [box_SUC, AC UNION_COMM UNION_ASSOC])
+  \\ ‘y + 1 + &(n − 1) = y + &n’ by intLib.COOPER_TAC
+  \\ gvs [AC UNION_COMM UNION_ASSOC]
+QED
+
+Theorem or_io_areas_eq:
+  ∀outs ins1 outs1.
+    simple_checks w h ins1 outs1 (rows : bexp list list) ∧
+    set outs ⊆ set ins1 ∪ set outs1 ⇒
+    from_rows (-85,-85)
+              (or_io_areas outs
+                 (REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F))) =
+    circ_io_area (set (eval_io env outs))
+Proof
+  gvs [circ_io_area_def,eval_io_def,MEM_MAP,EXISTS_PROD]
+  \\ rw []
+  \\ Induct_on ‘outs’
+  \\ gvs [or_io_areas_def]
+  >- (irule from_rows_EMPTY \\ gvs [])
+  \\ gen_tac
+  \\ disch_then assume_tac
+  \\ PairCases_on ‘h'’
+  \\ rename [‘(((x,y),d,r)::outs)’]
+  \\ ‘-1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1 ∧
+      set outs ⊆ set ins1 ∪ set outs1’ by
+       (gvs [EVERY_MEM,simple_checks_def] \\ res_tac \\ fs [])
+  \\ qpat_x_assum ‘(_ ∨ _) ∧ _’ kall_tac
+  \\ irule EQ_TRANS
+  \\ qexists_tac ‘
+       io_box (x,y) ∪
+       U {io_box (x,y) | (∃p_1 p_2''. MEM ((x,y),p_1,p_2'') outs)}’
+  \\ reverse conj_tac
+  >- (gvs [EXTENSION,PULL_EXISTS] \\ metis_tac [])
+  \\ gvs [or_io_areas_def]
+  \\ DEP_REWRITE_TAC [from_rows_or_box]
+  \\ conj_tac
+  >-
+   (qabbrev_tac ‘rows1 = (or_io_areas outs
+             (REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F)))’
+    \\ ‘rectangle w h rows1’ by
+     (gvs [Abbr‘rows1’]
+      \\ irule (or_io_areas_rectangle |> GEN_ALL |> SRULE [])
+      \\ gvs [rectangle_def])
+    \\ gvs [rectangle_def,EVERY_MEM]
+    \\ rw [] \\ intLib.COOPER_TAC)
+  \\ asm_rewrite_tac [io_box_def]
+  \\ AP_THM_TAC \\ AP_TERM_TAC
+  \\ AP_THM_TAC \\ AP_TERM_TAC \\ gvs []
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem inter_rows_rectangle:
+  inter_rows rows1 bools = rows2 ∧
+  rectangle w h rows1 ∧
+  rectangle w h bools ⇒
+  rectangle w h rows2
+Proof
+  rw [] \\ gvs [inter_rows_def,rectangle_def]
+  \\ gvs [EVERY_MEM,MAP2_MAP,MEM_MAP,PULL_EXISTS,MEM_ZIP]
+  \\ gvs [MEM_EL,PULL_EXISTS]
+QED
+
+Theorem IN_from_row:
+  ∀row i j x y.
+    (x,y) ∈ from_row (i,j) row ⇔
+    y = j ∧ ∃n. oEL n row = SOME T ∧ x = i + &n
+Proof
+  Induct \\ gvs [from_row_def,oEL_def]
+  \\ rw [] \\ gvs [from_row_def,oEL_def]
+  \\ Cases_on ‘h’ \\ gvs [from_row_def,oEL_def]
+  \\ Cases_on ‘y = j’ \\ gvs []
+  \\ eq_tac \\ rw []
+  >- (qexists_tac ‘0’ \\ gvs [])
+  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ gvs [AllCaseEqs()]
+  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
+QED
+
+Theorem IN_from_rows:
+  ∀rows i j x y.
+    (x,y) ∈ from_rows (i,j) rows ⇔
+      ∃dx dy row.
+        x = i + & dx ∧ y = j + & dy ∧
+        oEL dy rows = SOME row ∧
+        oEL dx row = SOME T
+Proof
+  Induct \\ gvs [from_rows_def] \\ gvs [oEL_def,IN_from_row]
+  \\ rpt gen_tac \\ eq_tac \\ strip_tac
+  >- (pop_assum $ irule_at Any \\ qrefinel [‘_’,‘0’] \\ gvs [])
+  >- (qrefinel [‘dx’,‘1+dy’] \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ Cases_on ‘dy’ \\ gvs []
+  \\ rpt $ pop_assum $ irule_at Any
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem oEL_MAP_SOME:
+  ∀xs f n y.
+    oEL n (MAP f xs) = SOME y ⇔
+    ∃x. oEL n xs = SOME x ∧ y = f x
+Proof
+  gvs [oEL_THM,EL_MAP,SF CONJ_ss] \\ metis_tac []
+QED
+
+Theorem oEL_MAP2_SOME:
+  ∀xs ys f n z.
+    oEL n (MAP2 f xs ys) = SOME z ⇔
+    ∃x y. oEL n xs = SOME x ∧ oEL n ys = SOME y ∧ z = f x y
+Proof
+  Induct \\ gvs [oEL_def] \\ Cases_on ‘ys’ \\ gvs [oEL_def]
+  \\ rw [] \\ eq_tac \\ gvs []
+QED
+
+Theorem inter_rows_lemma:
+  rectangle w h rows1 ∧ rectangle w h bools ⇒
+  from_rows (x,y) (MAP (MAP (eval env)) (inter_rows rows1 bools)) =
+  from_rows (x,y) (MAP (MAP (eval env)) rows1) ∩
+  from_rows (x,y) bools
+Proof
+  strip_tac
+  \\ gvs [EXTENSION,FORALL_PROD,IN_from_rows,rectangle_def]
+  \\ rw [inter_rows_def,oEL_MAP_SOME,PULL_EXISTS,oEL_MAP2_SOME]
+  \\ eq_tac \\ strip_tac \\ gvs []
+  \\ Cases_on ‘b’ \\ gvs []
 QED
 
 Theorem inter_rows_thm:
-  bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) ⇒
+  bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) ∧
+  rectangle w h rows1 ∧
+  simple_checks w h ins1 outs1 (rows : bexp list list) ∧
+  set outs ⊆ set (ins1 ++ outs1) ⇒
   from_rows (-85,-85) (MAP (MAP (eval env))
                            (inter_rows rows1 (or_io_areas outs bools))) =
   from_rows (-85,-85) (MAP (MAP (eval env)) rows1) ∩
   circ_io_area (set (eval_io env outs))
 Proof
-  cheat
+  strip_tac
+  \\ DEP_REWRITE_TAC [inter_rows_lemma] \\ gvs []
+  \\ irule_at Any (or_io_areas_rectangle |> GEN_ALL |> SRULE [])
+  \\ conj_tac >- gvs [rectangle_def]
+  \\ AP_TERM_TAC
+  \\ irule or_io_areas_eq
+  \\ rpt $ first_x_assum $ irule_at Any
+QED
+
+Theorem diff_rows_rectangle:
+  diff_rows rows1 bools = rows2 ∧
+  rectangle w h rows1 ∧
+  rectangle w h bools ⇒
+  rectangle w h rows2
+Proof
+  rw [] \\ gvs [diff_rows_def,rectangle_def]
+  \\ gvs [EVERY_MEM,MAP2_MAP,MEM_MAP,PULL_EXISTS,MEM_ZIP]
+  \\ gvs [MEM_EL,PULL_EXISTS]
+QED
+
+Theorem diff_rows_lemma:
+  rectangle w h rows1 ∧ rectangle w h bools ⇒
+  from_rows (x,y) (MAP (MAP (eval env)) (diff_rows rows1 bools)) =
+  from_rows (x,y) (MAP (MAP (eval env)) rows1) DIFF
+  from_rows (x,y) bools
+Proof
+  strip_tac
+  \\ gvs [EXTENSION,FORALL_PROD,IN_from_rows,rectangle_def]
+  \\ rw [diff_rows_def,oEL_MAP_SOME,PULL_EXISTS,oEL_MAP2_SOME]
+  \\ eq_tac \\ strip_tac \\ gvs []
+  >- (Cases_on ‘b’ \\ gvs [])
+  \\ Cases_on ‘LLOOKUP bools dy’ \\ gvs []
+  \\ gvs [oEL_THM,EVERY_MEM,MEM_EL,PULL_EXISTS]
+QED
+
+Theorem diff_rows_thm:
+  bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) ∧
+  rectangle w h rows1 ∧
+  simple_checks w h ins1 outs1 (rows : bexp list list) ∧
+  set outs ⊆ set (ins1 ++ outs1) ⇒
+  from_rows (-85,-85) (MAP (MAP (eval env))
+                           (diff_rows rows1 (or_io_areas outs bools))) =
+  from_rows (-85,-85) (MAP (MAP (eval env)) rows1) DIFF
+  circ_io_area (set (eval_io env outs))
+Proof
+  strip_tac
+  \\ DEP_REWRITE_TAC [diff_rows_lemma] \\ gvs []
+  \\ irule_at Any (or_io_areas_rectangle |> GEN_ALL |> SRULE [])
+  \\ conj_tac >- gvs [rectangle_def]
+  \\ AP_TERM_TAC
+  \\ irule or_io_areas_eq
+  \\ rpt $ first_x_assum $ irule_at Any
 QED
 
 Theorem simulation_ok_thm:
@@ -1270,6 +1630,8 @@ Theorem simulation_ok_thm:
 Proof
   rw [] \\ gvs [simulation_ok_def] \\ gvs [opt_bool]
   \\ pairarg_tac \\ gvs []
+  \\ ‘rectangle w h rows’ by gvs [simple_checks_def]
+  \\ ‘rectangle w h rows1’ by imp_res_tac gol_checked_steps_rectangle
   \\ irule run_to_60_lemma \\ gvs [GSYM make_area_def]
   \\ qexists_tac ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows1)’
   \\ qexists_tac ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows2)’
@@ -1282,8 +1644,20 @@ Proof
   \\ qabbrev_tac ‘rows2a = diff_rows rows2 outs_ew’
   \\ irule_at Any gol_checked_steps_2
   \\ first_assum $ irule_at $ Pos hd \\ gvs []
+  \\ ‘rectangle w h bools ∧ rectangle w h falses’ by
+        gvs [Abbr‘bools’,Abbr‘falses’,rectangle_def]
+  \\ ‘rectangle w h outs_ns ∧ rectangle w h rows1a’ by
+        metis_tac [or_io_areas_rectangle,diff_rows_rectangle]
+  \\ ‘rectangle w h rowsA’ by metis_tac [or_lwss_rectangle]
+  \\ ‘rectangle w h rows2’ by metis_tac [gol_checked_steps_rectangle]
+  \\ ‘rectangle w h outs_ew ∧ rectangle w h rows2a’ by
+        metis_tac [or_io_areas_rectangle,diff_rows_rectangle]
   \\ gvs [circ_io_lwss_def,set_INTER,FILTER_eval_io,lwss_29_59]
   \\ rpt $ dxrule or_lwss_imp
+  \\ rpt $ disch_then $ drule_then assume_tac
+  \\ rpt $ pop_assum drule
+  \\ rpt (disch_then $ qspec_then ‘env’ mp_tac \\ impl_tac >-
+           gvs [SUBSET_DEF,MEM_FILTER] \\ strip_tac)
   \\ ‘∀env. from_rows (-85,-85) (MAP (MAP (eval env)) falses) = {}’ by
     (gvs [Abbr‘falses’] \\ irule from_rows_EMPTY \\ gvs [Abbr‘bools’])
   \\ gvs [] \\ rpt disch_tac
@@ -1291,19 +1665,23 @@ Proof
   \\ ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows1a) =
       from_rows (-85,-85) (MAP (MAP (eval env)) rows1) DIFF
          circ_io_area (set (eval_io env (FILTER is_ns outs)))’ by
-    (unabbrev_all_tac \\ irule diff_rows_thm \\ gvs [] \\ metis_tac [])
+    (unabbrev_all_tac \\ irule diff_rows_thm \\ gvs []
+     \\ last_x_assum $ irule_at $ Pos last \\ gvs [SUBSET_DEF,MEM_FILTER])
   \\ ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows2a) =
       from_rows (-85,-85) (MAP (MAP (eval env)) rows2) DIFF
          circ_io_area (set (eval_io env (FILTER is_ew outs)))’ by
-    (unabbrev_all_tac \\ irule diff_rows_thm \\ gvs [] \\ metis_tac [])
+    (unabbrev_all_tac \\ irule diff_rows_thm \\ gvs []
+     \\ last_x_assum $ irule_at $ Pos last \\ gvs [SUBSET_DEF,MEM_FILTER])
   \\ ‘from_rows (-85,-85) (MAP (MAP (eval env)) (inter_rows rows1 outs_ns)) =
       from_rows (-85,-85) (MAP (MAP (eval env)) rows1) ∩
       circ_io_area (set (eval_io env (FILTER is_ns outs)))’ by
-    (unabbrev_all_tac \\ irule inter_rows_thm \\ gvs [] \\ metis_tac [])
+    (unabbrev_all_tac \\ irule inter_rows_thm \\ gvs []
+     \\ last_x_assum $ irule_at $ Pos last \\ gvs [SUBSET_DEF,MEM_FILTER])
   \\ ‘from_rows (-85,-85) (MAP (MAP (eval env)) (inter_rows rows2 outs_ew)) =
       from_rows (-85,-85) (MAP (MAP (eval env)) rows2) ∩
       circ_io_area (set (eval_io env (FILTER is_ew outs)))’ by
-    (unabbrev_all_tac \\ irule inter_rows_thm \\ gvs [] \\ metis_tac [])
+    (unabbrev_all_tac \\ irule inter_rows_thm \\ gvs []
+     \\ last_x_assum $ irule_at $ Pos last \\ gvs [SUBSET_DEF,MEM_FILTER])
   \\ gvs [AC UNION_COMM UNION_ASSOC]
 QED
 
