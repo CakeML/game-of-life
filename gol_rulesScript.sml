@@ -1021,8 +1021,24 @@ Definition make_base_area_def:
       add_margin F 10 trues : bool list list
 End
 
+Definition shrink_row_def:
+  shrink_row (x1::x2::x3::xs)
+             (y1::y2::y3::ys)
+             (z1::z2::z3::zs) =
+    ((x1 ∧ x2 ∧ x3 ∧ y1 ∧ y2 ∧ y3 ∧ z1 ∧ z2 ∧ z3) :: shrink_row (x2::x3::xs)
+                                                                (y2::y3::ys)
+                                                                (z2::z3::zs)) ∧
+  shrink_row _ _ _ = []
+End
+
+Definition shrink_all_def:
+  shrink_all (r1::r2::r3::rest) =
+    shrink_row r1 r2 r3 :: shrink_all (r2::r3::rest) ∧
+  shrink_all _ = []
+End
+
 Definition shrink_def:
-  shrink xs = xs
+  shrink xs = add_margin F 1 (shrink_all xs)
 End
 
 Definition or_box_row_def:
@@ -1105,8 +1121,8 @@ Definition masks_def:
     let ins_ew = or_io_areas (FILTER is_ew ins) bools in
     let outs_ns = or_io_areas (FILTER is_ns outs) bools in
     let outs_ew = or_io_areas (FILTER is_ew outs) bools in
-      (shrink (or outs_ns (or ins_ew (diff (diff base_area_bools ins_ns) outs_ew))),
-       shrink (or outs_ew (or ins_ns (diff (diff base_area_bools ins_ew) outs_ns))))
+      (or outs_ns (or ins_ew (diff (diff base_area_bools ins_ns) outs_ew)),
+       or outs_ew (or ins_ns (diff (diff base_area_bools ins_ew) outs_ns)))
 End
 
 Definition simple_checks_def:
@@ -1141,14 +1157,14 @@ Definition simulation_ok_def:
     let outs1 = FILTER is_ns outs in
     let outs2 = FILTER is_ew outs in
     let empty = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) False) in
-      case gol_checked_steps 30 rows m1 of
+      case gol_checked_steps 30 rows (shrink m1) of
       | NONE => F
       | SOME rows1 =>
         if or_lwss empty outs1 ≠ SOME (inter_rows rows1 del1) then F else
           case or_lwss (diff_rows rows1 del1) ins1 of
           | NONE => F
           | SOME rowsA =>
-            case gol_checked_steps 30 rowsA m2 of
+            case gol_checked_steps 30 rowsA (shrink m2) of
             | NONE => F
             | SOME rows2 =>
                 if or_lwss empty outs2 ≠ SOME (inter_rows rows2 del2) then F else
@@ -1283,6 +1299,15 @@ Proof
   \\ Cases_on ‘rows’ \\ gvs []
 QED
 
+Theorem gol_step_rows_rectangle:
+  rectangle w h rows ⇒
+  rectangle w h (gol_step_rows rows)
+Proof
+  rw [rectangle_def]
+  \\ qspec_then ‘rows’ drule gol_step_rows_length
+  \\ gvs [LIST_REL_EL_EQN,MEM_EL,PULL_EXISTS,EVERY_MEM]
+QED
+
 Theorem gol_checked_steps_rectangle:
   ∀n rows m1 rows1.
     gol_checked_steps n rows m1 = SOME rows1 ∧
@@ -1291,13 +1316,341 @@ Theorem gol_checked_steps_rectangle:
 Proof
   Induct \\ gvs [gol_checked_steps_def] \\ rw []
   \\ last_x_assum $ drule_then irule
-  \\ gvs [rectangle_def]
-  \\ qspec_then ‘rows’ drule gol_step_rows_length
-  \\ gvs [LIST_REL_EL_EQN,MEM_EL,PULL_EXISTS,EVERY_MEM]
+  \\ irule gol_step_rows_rectangle \\ gvs []
+QED
+
+Theorem gol_step_rows:
+  EVERY (λr. HD r = False ∧ LAST r = False) rows ∧
+  (rows ≠ [] ⇒ EVERY (λx. x = False) (HD rows)) ∧
+  (rows ≠ [] ⇒ EVERY (λx. x = False) (LAST rows)) ⇒
+  from_rows (-85,-85) (MAP (MAP (eval env)) (gol_step_rows rows)) =
+  step (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+Proof
+  cheat
+QED
+
+Theorem IN_from_row:
+  ∀row i j x y.
+    (x,y) ∈ from_row (i,j) row ⇔
+    y = j ∧ ∃n. oEL n row = SOME T ∧ x = i + &n
+Proof
+  Induct \\ gvs [from_row_def,oEL_def]
+  \\ rw [] \\ gvs [from_row_def,oEL_def]
+  \\ Cases_on ‘h’ \\ gvs [from_row_def,oEL_def]
+  \\ Cases_on ‘y = j’ \\ gvs []
+  \\ eq_tac \\ rw []
+  >- (qexists_tac ‘0’ \\ gvs [])
+  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ gvs [AllCaseEqs()]
+  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
+QED
+
+Theorem IN_from_rows:
+  ∀rows i j x y.
+    (x,y) ∈ from_rows (i,j) rows ⇔
+      ∃dx dy row.
+        x = i + & dx ∧ y = j + & dy ∧
+        oEL dy rows = SOME row ∧
+        oEL dx row = SOME T
+Proof
+  Induct \\ gvs [from_rows_def] \\ gvs [oEL_def,IN_from_row]
+  \\ rpt gen_tac \\ eq_tac \\ strip_tac
+  >- (pop_assum $ irule_at Any \\ qrefinel [‘_’,‘0’] \\ gvs [])
+  >- (qrefinel [‘dx’,‘1+dy’] \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ Cases_on ‘dy’ \\ gvs []
+  \\ rpt $ pop_assum $ irule_at Any
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem check_mask_thm:
+  check_mask rows m ⇒
+  from_rows (-85,-85) (MAP (MAP (eval env)) rows) ⊆
+  from_rows (-85,-85) m
+Proof
+  gvs [check_mask_def,LIST_REL_EL_EQN,SUBSET_DEF,FORALL_PROD]
+  \\ rw [IN_from_rows] \\ gvs [oEL_THM,EL_MAP]
+  \\ first_x_assum drule \\ strip_tac
+  \\ pop_assum $ qspec_then ‘dx’ mp_tac \\ gvs []
+  \\ strip_tac \\ gvs []
+QED
+
+Theorem check_mask_F:
+  check_mask rows m ⇒
+  ∀x y row.
+    oEL y m = SOME row ∧ oEL x row = SOME F ⇒
+    ∃r. oEL y rows = SOME r ∧ oEL x r = SOME False
+Proof
+  gvs [check_mask_def,LIST_REL_EL_EQN,oEL_THM] \\ metis_tac []
+QED
+
+Theorem HD_EL:
+  HD xs = EL 0 xs
+Proof
+  Cases_on ‘xs’ \\ gvs []
+QED
+
+Theorem from_row_append:
+  ∀xs ys x y.
+    from_row (x,y) (xs ++ ys) =
+    from_row (x,y) xs ∪ from_row (x + & LENGTH xs,y) ys
+Proof
+  Induct \\ gvs [from_row_def]
+  \\ Cases \\ gvs [from_row_def,ADD1]
+  \\ rpt gen_tac
+  \\ gvs [UNION_ASSOC]
+  \\ rpt AP_TERM_TAC
+  \\ rpt AP_THM_TAC
+  \\ rpt AP_TERM_TAC
+  \\ gvs [] \\ intLib.COOPER_TAC
+QED
+
+Theorem from_rows_append:
+  ∀xs ys x y.
+    from_rows (x,y) (xs ++ ys) =
+    from_rows (x,y) xs ∪ from_rows (x,y + & LENGTH xs) ys
+Proof
+  Induct \\ gvs [from_rows_def]
+  \\ rpt gen_tac
+  \\ gvs [UNION_ASSOC]
+  \\ rpt AP_TERM_TAC
+  \\ rpt AP_THM_TAC
+  \\ rpt AP_TERM_TAC
+  \\ gvs [] \\ intLib.COOPER_TAC
+QED
+
+Triviality from_row_rep_F:
+  ∀x y. from_row (x,y) (REPLICATE l F) = {}
+Proof
+  Induct_on ‘l’ \\ gvs [from_row_def]
+QED
+
+Triviality from_rows_rep_rep_F:
+  from_rows (x,y) (REPLICATE k (REPLICATE l F)) = {}
+Proof
+  irule from_rows_EMPTY \\ gvs []
+QED
+
+Theorem from_rows_add_margin:
+  from_rows (x,y) (add_margin F k m) =
+  from_rows (x + &k,y + &k) m
+Proof
+  gvs [add_margin_def,from_rows_append]
+  \\ gvs [from_rows_rep_rep_F]
+  \\ qid_spec_tac ‘y’
+  \\ qid_spec_tac ‘x’
+  \\ Induct_on ‘m’ \\ gvs [from_rows_def]
+  \\ gvs [from_row_append,from_row_rep_F]
+  \\ rpt gen_tac \\ AP_TERM_TAC
+  \\ first_x_assum $ qspecl_then [‘x’,‘y+1’] mp_tac
+  \\ gvs [AC integerTheory.INT_ADD_COMM integerTheory.INT_ADD_ASSOC]
+QED
+
+Theorem IN_COMPL_infl_COMPL:
+  (x,y) ∈ COMPL (infl (COMPL s)) ⇔
+  { (x-1,y-1); (x,y-1); (x+1,y-1);
+    (x-1,y  ); (x,y  ); (x+1,y  );
+    (x-1,y+1); (x,y+1); (x+1,y+1) } ⊆ s
+Proof
+  gvs [] \\ simp [IN_DEF,infl_def]
+  \\ gvs [live_adj_def,IN_DEF]
+  \\ eq_tac \\ rw []
+QED
+
+Triviality from_row_cons_imp:
+  (p,q) ∈ from_row (x,y) (t::ts) ⇒
+  (p,q) = (x,y) ∧ t ∨ (p,q) ∈ from_row (x+1,y) ts
+Proof
+  Cases_on ‘t’ \\ gvs [from_row_def]
+QED
+
+Theorem from_row_cons_eq:
+  (a,b) ∈ from_row (x,y) (r::rs) ⇔
+  (r ∧ a = x ∧ b = y) ∨ (a,b) ∈ from_row (x+1,y) rs
+Proof
+  Cases_on ‘r’ \\ gvs [from_row_def]
+QED
+
+Theorem from_row_shrink_row:
+  ∀r1 r2 r3 a b x y.
+    (a,b) ∈ from_row (x,y) (shrink_row r1 r2 r3) ⇒
+    (a-1,b-1) ∈ from_row (x-1,y-1) r1 ∧
+    (a,b-1)   ∈ from_row (x-1,y-1) r1 ∧
+    (a+1,b-1) ∈ from_row (x-1,y-1) r1 ∧
+    (a-1,b)   ∈ from_row (x-1,y) r2 ∧
+    (a,b)     ∈ from_row (x-1,y) r2 ∧
+    (a+1,b)   ∈ from_row (x-1,y) r2 ∧
+    (a-1,b+1) ∈ from_row (x-1,y+1) r3 ∧
+    (a,b+1)   ∈ from_row (x-1,y+1) r3 ∧
+    (a+1,b+1) ∈ from_row (x-1,y+1) r3
+Proof
+  ho_match_mp_tac shrink_row_ind
+  \\ gvs [shrink_row_def,from_row_def]
+  \\ rpt gen_tac \\ disch_tac
+  \\ rpt gen_tac \\ disch_tac
+  \\ dxrule from_row_cons_imp
+  \\ strip_tac \\ gvs []
+  >- gvs [from_row_def]
+  \\ once_rewrite_tac [from_row_cons_eq]
+  \\ metis_tac [intLib.COOPER_PROVE “m + n - n:int = m”,
+                intLib.COOPER_PROVE “m - n + n:int = m”]
+QED
+
+Theorem from_rows_shrink:
+  from_rows (x,y) (shrink m) ⊆
+  COMPL (infl (COMPL (from_rows (x,y) m)))
+Proof
+  gvs [shrink_def,from_rows_add_margin]
+  \\ qsuff_tac
+     ‘∀m x y.
+        from_rows (x,y) (shrink_all m) ⊆
+        COMPL (infl (COMPL (from_rows (x-1,y-1) m)))’
+  >- metis_tac [intLib.COOPER_PROVE “x+1-1:int = x”]
+  \\ rewrite_tac [SUBSET_DEF]
+  \\ once_rewrite_tac [GSYM PAIR]
+  \\ rewrite_tac [IN_COMPL_infl_COMPL]
+  \\ gvs [FORALL_PROD]
+  \\ ho_match_mp_tac shrink_all_ind
+  \\ gvs [shrink_all_def,from_rows_def]
+  \\ rpt gen_tac \\ disch_tac
+  \\ rpt gen_tac \\ reverse strip_tac
+  >- metis_tac [intLib.COOPER_PROVE “m + n - n:int = m”,
+                intLib.COOPER_PROVE “m - n + n:int = m”]
+  \\ dxrule from_row_shrink_row \\ gvs []
+QED
+
+Theorem length_shrink_row:
+  ∀xs ys zs.
+    LENGTH xs = LENGTH ys ∧
+    LENGTH zs = LENGTH ys ⇒
+    LENGTH (shrink_row xs ys zs) = LENGTH ys - 2
+Proof
+  ho_match_mp_tac shrink_row_ind \\ gvs [shrink_row_def]
+QED
+
+Theorem length_shrink_all:
+  ∀m. LENGTH (shrink_all m) = LENGTH m - 2
+Proof
+  ho_match_mp_tac shrink_all_ind \\ gvs [shrink_all_def]
+QED
+
+Theorem shrink_rectangle:
+  rectangle w h m ⇒ rectangle w h (shrink m)
+Proof
+  rw [rectangle_def,EVERY_MEM,shrink_def,add_margin_def]
+  \\ gvs [length_shrink_all,MEM_MAP]
+  >-
+   (CASE_TAC \\ gvs []
+    \\ Cases_on ‘m’ \\ gvs []
+    \\ rename [‘shrink_all (x::xs)’] \\ Cases_on ‘xs’ \\ gvs []
+    \\ rename [‘shrink_all (x::y::xs)’] \\ Cases_on ‘xs’ \\ gvs []
+    \\ gvs [shrink_all_def] \\ gvs [SF DNF_ss]
+    \\ DEP_REWRITE_TAC [length_shrink_row] \\ gvs [])
+  >-
+   (last_x_assum kall_tac
+    \\ gvs [GSYM EVERY_MEM]
+    \\ rpt $ pop_assum mp_tac
+    \\ qid_spec_tac ‘m’
+    \\ ho_match_mp_tac shrink_all_ind \\ gvs [shrink_all_def]
+    \\ rw [] \\ gvs [SF SFY_ss]
+    \\ DEP_REWRITE_TAC [length_shrink_row] \\ gvs [])
+  >-
+   (CASE_TAC \\ gvs []
+    \\ Cases_on ‘m’ \\ gvs []
+    \\ rename [‘shrink_all (x::xs)’] \\ Cases_on ‘xs’ \\ gvs []
+    \\ rename [‘shrink_all (x::y::xs)’] \\ Cases_on ‘xs’ \\ gvs []
+    \\ gvs [shrink_all_def] \\ gvs [SF DNF_ss]
+    \\ DEP_REWRITE_TAC [length_shrink_row] \\ gvs [])
+QED
+
+Theorem gol_checked_steps_gen:
+  ∀rows rows1 area.
+    gol_checked_steps 30 rows (shrink m) = SOME rows1 ∧
+    rectangle w h rows ∧
+    rectangle w h m ∧
+    area = from_rows (-85,-85) m ⇒
+    steps (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+          area
+          (from_rows (-85,-85) (MAP (MAP (eval env)) rows1))
+Proof
+  simp [steps_def]
+  \\ qspec_tac (‘30:num’,‘k’)
+  \\ Induct
+  \\ gvs [gol_checked_steps_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ last_x_assum drule
+  \\ impl_tac >- gvs [gol_step_rows_rectangle]
+  \\ strip_tac \\ gvs []
+  \\ qabbrev_tac ‘m1 = shrink m’
+  \\ ‘rectangle w h m1’ by
+    (simp [Abbr‘m1’] \\ irule shrink_rectangle \\ gvs [])
+  \\ ‘m1 ≠ [] ∧ EVERY (λx. x ≠ []) m1’ by
+   (gvs [rectangle_def,EVERY_MEM] \\ CCONTR_TAC \\ gvs []
+    \\  res_tac \\ gvs [])
+  \\ ‘EVERY (λx. x = F) (HD m1) ∧
+      EVERY (λx. x = F) (LAST m1) ∧
+      EVERY (λr. HD r = F ∧ LAST r = F) m1’ by
+   (gvs [shrink_def,Abbr‘m1’]
+    \\ gvs [add_margin_def]
+    \\ Cases_on ‘shrink_all m’
+    >- gvs [rectangle_def]
+    \\ gvs [EVAL “REPLICATE 1 x”]
+    \\ gvs [EVERY_MEM,MEM_MAP,PULL_EXISTS]
+    \\ gvs [GSYM SNOC_APPEND]
+    \\ rewrite_tac [GSYM SNOC,LAST_SNOC]
+    \\ rewrite_tac [DECIDE “m + 2 = 1 + m + 1:num”]
+    \\ rewrite_tac [GSYM rich_listTheory.REPLICATE_APPEND]
+    \\ rewrite_tac [EVAL “REPLICATE 1 x”] \\ gvs []
+    \\ gvs [GSYM SNOC_APPEND]
+    \\ rewrite_tac [GSYM SNOC,LAST_SNOC]
+    \\ qspec_tac (‘LENGTH h'’,‘k’)
+    \\ Induct \\ gvs [])
+  \\ ‘EVERY (λx. x = False) (HD rows) ∧
+      EVERY (λx. x = False) (LAST rows) ∧
+      EVERY (λr. HD r = False ∧ LAST r = False) rows’ by
+   (rpt conj_tac
+    >- (Cases_on ‘rows’ >- gvs [rectangle_def]
+        \\ gvs [check_mask_def,EVERY_EL,LIST_REL_EL_EQN])
+    >- (Cases_on ‘rows’ using SNOC_CASES >- gvs [rectangle_def]
+        \\ gvs [LAST_SNOC,check_mask_def,listTheory.LIST_REL_SNOC]
+        \\ gvs [check_mask_def,EVERY_EL,LIST_REL_EL_EQN])
+    \\ gvs [EVERY_EL,LIST_REL_EL_EQN,check_mask_def]
+    \\ gen_tac \\ strip_tac
+    \\ last_x_assum drule \\ strip_tac
+    \\ last_x_assum drule \\ strip_tac
+    \\ ‘EL n rows ≠ []’ by
+      (gvs [rectangle_def,EVERY_EL]
+       \\ rewrite_tac [GSYM LENGTH_NIL]
+       \\ res_tac \\ decide_tac)
+    \\ first_assum $ qspec_then ‘0’ mp_tac
+    \\ impl_tac
+    >-
+     (pop_assum mp_tac
+      \\ rewrite_tac [GSYM LENGTH_NIL]
+      \\ decide_tac)
+    \\ gvs [] \\ rw []
+    \\ first_x_assum $ qspec_then ‘PRE (LENGTH (EL n m1))’ mp_tac
+    \\ ‘EL n m1 ≠ []’ by metis_tac [LENGTH_NIL]
+    \\ gvs [LAST_EL]
+    \\ impl_keep_tac
+    >- (irule (DECIDE “m ≠ 0 ⇒ PRE m < m”) \\ gvs [])
+    \\ strip_tac \\ gvs []
+    \\ qsuff_tac ‘F’ \\ gvs []
+    \\ pop_assum mp_tac \\ gvs []
+    \\ first_x_assum drule
+    \\ gvs [LAST_EL])
+  \\ gvs [FUNPOW,gol_step_rows] \\ rw []
+  \\ Cases_on ‘n’ \\ gvs [GSYM FUNPOW]
+  \\ irule IMP_infl_subset
+  \\ irule SUBSET_TRANS
+  \\ irule_at Any check_mask_thm
+  \\ last_x_assum $ irule_at Any
+  \\ gvs [from_rows_shrink,Abbr‘m1’]
 QED
 
 Theorem gol_checked_steps_1:
-  gol_checked_steps 30 rows m1 = SOME rows1 ∧
+  gol_checked_steps 30 rows (shrink m1) = SOME rows1 ∧
   masks w h ins outs = (m1,m2) ∧
   rectangle w h rows ⇒
   steps (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
@@ -1305,11 +1658,14 @@ Theorem gol_checked_steps_1:
                    (set (eval_io env outs)) 0)
         (from_rows (-85,-85) (MAP (MAP (eval env)) rows1))
 Proof
-  cheat
+  rw [] \\ irule gol_checked_steps_gen
+  \\ last_x_assum $ irule_at Any
+  \\ first_assum $ irule_at Any
+  \\ cheat
 QED
 
 Theorem gol_checked_steps_2:
-  gol_checked_steps 30 rows m2 = SOME rows1 ∧
+  gol_checked_steps 30 rows (shrink m2) = SOME rows1 ∧
   masks w h ins outs = (m1,m2) ∧
   rectangle w h rows ⇒
   from_rows (-85,-85) (MAP (MAP (eval env)) rows) = x ∧
@@ -1317,7 +1673,10 @@ Theorem gol_checked_steps_2:
   steps x (circ_area (set (make_area w h)) (set (eval_io env ins))
                      (set (eval_io env outs)) 30) y
 Proof
-  cheat
+  rw [] \\ irule gol_checked_steps_gen
+  \\ last_x_assum $ irule_at Any
+  \\ first_assum $ irule_at Any
+  \\ cheat
 QED
 
 Theorem or_at_length:
@@ -1605,41 +1964,6 @@ Proof
   rw [] \\ gvs [inter_rows_def,rectangle_def]
   \\ gvs [EVERY_MEM,MAP2_MAP,MEM_MAP,PULL_EXISTS,MEM_ZIP]
   \\ gvs [MEM_EL,PULL_EXISTS]
-QED
-
-Theorem IN_from_row:
-  ∀row i j x y.
-    (x,y) ∈ from_row (i,j) row ⇔
-    y = j ∧ ∃n. oEL n row = SOME T ∧ x = i + &n
-Proof
-  Induct \\ gvs [from_row_def,oEL_def]
-  \\ rw [] \\ gvs [from_row_def,oEL_def]
-  \\ Cases_on ‘h’ \\ gvs [from_row_def,oEL_def]
-  \\ Cases_on ‘y = j’ \\ gvs []
-  \\ eq_tac \\ rw []
-  >- (qexists_tac ‘0’ \\ gvs [])
-  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
-  \\ gvs [AllCaseEqs()]
-  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
-  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
-  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
-QED
-
-Theorem IN_from_rows:
-  ∀rows i j x y.
-    (x,y) ∈ from_rows (i,j) rows ⇔
-      ∃dx dy row.
-        x = i + & dx ∧ y = j + & dy ∧
-        oEL dy rows = SOME row ∧
-        oEL dx row = SOME T
-Proof
-  Induct \\ gvs [from_rows_def] \\ gvs [oEL_def,IN_from_row]
-  \\ rpt gen_tac \\ eq_tac \\ strip_tac
-  >- (pop_assum $ irule_at Any \\ qrefinel [‘_’,‘0’] \\ gvs [])
-  >- (qrefinel [‘dx’,‘1+dy’] \\ gvs [] \\ intLib.COOPER_TAC)
-  \\ Cases_on ‘dy’ \\ gvs []
-  \\ rpt $ pop_assum $ irule_at Any
-  \\ intLib.COOPER_TAC
 QED
 
 Theorem oEL_MAP_SOME:
