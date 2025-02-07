@@ -1117,17 +1117,15 @@ Definition masks_def:
   masks w h ins outs =
     let base_area_bools = make_base_area w h in
     let bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) in
-    let ins_ns = or_io_areas (FILTER is_ns ins) bools in
-    let ins_ew = or_io_areas (FILTER is_ew ins) bools in
-    let outs_ns = or_io_areas (FILTER is_ns outs) bools in
-    let outs_ew = or_io_areas (FILTER is_ew outs) bools in
-      (or outs_ns (or ins_ew (diff (diff base_area_bools ins_ns) outs_ew)),
-       or outs_ew (or ins_ns (diff (diff base_area_bools ins_ew) outs_ns)))
+    let sets1 = or_io_areas (FILTER is_ns ins ++ FILTER is_ew outs) bools in
+    let sets2 = or_io_areas (FILTER is_ew ins ++ FILTER is_ns outs) bools in
+      (or sets2 (diff base_area_bools sets1),
+       or sets1 (diff base_area_bools sets2))
 End
 
 Definition simple_checks_def:
   simple_checks w h ins outs rows ⇔
-    rectangle w h rows ∧
+    rectangle w h rows ∧ h ≠ 0 ∧ w ≠ 0 ∧
     ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
     EVERY (λ((x,y),r).
              (x % 2 = 0 ⇎ y % 2 = 0) ∧
@@ -1649,36 +1647,6 @@ Proof
   \\ gvs [from_rows_shrink,Abbr‘m1’]
 QED
 
-Theorem gol_checked_steps_1:
-  gol_checked_steps 30 rows (shrink m1) = SOME rows1 ∧
-  masks w h ins outs = (m1,m2) ∧
-  rectangle w h rows ⇒
-  steps (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
-        (circ_area (set (make_area w h)) (set (eval_io env ins))
-                   (set (eval_io env outs)) 0)
-        (from_rows (-85,-85) (MAP (MAP (eval env)) rows1))
-Proof
-  rw [] \\ irule gol_checked_steps_gen
-  \\ last_x_assum $ irule_at Any
-  \\ first_assum $ irule_at Any
-  \\ cheat
-QED
-
-Theorem gol_checked_steps_2:
-  gol_checked_steps 30 rows (shrink m2) = SOME rows1 ∧
-  masks w h ins outs = (m1,m2) ∧
-  rectangle w h rows ⇒
-  from_rows (-85,-85) (MAP (MAP (eval env)) rows) = x ∧
-  from_rows (-85,-85) (MAP (MAP (eval env)) rows1) = y ⇒
-  steps x (circ_area (set (make_area w h)) (set (eval_io env ins))
-                     (set (eval_io env outs)) 30) y
-Proof
-  rw [] \\ irule gol_checked_steps_gen
-  \\ last_x_assum $ irule_at Any
-  \\ first_assum $ irule_at Any
-  \\ cheat
-QED
-
 Theorem or_at_length:
   ∀x y xs ys. LIST_REL (λa b. LENGTH a = LENGTH b) (or_at x y xs ys) ys
 Proof
@@ -2060,6 +2028,146 @@ Proof
   \\ rpt $ first_x_assum $ irule_at Any
 QED
 
+Theorem diff_rectangle:
+  rectangle w h xs ∧ rectangle w h ys ⇒ rectangle w h (diff xs ys)
+Proof
+  gvs [rectangle_def,diff_def,MAP2_MAP,EVERY_MAP]
+  \\ gvs [EVERY_MEM,MEM_ZIP,PULL_EXISTS]
+  \\ gvs [MEM_EL,PULL_EXISTS]
+QED
+
+Theorem or_rectangle:
+  rectangle w h xs ∧ rectangle w h ys ⇒ rectangle w h (or xs ys)
+Proof
+  gvs [rectangle_def,or_def,MAP2_MAP,EVERY_MAP]
+  \\ gvs [EVERY_MEM,MEM_ZIP,PULL_EXISTS]
+  \\ gvs [MEM_EL,PULL_EXISTS]
+QED
+
+Theorem from_rows_or:
+  ∀xs ys x y.
+    LIST_REL (λx y. LENGTH x = LENGTH y) xs ys ⇒
+    from_rows (x,y) (or xs ys) =
+    from_rows (x,y) xs ∪ from_rows (x,y) ys
+Proof
+  gvs [EXTENSION,FORALL_PROD,IN_from_rows,or_def,oEL_THM,EL_MAP2,LIST_REL_EL_EQN]
+  \\ rw [] \\ eq_tac \\ rw [] \\ gvs [EL_MAP2]
+QED
+
+Theorem from_rows_diff:
+  ∀xs ys x y.
+    LIST_REL (λx y. LENGTH x = LENGTH y) xs ys ⇒
+    from_rows (x,y) (diff xs ys) =
+    from_rows (x,y) xs DIFF from_rows (x,y) ys
+Proof
+  gvs [EXTENSION,FORALL_PROD,IN_from_rows,diff_def,oEL_THM,EL_MAP2,LIST_REL_EL_EQN]
+  \\ rw [] \\ eq_tac \\ rw [] \\ gvs [EL_MAP2]
+QED
+
+Theorem make_base_area_thm:
+  base_area (set (make_area w h)) =
+  from_rows (-85,-85) (make_base_area w h)
+Proof
+  gvs [make_base_area_def,from_rows_add_margin]
+  \\ gvs [EXTENSION] \\ PairCases
+  \\ gvs [IN_from_rows,oEL_THM,base_area_def,make_area_def]
+  \\ gvs [MEM_FLAT,MEM_GENLIST,PULL_EXISTS]
+  \\ gvs [EL_REPLICATE, SF CONJ_ss,box_def,PULL_EXISTS]
+  \\ rw [] \\ eq_tac \\ rw []
+  >- (* why is the following slow? *)
+   (qexists_tac ‘i + 150 * x'’
+    \\ qexists_tac ‘j + 150 * y'’
+    \\ intLib.COOPER_TAC)
+  \\ rewrite_tac [intLib.COOPER_PROVE
+        “-75 + & n = & (150 * m) - 75 + & i :int ⇔ n = 150 * m + i”]
+  \\ qexists_tac ‘dy DIV 150’
+  \\ qexists_tac ‘dx DIV 150’
+  \\ qexists_tac ‘dx MOD 150’
+  \\ qexists_tac ‘dy MOD 150’
+  \\ gvs [DIV_LT_X]
+  \\ ‘0 < 150:num’ by gvs []
+  \\ drule DIVISION
+  \\ disch_then $ assume_tac o GSYM \\ gvs []
+QED
+
+Theorem masks_thm:
+  simple_checks w h ins outs (rows2 : bexp list list) ∧
+  masks w h ins outs = (m1,m2) ⇒
+  rectangle w h m1 ∧ rectangle w h m2 ∧
+  from_rows (-85,-85) m1 =
+  circ_area (set (make_area w h)) (set (eval_io env ins)) (set (eval_io env outs)) 0 ∧
+  from_rows (-85,-85) m2 =
+  circ_area (set (make_area w h)) (set (eval_io env ins)) (set (eval_io env outs)) 30
+Proof
+  gvs [masks_def]
+  \\ qabbrev_tac ‘bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F)’
+  \\ qabbrev_tac ‘sets1 = or_io_areas (FILTER is_ns ins ++ FILTER is_ew outs) bools’
+  \\ qabbrev_tac ‘sets2 = or_io_areas (FILTER is_ew ins ++ FILTER is_ns outs) bools’
+  \\ qabbrev_tac ‘dsets1 = diff (make_base_area w h) sets1’
+  \\ qabbrev_tac ‘dsets2 = diff (make_base_area w h) sets2’
+  \\ strip_tac \\ gvs []
+  \\ ‘rectangle w h bools’ by gvs [rectangle_def,Abbr‘bools’]
+  \\ ‘rectangle w h sets1 ∧ rectangle w h sets2’ by metis_tac [or_io_areas_rectangle]
+  \\ ‘rectangle w h (make_base_area w h)’ by
+   (gvs [rectangle_def,make_base_area_def,add_margin_def]
+    \\ gvs [] \\ CASE_TAC
+    >- gvs [rich_listTheory.REPLICATE_NIL,simple_checks_def]
+    \\ Cases_on ‘150 * h’ \\ gvs [simple_checks_def])
+  \\ ‘rectangle w h dsets1 ∧ rectangle w h dsets2’
+    by metis_tac [diff_rectangle]
+  \\ conj_tac >- metis_tac [or_rectangle]
+  \\ conj_tac >- metis_tac [or_rectangle]
+  \\ DEP_REWRITE_TAC [from_rows_or]
+  \\ conj_tac >- gvs [rectangle_def,LIST_REL_EL_EQN,EVERY_EL]
+  \\ once_rewrite_tac [UNION_COMM]
+  \\ gvs [Abbr‘dsets1’,Abbr‘dsets2’]
+  \\ DEP_REWRITE_TAC [from_rows_diff]
+  \\ conj_tac >- gvs [rectangle_def,LIST_REL_EL_EQN,EVERY_EL]
+  \\ gvs [circ_area_def,eval_io_def,MEM_MAP,EXISTS_PROD,PULL_EXISTS]
+  \\ gvs [make_base_area_thm]
+  \\ rpt $ irule_at Any
+       (METIS_PROVE [] “y1 = y2 ∧ z1 = z2 ⇒ (x DIFF y1) ∪ z1 = (x DIFF y2) ∪ z2”)
+  \\ drule or_io_areas_eq \\ gvs [Abbr‘sets1’,Abbr‘sets2’]
+  \\ disch_then (fn th => DEP_REWRITE_TAC [th])
+  \\ conj_tac >- (gvs [SUBSET_DEF,MEM_FILTER] \\ rw [] \\ gvs [])
+  \\ gvs [circ_io_area_def,eval_io_def,MEM_MAP,MEM_FILTER,PULL_EXISTS,EXISTS_PROD]
+  \\ gvs [is_ns_def,is_ew_def] \\ gvs [SF DNF_ss]
+  \\ gvs [EXTENSION]
+  \\ rw [] \\ eq_tac \\ rw [] \\ gvs []
+  \\ metis_tac []
+QED
+
+Theorem gol_checked_steps_1:
+  gol_checked_steps 30 rows (shrink m1) = SOME rows1 ∧
+  simple_checks w h ins outs (rows2 : bexp list list) ∧
+  masks w h ins outs = (m1,m2) ∧
+  rectangle w h rows ⇒
+  steps (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+        (circ_area (set (make_area w h)) (set (eval_io env ins)) (set (eval_io env outs)) 0)
+        (from_rows (-85,-85) (MAP (MAP (eval env)) rows1))
+Proof
+  rw [] \\ irule gol_checked_steps_gen
+  \\ last_x_assum $ irule_at Any
+  \\ first_assum $ irule_at Any
+  \\ drule_all masks_thm \\ gvs []
+QED
+
+Theorem gol_checked_steps_2:
+  gol_checked_steps 30 rows (shrink m2) = SOME rows1 ∧
+  simple_checks w h ins outs (rows2 : bexp list list) ∧
+  masks w h ins outs = (m1,m2) ∧
+  rectangle w h rows ⇒
+  from_rows (-85,-85) (MAP (MAP (eval env)) rows) = x ∧
+  from_rows (-85,-85) (MAP (MAP (eval env)) rows1) = y ⇒
+  steps x (circ_area (set (make_area w h)) (set (eval_io env ins))
+                     (set (eval_io env outs)) 30) y
+Proof
+  rw [] \\ irule gol_checked_steps_gen
+  \\ last_x_assum $ irule_at Any
+  \\ first_assum $ irule_at Any
+  \\ drule_all masks_thm \\ gvs []
+QED
+
 Theorem simulation_ok_thm:
   simulation_ok w h ins outs rows ⇒
   (∀env.
@@ -2078,7 +2186,7 @@ Proof
   \\ irule run_to_60_lemma \\ gvs [GSYM make_area_def]
   \\ qexists_tac ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows1)’
   \\ qexists_tac ‘from_rows (-85,-85) (MAP (MAP (eval env)) rows2)’
-  \\ conj_tac >- gvs [gol_checked_steps_1]
+  \\ conj_tac >- gvs [gol_checked_steps_1,SF SFY_ss]
   \\ qabbrev_tac ‘bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F)’
   \\ qabbrev_tac ‘falses = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) False)’
   \\ qabbrev_tac ‘outs_ns = or_io_areas (FILTER is_ns outs) bools’
@@ -2086,6 +2194,7 @@ Proof
   \\ qabbrev_tac ‘rows1a = diff_rows rows1 outs_ns’
   \\ qabbrev_tac ‘rows2a = diff_rows rows2 outs_ew’
   \\ irule_at Any gol_checked_steps_2
+  \\ first_assum $ irule_at $ Pos hd \\ gvs []
   \\ first_assum $ irule_at $ Pos hd \\ gvs []
   \\ ‘rectangle w h bools ∧ rectangle w h falses’ by
         gvs [Abbr‘bools’,Abbr‘falses’,rectangle_def]
