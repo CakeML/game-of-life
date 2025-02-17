@@ -29,6 +29,9 @@ val run_to_fixpoint: state ->
     outputs: io_port list,
     grid: bexp vector vector }
 
+val array_to_svg: bexp array array -> string -> unit
+val vector_to_svg: bexp vector vector -> string -> unit
+
 val and_en_e: gate;
 val and_es_e: gate;
 val and_ew_n: gate;

@@ -444,6 +444,72 @@ fun rotate
       height = width }
   end
 
+fun fun_to_svg (rows, cols, g) filename =
+  let
+    val cell_size = 6
+    val f = TextIO.openOut filename
+    fun every_col row_index col_index h =
+      if col_index < cols then
+        (h col_index row_index (g row_index col_index);
+         every_col row_index (col_index+1) h)
+      else ()
+    fun every_row row_index h =
+      if row_index < rows then
+        (every_col row_index 0 h;
+         every_row (row_index+1) h)
+      else ();
+    fun fold_grid h = every_row 0 h
+    val _ = TextIO.output(f,String.concat [
+      "<svg width=\"", Int.toString (cell_size * cols),
+        "\" height=\"", Int.toString (cell_size * rows),
+        "\" xmlns=\"http://www.w3.org/2000/svg\">\n",
+        "<rect x=\"0\" y=\"0",
+        "\" width=\"", Int.toString (cell_size * cols),
+        "\" height=\"", Int.toString (cell_size * rows),
+        "\" fill=\"black\" />\n"])
+    fun fmla cell = case cell of
+        False => "⊥"
+      | True => "⊤"
+      | And(a, b) => "("^fmla a^" ∧ "^fmla b^")"
+      | Or(a, b) => "("^fmla a^" ∨ "^fmla b^")"
+      | Not(a) => "¬"^fmla a
+      | Var(0, i) => "a"^Int.toString i
+      | Var(1, i) => "b"^Int.toString i
+      | Var _ => "*"
+    fun output_cell _ _ False = ()
+      | output_cell col row cell =
+      let
+        val color = case cell of
+          True => "white"
+        | Var (0, _) => "red"
+        | Var (1, _) => "blue"
+        | _ => "purple"
+        val x = Int.toString (col * cell_size)
+        val y = Int.toString (row * cell_size)
+        val cell_size_str = Int.toString cell_size
+      in
+        TextIO.output(f,String.concat
+          ["<rect x=\"", x,
+           "\" y=\"", y,
+           "\" width=\"", cell_size_str,
+           "\" height=\"", cell_size_str,
+           "\" fill=\"", color,
+           "\" stroke=\"black\" stroke-width=\"1\"><title>", fmla cell,
+           "</title></rect>\n"])
+      end handle Match => ()
+    val _ = fold_grid output_cell
+    val _ = TextIO.output(f,"</svg>\n")
+    val _ = TextIO.closeOut(f)
+  in () end;
+
+fun array_to_svg grid =
+  fun_to_svg (Array.length grid, Array.length (Array.sub(grid,0)),
+    fn i => fn j => Array.sub(Array.sub(grid,i),j));
+
+fun vector_to_svg grid =
+  fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
+    fn i => fn j => Vector.sub(Vector.sub(grid,i),j));
+
 val and_en_e =
   { filename = "and-en-e.rle",
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
