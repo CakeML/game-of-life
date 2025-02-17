@@ -787,7 +787,7 @@ Definition build_Not_def:
     | True => False
     | False => True
     | Not y => y
-    | _ => x
+    | _ => Not x
 End
 
 Definition build_If_def:
@@ -823,11 +823,6 @@ Definition get_bvars8_def:
      get_bvars y5 $ get_bvars y6 $ get_bvars y7 $ get_bvars y8 [])
 End
 
-Definition num_of_bool_def[simp]:
-  num_of_bool T = 1 ∧
-  num_of_bool F = 0:num
-End
-
 Definition eval_bexp_def[simp]:
   eval_bexp env True      = T ∧
   eval_bexp env False     = F ∧
@@ -839,27 +834,27 @@ End
 
 Definition eval_bexp8_def:
   eval_bexp8 env (y1,y2,y3,y4,y5,y6,y7,y8) =
-    num_of_bool (eval_bexp env y1) +
-    num_of_bool (eval_bexp env y2) +
-    num_of_bool (eval_bexp env y3) +
-    num_of_bool (eval_bexp env y4) +
-    num_of_bool (eval_bexp env y5) +
-    num_of_bool (eval_bexp env y6) +
-    num_of_bool (eval_bexp env y7) +
-    num_of_bool (eval_bexp env y8)
+    b2n (eval_bexp env y1) +
+    b2n (eval_bexp env y2) +
+    b2n (eval_bexp env y3) +
+    b2n (eval_bexp env y4) +
+    b2n (eval_bexp env y5) +
+    b2n (eval_bexp env y6) +
+    b2n (eval_bexp env y7) +
+    b2n (eval_bexp env y8)
 End
 
 Definition count_falses_def:
   count_falses x (y1,y2,y3,y4,y5,y6,y7,y8) =
-    num_of_bool (x  = False) +
-    num_of_bool (y1 = False) +
-    num_of_bool (y2 = False) +
-    num_of_bool (y3 = False) +
-    num_of_bool (y4 = False) +
-    num_of_bool (y5 = False) +
-    num_of_bool (y6 = False) +
-    num_of_bool (y7 = False) +
-    num_of_bool (y8 = False)
+    b2n (x  = False) +
+    b2n (y1 = False) +
+    b2n (y2 = False) +
+    b2n (y3 = False) +
+    b2n (y4 = False) +
+    b2n (y5 = False) +
+    b2n (y6 = False) +
+    b2n (y7 = False) +
+    b2n (y8 = False)
 End
 
 Definition to_bexp_def[simp]:
@@ -887,31 +882,29 @@ Definition gol_cell_def:
         gol_eval vars [] x ys
 End
 
+Definition hd_or_false_def:
+  hd_or_false [] = False ∧
+  hd_or_false (x::xs) = x
+End
+
 Definition gol_row_def:
-  gol_row x0 x1 (x2::xs)
-          y0 y1 (y2::ys)
-          z0 z1 (z2::zs) =
-    gol_cell y1 (x0,x1,x2,y0,y2,z0,z1,z2) ::
-    gol_row x1 x2 xs
-            y1 y2 ys
-            z1 z2 zs ∧
-  gol_row x0 x1 _ y0 y1 _ z0 z1 _ =
-    [gol_cell y1 (x0,x1,False,y0,False,z0,z1,False)]
+  gol_row x0 (x1::xs)
+          y0 (y1::ys)
+          z0 (z1::zs) =
+    gol_cell y1 (x0, x1, hd_or_false xs,
+                 y0,     hd_or_false ys,
+                 z0, z1, hd_or_false zs) ::
+    gol_row x1 xs
+            y1 ys
+            z1 zs ∧
+  gol_row _ _ _ _ _ _ = []
 End
 
 Definition gol_rows_def:
   gol_rows prev (row :: rest) =
-    (case row of
-     | [] => []
-     | (r::rs) =>
-       let next = (case rest of
-                         | [] => REPLICATE (LENGTH row) False
-                         | (x::_) => x) in
-       let (p,ps) = case prev of [] => (False,[]) | (p::ps) => (p,ps) in
-       let (n,ns) = case next of [] => (False,[]) | (n::ns) => (n,ns) in
-         gol_row False p ps
-                 False r rs
-                 False n ns)
+    gol_row False prev
+            False row
+            False (case rest of [] => MAP (K False) row | r :: _ => r)
     :: gol_rows row rest ∧
   gol_rows prev [] = []
 End
@@ -1275,9 +1268,9 @@ Proof
 QED
 
 Theorem length_gol_row:
-  ∀xs ys zs x1 x2 y1 y2 z1 z2.
+  ∀xs ys zs x1 y1 z1.
     LENGTH xs = LENGTH ys ∧ LENGTH zs = LENGTH ys ⇒
-    LENGTH (gol_row x1 x2 xs y1 y2 ys z1 z2 zs) = LENGTH ys + 1
+    LENGTH (gol_row x1 xs y1 ys z1 zs) = LENGTH ys
 Proof
   Induct \\ gvs [gol_row_def]
   \\ Cases_on ‘ys’ \\ gvs []
@@ -1333,14 +1326,75 @@ Proof
   \\ irule gol_step_rows_rectangle \\ gvs []
 QED
 
-Theorem gol_step_rows:
-  EVERY (λr. HD r = False ∧ LAST r = False) rows ∧
-  (rows ≠ [] ⇒ EVERY (λx. x = False) (HD rows)) ∧
-  (rows ≠ [] ⇒ EVERY (λx. x = False) (LAST rows)) ⇒
-  from_rows (-85,-85) (MAP (MAP (eval env)) (gol_step_rows rows)) =
-  step (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+Theorem oEL_MAP_EQ_SOME:
+  ∀xs f n y.
+    LLOOKUP (MAP f xs) n = SOME y ⇔
+    ∃x. LLOOKUP xs n = SOME x ∧ y = f x
 Proof
-  cheat
+  Induct \\ gvs [oEL_def] \\ rw [] \\ eq_tac \\ rw []
+QED
+
+Theorem LLOOKUP_gol_row:
+  ∀xs ys zs x y z n res.
+    LLOOKUP (gol_row x xs y ys z zs) n = SOME res ⇔
+    n < LENGTH xs ∧ n < LENGTH ys ∧ n < LENGTH zs ∧
+    res = gol_cell (EL n ys)
+            ((if n = 0 then x else EL (n-1) xs),
+             EL n xs,
+             (if n+1 < LENGTH xs then EL (n+1) xs else False),
+             (if n = 0 then y else EL (n-1) ys),
+             (if n+1 < LENGTH ys then EL (n+1) ys else False),
+             (if n = 0 then z else EL (n-1) zs),
+             EL n zs,
+             (if n+1 < LENGTH zs then EL (n+1) zs else False))
+Proof
+  Induct \\ Cases_on ‘ys’ \\ Cases_on ‘zs’ \\ gvs [gol_row_def,oEL_def]
+  \\ rpt gen_tac \\ Cases_on ‘n’ \\ gvs []
+  \\ ‘∀xs. (if 1 < SUC (LENGTH xs) then HD xs else False) = hd_or_false xs’
+       by (Cases \\ gvs [hd_or_false_def]) \\ gvs []
+  >- (eq_tac \\ rw [])
+  \\ gvs [ADD_CLAUSES]
+  \\ Cases_on ‘n' ’ \\ gvs []
+QED
+
+Theorem LLOOKUP_gol_rows:
+  ∀xs prev n ys.
+    LLOOKUP (gol_rows prev xs) n = SOME ys ⇔
+    n < LENGTH xs ∧
+    ys = gol_row False (if n = 0 then prev else EL (n-1) xs)
+                 False (EL n xs)
+                 False (if n+1 < LENGTH xs then EL (n+1) xs else MAP (K False) (EL n xs))
+Proof
+  Induct \\ gvs [gol_rows_def,oEL_def] \\ rpt gen_tac
+  \\ IF_CASES_TAC
+  >- (gvs [] \\ Cases_on ‘xs’ \\ gvs []
+      \\ rw [] \\ eq_tac \\ rw [])
+  \\ gvs [GSYM ADD1]
+  \\ Cases_on ‘n’ \\ gvs [] \\ gvs [ADD1]
+  \\ Cases_on ‘xs’ \\ gvs []
+  \\ Cases_on ‘n'’ \\ gvs []
+QED
+
+Definition decide_step_def:
+  decide_step y2 (x1,x2,x3,y1,y3,z1,z2,z3) =
+    if y2 then
+      b2n x1 + b2n x2 + b2n x3 +
+      b2n y1 +          b2n y3 +
+      b2n z1 + b2n z2 + b2n z3 ∈ {2;3}
+    else
+      b2n x1 + b2n x2 + b2n x3 +
+      b2n y1 +          b2n y3 +
+      b2n z1 + b2n z2 + b2n z3 = 3
+End
+
+Theorem IN_step_lemma:
+  (x,y) ∈ step s ⇔
+  decide_step ((x,y) ∈ s)
+    ((x-1,y-1) ∈ s, (x,y-1) ∈ s, (x+1,y-1) ∈ s,
+     (x-1,y)   ∈ s,              (x+1,y  ) ∈ s,
+     (x-1,y+1) ∈ s, (x,y+1) ∈ s, (x+1,y+1) ∈ s)
+Proof
+  gvs [step_def,IN_DEF,live_adj_def,decide_step_def]
 QED
 
 Theorem IN_from_row:
@@ -1376,6 +1430,255 @@ Proof
   \\ Cases_on ‘dy’ \\ gvs []
   \\ rpt $ pop_assum $ irule_at Any
   \\ intLib.COOPER_TAC
+QED
+
+Theorem y_SUB_IN_from_rows:
+  (x,y-1) ∈ from_rows (a,b) rows ⇔ (x,y) ∈ from_rows (a,b) ([]::rows)
+Proof
+  gvs [IN_from_rows,oEL_def]
+  \\ rw [] \\ eq_tac \\ rw []
+  \\ gvs [SF intLib.INT_ARITH_ss]
+  >- (qexists_tac ‘dy+1’ \\ gvs [SF intLib.INT_ARITH_ss])
+  \\ Cases_on ‘dy’ \\ gvs [] \\ gvs [oEL_def]
+  \\ first_x_assum $ irule_at $ Pos last
+  \\ first_x_assum $ irule_at $ Pos last
+  \\ gvs [SF intLib.INT_ARITH_ss]
+QED
+
+Theorem x_SUB_IN_from_rows:
+  (x-1,y) ∈ from_rows (a,b) rows ⇔ (x,y) ∈ from_rows (a,b) (MAP (λr. F::r) rows)
+Proof
+  gvs [IN_from_rows,oEL_def,oEL_MAP_EQ_SOME,PULL_EXISTS,CaseEq"bool"]
+  \\ rw [] \\ eq_tac \\ rw []
+  \\ gvs [SF intLib.INT_ARITH_ss]
+  >- (qexists_tac ‘dx+1’ \\ gvs [SF intLib.INT_ARITH_ss])
+  \\ first_x_assum $ irule_at $ Pos last
+  \\ gvs [SF intLib.INT_ARITH_ss]
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem LENGTH_if:
+  LENGTH (if b then xs else ys) =
+  if b then LENGTH xs else LENGTH ys
+Proof
+  rw []
+QED
+
+Theorem count_falses_lemma:
+  ∀xs.
+    SUM (MAP (b2n o (λe. e = False)) xs) +
+    SUM (MAP (b2n o eval env) xs) ≤ LENGTH xs
+Proof
+  Induct \\ gvs [] \\ rw []
+  \\ Cases_on ‘h = False’ \\ gvs []
+  \\ rw [oneline b2n_def]
+QED
+
+Definition vars_of_def:
+  vars_of (And e1 e2) = vars_of e1 ∪ vars_of e2 ∧
+  vars_of (Or e1 e2)  = vars_of e1 ∪ vars_of e2 ∧
+  vars_of (Not e1)    = vars_of e1 ∧
+  vars_of (Var g n)   = {(g,n)} ∧
+  vars_of _           = {}
+End
+
+Theorem eval_build_Not:
+  eval env (build_Not e) = eval env (Not e)
+Proof
+  Cases_on ‘e’ \\ gvs [build_Not_def]
+QED
+
+Theorem eval_build_If:
+  eval env (build_If x y z) =
+  if eval env x then eval env y else eval env z
+Proof
+  rw [build_If_def,eval_build_Not]
+QED
+
+Theorem eval_bexp_eq_eval:
+  EVERY (λ(v,x). env v ⇔ x) l ∧
+  vars_of x ⊆ set (MAP FST l) ⇒
+  eval_bexp l x = eval env x
+Proof
+  Induct_on ‘x’ \\ gvs [vars_of_def,eval_bexp_def]
+  \\ Induct_on ‘l’ \\ gvs [] \\ PairCases \\ gvs []
+  \\ rw [] \\ gvs []
+QED
+
+Theorem eval_to_bexp:
+  eval env (to_bexp b) = b
+Proof
+  Cases_on ‘b’ \\ gvs []
+QED
+
+Theorem eval_gol_eval:
+  ∀vars l env x1 x2 x3 y1 y2 y3 z1 z2 z3.
+    vars_of x1 ∪ vars_of x2 ∪ vars_of x3 ∪
+    vars_of y1 ∪ vars_of y2 ∪ vars_of y3 ∪
+    vars_of z1 ∪ vars_of z2 ∪ vars_of z3 ⊆ set vars ∪ set (MAP FST l) ∧
+    EVERY (λ(v,x). env v = x) l ⇒
+    eval env (gol_eval vars l y2 (x1,x2,x3,y1,y3,z1,z2,z3)) =
+    decide_step (eval env y2)
+                (eval env x1,eval env x2,eval env x3,eval env y1,
+                 eval env y3,eval env z1,eval env z2,eval env z3)
+Proof
+  reverse Induct
+  >-
+   (PairCases
+    \\ simp [Once gol_eval_def] \\ rw [] \\ rw [eval_build_If]
+    \\ last_x_assum irule
+    \\ gvs [SUBSET_DEF, SF DNF_ss, AC DISJ_COMM DISJ_ASSOC])
+  \\ simp [Once gol_eval_def]
+  \\ gvs [decide_step_def,eval_bexp8_def]
+  \\ rpt strip_tac
+  \\ drule eval_bexp_eq_eval \\ gvs [eval_to_bexp]
+QED
+
+Theorem get_bvars_thm:
+  ∀x acc. set (get_bvars x acc) = vars_of x ∪ set acc
+Proof
+  Induct \\ gvs [get_bvars_def,vars_of_def, AC UNION_COMM UNION_ASSOC]
+  \\ induct_on ‘acc’ \\ gvs [add_to_sorted_def] \\ rw []
+  \\ gvs [EXTENSION] \\ rw [] \\ eq_tac \\ rw []
+  \\ rpt (PairCases_on ‘h’ \\ gvs [])
+  \\ PairCases_on ‘x’ \\ gvs []
+QED
+
+Theorem gol_cell_decide_step:
+  px1 = eval env x1 ∧
+  px2 = eval env x2 ∧
+  px3 = eval env x3 ∧
+  py1 = eval env y1 ∧
+  py2 = eval env y2 ∧
+  py3 = eval env y3 ∧
+  pz1 = eval env z1 ∧
+  pz2 = eval env z2 ∧
+  pz3 = eval env z3
+  ⇒
+  eval env (gol_cell y2 (x1,x2,x3,y1,y3,z1,z2,z3)) =
+  decide_step py2 (px1,px2,px3,py1,py3,pz1,pz2,pz3)
+Proof
+  rw [] \\ rw [gol_cell_def]
+  >-
+   (gvs [decide_step_def] \\ gvs [count_falses_def]
+    \\ qspec_then ‘[x1;x2;x3;y1;y2;y3;z1;z2;z3]’ assume_tac count_falses_lemma
+    \\ gvs [] \\ rw [] \\ CCONTR_TAC \\ gvs [])
+  \\ irule eval_gol_eval \\ gvs []
+  \\ gvs [get_bvars8_def,get_bvars_thm,SUBSET_DEF]
+QED
+
+Theorem gol_step_rows:
+  EVERY (λr. HD r = False ∧ LAST r = False) rows ∧
+  (rows ≠ [] ⇒ EVERY (λx. x = False) (HD rows)) ∧
+  (rows ≠ [] ⇒ EVERY (λx. x = False) (LAST rows)) ∧
+  rectangle w h rows ⇒
+  from_rows (-85,-85) (MAP (MAP (eval env)) (gol_step_rows rows)) =
+  step (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
+Proof
+  Cases_on ‘rows’ >- gvs [rectangle_def]
+  \\ rewrite_tac [gol_step_rows_def,NOT_CONS_NIL]
+  \\ rename [‘x::xs’]
+  \\ ‘LENGTH x = LENGTH (HD (x::xs))’ by gvs []
+  \\ asm_rewrite_tac []
+  \\ qspec_tac (‘x::xs’,‘ys’)
+  \\ pop_assum kall_tac \\ rw []
+  \\ gvs [EXTENSION] \\ PairCases
+  \\ rename [‘(x,y) ∈ _’]
+  \\ simp [IN_step_lemma]
+  \\ rewrite_tac [x_SUB_IN_from_rows]
+  \\ rewrite_tac [y_SUB_IN_from_rows]
+  \\ simp [IN_from_rows,oEL_MAP_EQ_SOME,PULL_EXISTS]
+  \\ gvs [LLOOKUP_gol_rows]
+  \\ gvs [LLOOKUP_gol_row,PULL_EXISTS]
+  \\ Cases_on ‘x < -85’ >-
+   (‘∀dx. x ≠ -85 + &dx’ by intLib.COOPER_TAC \\ gvs []
+    \\ ‘∀dx. x + 1 = -85 + &dx <=>
+             x + 1 = -85 + &dx ∧ dx = 0’ by intLib.COOPER_TAC
+    \\ pop_assum (fn th => once_rewrite_tac [th])
+    \\ gvs [] \\ gvs [oEL_THM] \\ gvs [EVERY_EL, SF CONJ_ss]
+    \\ EVAL_TAC \\ rw [oneline b2n_def])
+  \\ Cases_on ‘y < -85’ >-
+   (‘∀dx. y ≠ -85 + &dx’ by intLib.COOPER_TAC \\ gvs []
+    \\ ‘∀dx. y + 1 = -85 + &dx <=>
+             y + 1 = -85 + &dx ∧ dx = 0’ by intLib.COOPER_TAC
+    \\ pop_assum (fn th => once_rewrite_tac [th])
+    \\ gvs [] \\ gvs [oEL_THM] \\ gvs [EVERY_EL, SF CONJ_ss]
+    \\ EVAL_TAC \\ rw [oneline b2n_def])
+  \\ ‘∃dx. x = -85 + &dx’ by intLib.COOPER_TAC \\ gvs []
+  \\ ‘∃dy. y = -85 + &dy’ by intLib.COOPER_TAC \\ gvs []
+  \\ gvs [GSYM integerTheory.INT_ADD_ASSOC,integerTheory.INT_ADD]
+  \\ reverse $ Cases_on ‘dy < LENGTH ys’ \\ gvs []
+  >-
+   (gvs [oEL_THM]
+    \\ reverse $ Cases_on ‘dy < SUC (LENGTH ys)’ \\ gvs [] >- EVAL_TAC
+    \\ ‘dy = LENGTH ys’ by gvs [] \\ gvs []
+    \\ DEP_REWRITE_TAC [EL_CONS]
+    \\ gvs [MAP_MAP_o,arithmeticTheory.PRE_SUB1]
+    \\ conj_tac >- gvs [rectangle_def]
+    \\ gvs [EVERY_EL]
+    \\ gvs [SF CONJ_ss, GSYM (SRULE [PRE_SUB1] LAST_EL), EL_MAP]
+    \\ ‘dx < LENGTH (EL (LENGTH ys − 1) (MAP (MAP (eval env)) ys)) ∧
+        EL dx (EL (LENGTH ys − 1) (MAP (MAP (eval env)) ys)) ⇔ F’ by
+      (DEP_ONCE_REWRITE_TAC [EL_MAP]
+       \\ gvs [SF CONJ_ss, EL_MAP]
+       \\ DEP_REWRITE_TAC [GSYM (SRULE [PRE_SUB1] LAST_EL)]
+       \\ gvs [rectangle_def]
+       \\ ‘LENGTH ys ≠ 0’ by decide_tac
+       \\ gvs []
+       \\ CCONTR_TAC \\ gvs []
+       \\ gvs [SF CONJ_ss, EL_MAP])
+    \\ asm_rewrite_tac []
+    \\ EVAL_TAC \\ rw [oneline b2n_def])
+  \\ gvs [LENGTH_if]
+  \\ ‘∀n. n < LENGTH ys ⇒ LENGTH (EL n ys) = LENGTH (HD ys)’ by
+     (gvs [rectangle_def,EVERY_EL]
+      \\ Cases_on ‘ys’ \\ gvs []
+      \\ first_x_assum $ qspec_then ‘0’ mp_tac \\ gvs [])
+  \\ gvs [SF CONJ_ss]
+  \\ reverse $ Cases_on ‘dx < LENGTH (HD ys)’ \\ gvs []
+  >-
+   (gvs [oEL_THM, SF CONJ_ss]
+    \\ Cases_on ‘dy’ \\ gvs []
+    >- (EVAL_TAC \\ rw [oneline b2n_def])
+    \\ gvs [EL_MAP]
+    \\ reverse $ Cases_on ‘dx < SUC (LENGTH (HD ys))’ \\ gvs []
+    >- EVAL_TAC
+    \\ DEP_REWRITE_TAC [EL_CONS] \\ gvs []
+    \\ conj_asm1_tac >- (Cases_on ‘ys’ \\ gvs [rectangle_def])
+    \\ gvs [EL_MAP]
+    \\ ‘eval env (EL (PRE dx) (EL n ys)) = F’ by
+     (‘dx = LENGTH (HD ys)’ by gvs []
+      \\ gvs [PRE_SUB1]
+      \\ ‘LENGTH (HD ys) = LENGTH (EL n ys)’ by simp []
+      \\ asm_rewrite_tac []
+      \\ DEP_REWRITE_TAC [GSYM (SRULE [PRE_SUB1] LAST_EL)]
+      \\ pop_assum kall_tac
+      \\ gvs [EVERY_EL]
+      \\ rewrite_tac [GSYM LENGTH_NIL]
+      \\ ‘n < LENGTH ys’ by gvs []
+      \\ res_tac
+      \\ decide_tac)
+    \\ EVAL_TAC \\ rw [oneline b2n_def])
+  \\ irule gol_cell_decide_step
+  \\ rpt strip_tac
+  >- (Cases_on ‘dy’ \\ gvs [oEL_def,EL_REPLICATE]
+      \\ gvs [oEL_MAP_EQ_SOME,PULL_EXISTS]
+      \\ Cases_on ‘dx’ \\ gvs [oEL_def]
+      \\ gvs [oEL_MAP_EQ_SOME,PULL_EXISTS]
+      \\ gvs [oEL_THM])
+  >- (Cases_on ‘dy’ \\ gvs [oEL_def,EL_REPLICATE]
+      \\ gvs [oEL_MAP_EQ_SOME,PULL_EXISTS] \\ gvs [oEL_THM])
+  >- (Cases_on ‘dy’ \\ gvs [oEL_def,EL_REPLICATE]
+      \\ gvs [oEL_MAP_EQ_SOME,PULL_EXISTS]
+      \\ gvs [oEL_THM] \\ rw [])
+  >- (Cases_on ‘dx’ \\ gvs [oEL_def,oEL_MAP_EQ_SOME,PULL_EXISTS]
+      \\ gvs [oEL_THM])
+  >- (Cases_on ‘dx’ \\ gvs [oEL_def,oEL_MAP_EQ_SOME,PULL_EXISTS]
+      \\ gvs [oEL_THM])
+  >- (rw [] \\ gvs [oEL_THM])
+  >- (Cases_on ‘dx’ \\ gvs [oEL_def,oEL_MAP_EQ_SOME,PULL_EXISTS]
+      \\ rw [] \\ gvs [oEL_THM,EL_MAP])
+  \\ rw [] \\ gvs [oEL_THM,EL_MAP]
 QED
 
 Theorem check_mask_thm:
@@ -1654,7 +1957,7 @@ Proof
     \\ pop_assum mp_tac \\ gvs []
     \\ first_x_assum drule
     \\ gvs [LAST_EL])
-  \\ gvs [FUNPOW,gol_step_rows] \\ rw []
+  \\ gvs [FUNPOW,gol_step_rows, SF SFY_ss] \\ rw []
   \\ Cases_on ‘n’ \\ gvs [GSYM FUNPOW]
   \\ irule IMP_infl_subset
   \\ irule SUBSET_TRANS
