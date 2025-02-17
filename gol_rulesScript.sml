@@ -255,11 +255,28 @@ Proof
   \\ qabbrev_tac ‘cst1 = { (c,s1,t) | ∃s. (c,s,t) ∈ cst ∧ mod_step (c n) s s1 }’
   \\ last_x_assum $ qspecl_then [‘cst1’,‘n+1’] mp_tac
   \\ impl_tac
-  >- cheat
+  >-
+   (gvs [Abbr‘cst1’,PULL_EXISTS]
+    \\ conj_tac
+    >-
+     (rw [] \\ res_tac \\ fs []
+      \\ first_x_assum $ irule
+      \\ CCONTR_TAC \\ gvs []
+      \\ gvs [mod_step_def])
+    >-
+     (rpt gen_tac
+      \\ strip_tac
+      \\ res_tac \\ gvs []
+      \\ gvs [mod_step_def]))
   \\ strip_tac
-  \\ ‘∀t. (∃c s. (c,s,t) ∈ cst1) ⇔ (∃c s. (c,s,t) ∈ cst)’ by cheat
+  \\ ‘∀t. (∃c s. (c,s,t) ∈ cst1) ⇔ (∃c s. (c,s,t) ∈ cst)’ by
+      (gvs [Abbr ‘cst1’] \\ metis_tac [])
   \\ gvs [] \\ pop_assum kall_tac
-  \\ ‘join_all cst1 = join_all cst’ by cheat
+  \\ ‘join_all cst1 = join_all cst’ by
+   (simp [join_all_def,Once FUN_EQ_THM]
+    \\ gvs [Abbr ‘cst1’]
+    \\ once_rewrite_tac [EXTENSION] \\ simp [PULL_EXISTS]
+    \\ metis_tac [])
   \\ gvs [] \\ pop_assum kall_tac
   \\ pop_assum $ irule_at Any
   \\ gvs [Abbr‘cst1’]
