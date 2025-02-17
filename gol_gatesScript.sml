@@ -3,6 +3,12 @@ open HolKernel bossLib gol_simLib gol_rulesTheory boolLib boolSyntax
 
 val _ = new_theory "gol_gates";
 
+Definition falses_def:
+  falses 0 l = l ∧
+  falses (SUC n) l = falses n (False :: l)
+End
+val _ = cv_auto_trans falses_def;
+
 local
 val A_tm  = prim_mk_const {Name = "A",  Thy = "gol_rules"}
 val B_tm  = prim_mk_const {Name = "B",  Thy = "gol_rules"}
@@ -16,15 +22,13 @@ val mk_var   = mk_binop (prim_mk_const {Name = "Var", Thy = "gol_rules"})
 val mk_not   = mk_monop (prim_mk_const {Name = "Not", Thy = "gol_rules"})
 val mk_and   = mk_binop (prim_mk_const {Name = "And", Thy = "gol_rules"})
 val mk_or    = mk_binop (prim_mk_const {Name = "Or",  Thy = "gol_rules"})
+val mk_falses = mk_binop (prim_mk_const {Name = "falses", Thy = "gol_gates"})
+val bexp_ty = ``:bexp``
 
 in
-fun tr_var "a" = A_tm
-  | tr_var "b" = B_tm
+fun tr_var 0 = A_tm
+  | tr_var 1 = B_tm
   | tr_var _ = raise Fail "unknown variable"
-
-fun tr_var_i 0 = A_tm
-  | tr_var_i 1 = B_tm
-  | tr_var_i _ = raise Fail "unknown variable"
 
 fun tr_bexp True         = true_tm
   | tr_bexp False        = false_tm
@@ -36,7 +40,17 @@ fun tr_bexp True         = true_tm
 fun tr_vector ty f =
   Vector.foldr (fn (a, r) => listSyntax.mk_cons (f a, r)) (listSyntax.mk_nil ty)
 
-val tr_bexpss = tr_vector ``:bexp list`` (tr_vector ``:bexp`` tr_bexp)
+fun tr_falses (0, r) = r
+  | tr_falses (1, r) = listSyntax.mk_cons (false_tm, r)
+  | tr_falses (n, r) = mk_falses (numSyntax.term_of_int n, r)
+    (* tr_falses (n, r) = if n = 0 then r else tr_falses (n-1, listSyntax.mk_cons (false_tm, r)) *)
+
+val tr_bexps = let
+  fun go (False, (n, r)) = (n + 1, r)
+    | go (a, r) = (0, listSyntax.mk_cons (tr_bexp a, tr_falses r))
+  in tr_falses o Vector.foldr go (0, listSyntax.mk_nil bexp_ty) end
+
+val tr_bexpss = tr_vector ``:bexp list`` tr_bexps
 
 fun tr_dir N = N_tm
   | tr_dir E = E_tm

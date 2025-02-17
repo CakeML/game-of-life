@@ -3,14 +3,14 @@ sig
 
 datatype bexp = False
               | True
-              | Var of string * int
+              | Var of int * int
               | Not of bexp
               | And of bexp * bexp
               | Or of bexp * bexp;
 
 datatype dir = N | S | W | E;
 
-type io_port = (int * int) * dir;
+type io_port = (int * int) * dir * bexp;
 
 type gate =
   { filename : string ,
@@ -25,8 +25,8 @@ val load: gate -> loaded_gate
 val prepare: loaded_gate -> state
 val rotate: loaded_gate -> loaded_gate
 val run_to_fixpoint: state ->
-  { inputs: (io_port * bexp) list,
-    outputs: (io_port * bexp) list,
+  { inputs: io_port list,
+    outputs: io_port list,
     grid: bexp vector vector }
 
 val and_en_e: gate;

@@ -4,16 +4,16 @@ open HolKernel
 
 datatype bexp = False
               | True
-              | Var of string * int
+              | Var of int * int
               | Not of bexp
               | And of bexp * bexp
               | Or of bexp * bexp;
 
 type bexp_env =
-  { name : string, generation : int, value: bool };
+  { name : int, generation : int, value: bool };
 
 type bvar =
-  { name : string, generation : int };
+  { name : int, generation : int };
 
 type bexp8 =
   { y1: bexp, y2: bexp, y3: bexp, y4: bexp,
@@ -228,41 +228,34 @@ fun new_grid cols rows =
 
 datatype dir = N | S | W | E;
 
-type io_port = (int * int) * dir;
+type io_port = (int * int) * dir * bexp;
 
-fun snapshot gen_count ins outs grid =
+fun snapshot gen_count ins grid =
   let
     val (cols,rows) = get_width_height grid
-    val min_a = ref (~1);
-    val min_b = ref (~1);
-    fun smart_min var_ref n =
-      (var_ref := (if !var_ref < 0 then n else Int.min(n, !var_ref)))
+    val min_i = Array.array (2, ~1);
+    fun smart_min i n = let
+      val v = Array.sub (min_i, i)
+      in Array.update (min_i, i, if v < 0 then n else Int.min(n, v)) end
     fun min_var (Not(x)) = min_var x
       | min_var (And(x,y)) = (min_var x ; min_var y)
       | min_var (Or(x,y)) = (min_var x ; min_var y)
-      | min_var (Var(s,g)) = (if s = "a" then smart_min min_a g else
-                              if s = "b" then smart_min min_b g else ())
+      | min_var (Var(s,g)) = smart_min s g
       | min_var _ = ()
     val _ = for_loop 0 rows (fn row =>
       for_loop 0 cols (fn col =>
         min_var (get_cell row col grid)))
-    val gen_count = gen_count - !min_b
-    val a = !min_a
-    val b = !min_b
     fun sub_var (Not(x)) = Not(sub_var x)
       | sub_var (And(x,y)) = And(sub_var x, sub_var y)
       | sub_var (Or(x,y)) = Or(sub_var x, sub_var y)
-      | sub_var (Var(s,g)) = (if s = "a" then Var(s,g-a) else
-                              if s = "b" then Var(s,g-b) else Var(s,g))
+      | sub_var (Var(s,g)) = Var(s, g - Array.sub (min_i, s))
       | sub_var x = x
     val grid =
       Vector.tabulate (rows, fn row =>
         Vector.tabulate (cols, fn col =>
           sub_var (get_cell row col grid)))
-    fun mk_in 0 = Var ("a", gen_count + 1 - !min_a)
-      | mk_in 1 = Var ("b", gen_count + 1 - !min_b)
-      | mk_in _ = raise Fail "too many"
-    val ins = mapi (fn i => fn d => (d, mk_in i)) ins
+    fun mk_in i = Var (i, gen_count + 1 - Array.sub(min_i, i))
+    val ins = mapi (fn i => fn (p, d, _) => (p, d, mk_in i)) ins
   in
     (ins, grid)
   end
@@ -302,64 +295,60 @@ fun compute_next_state
   (STATE {step_count, gen_count, inputs, outputs, the_grid, the_next_grid, ...})
   ignore_input =
   let
-    val varnames = ["a","b","c"]
     val grid = !the_grid
     val next_grid = !the_next_grid
     val (cols,rows) = get_width_height grid
     val _ = for_loop 0 rows (fn row =>
-              for_loop 0 cols (fn col =>
-                update_cell row col next_grid
-                  (gol_cell (get_cell row col grid)
-                     { y1 = get_cell (row-1) (col-1) grid ,
-                       y2 = get_cell (row-1) (col  ) grid ,
-                       y3 = get_cell (row-1) (col+1) grid ,
-                       y4 = get_cell (row  ) (col-1) grid ,
-                       y5 = get_cell (row  ) (col+1) grid ,
-                       y6 = get_cell (row+1) (col-1) grid ,
-                       y7 = get_cell (row+1) (col  ) grid ,
-                       y8 = get_cell (row+1) (col+1) grid })))
-     val _ = if !step_count <> 59 then [] else
-               let
-                 val _ = List.app (fn (((x,y),dir),r) =>
-                           if dir = E orelse dir = W then
-                             r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
-                           else ()) outputs
-               in
-                 if ignore_input then [] else
-                   mapi (fn i => fn ((x,y),dir) =>
-                           if dir = E then
-                             init_from_rle "$5bo2bo$9bo$5bo3bo$6b4o!"
-                               (toY(75*y-5)) (toX(75*x-5))
-                               (Var (List.nth(varnames,i), !gen_count)) next_grid
-                           else if dir = W then
-                             init_from_rle "5$4o$o3bo$o$bo2bo!"
-                               (toY(75*y-5)) (toX(75*x-5))
-                               (Var (List.nth(varnames,i), !gen_count)) next_grid
-                           else ()) inputs
-               end
-     val _ = if !step_count <> 29 then [] else
-               let
-                 val _ = List.app (fn (((x,y),dir),r) =>
-                           if dir = N orelse dir = S then
-                             r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
-                           else ()) outputs
-               in
-                 if ignore_input then [] else
-                   mapi (fn i => fn ((x,y),dir) =>
-                           if dir = N then
-                             init_from_rle "2b3o$bo2bo$4bo$4bo$bobo!"
-                               (toY(75*y-5)) (toX(75*x-5))
-                               (Var (List.nth(varnames,i), !gen_count)) next_grid
-                           else if dir = S then
-                             init_from_rle "5$6bobo$5bo$5bo$5bo2bo$5b3o!"
-                               (toY(75*y-5)) (toX(75*x-5))
-                               (Var (List.nth(varnames,i), !gen_count)) next_grid
-                           else ()) inputs
-               end
-    val _ = (step_count := ((!step_count) + 1) mod 60)
-    val _ = (if !step_count = 0 then (gen_count := (!gen_count) + 1) else ())
+      for_loop 0 cols (fn col =>
+        update_cell row col next_grid
+          (gol_cell (get_cell row col grid)
+            { y1 = get_cell (row-1) (col-1) grid ,
+              y2 = get_cell (row-1) (col  ) grid ,
+              y3 = get_cell (row-1) (col+1) grid ,
+              y4 = get_cell (row  ) (col-1) grid ,
+              y5 = get_cell (row  ) (col+1) grid ,
+              y6 = get_cell (row+1) (col-1) grid ,
+              y7 = get_cell (row+1) (col  ) grid ,
+              y8 = get_cell (row+1) (col+1) grid })))
+
+     val _ = if !step_count <> 59 then () else (
+        List.app (fn (((x,y),dir,_),r) =>
+          if dir = E orelse dir = W then
+            r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
+          else ()) outputs;
+        if ignore_input then () else
+          appi (fn i => fn ((x,y),dir,_) =>
+            if dir = E then
+              init_from_rle "$5bo2bo$9bo$5bo3bo$6b4o!"
+                (toY(75*y-5)) (toX(75*x-5))
+                (Var (i, !gen_count)) next_grid
+            else if dir = W then
+              init_from_rle "5$4o$o3bo$o$bo2bo!"
+                (toY(75*y-5)) (toX(75*x-5))
+                (Var (i, !gen_count)) next_grid
+            else ()) inputs;
+        gen_count := !gen_count + 1)
+
+     val _ = if !step_count <> 29 then () else (
+        List.app (fn (((x,y),dir,_),r) =>
+          if dir = N orelse dir = S then
+            r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
+          else ()) outputs;
+          if ignore_input then () else
+            appi (fn i => fn ((x,y),dir,_) =>
+              if dir = N then
+                init_from_rle "2b3o$bo2bo$4bo$4bo$bobo!"
+                  (toY(75*y-5)) (toX(75*x-5))
+                  (Var (i, !gen_count)) next_grid
+              else if dir = S then
+                init_from_rle "5$6bobo$5bo$5bo$5bo2bo$5b3o!"
+                  (toY(75*y-5)) (toX(75*x-5))
+                  (Var (i, !gen_count)) next_grid
+              else ()) inputs)
+
+    val _ = step_count := ((!step_count) + 1) mod 60
   in
-    (the_grid := next_grid; the_next_grid := grid)
+    the_grid := next_grid; the_next_grid := grid
   end;
 
 fun run_to_fixpoint (st as STATE {gen_count, the_grid, inputs, outputs, ...}) =
@@ -370,14 +359,14 @@ fun run_to_fixpoint (st as STATE {gen_count, the_grid, inputs, outputs, ...}) =
       let
         val _ = print (" " ^ Int.toString n)
         val _ = for_loop 0 60 (fn i => compute_next_state st false);
-        val snap = snapshot (!gen_count) inputs outputs (!the_grid)
+        val snap = snapshot (!gen_count) inputs (!the_grid)
       in
         if prev = #2 snap then snap else loop (n+1) (#2 snap)
       end
     val (ins, res) = loop 1 prev
     val _ = print " done\n"
   in
-    {inputs = ins, outputs = map (fn (d, r) => (d, !r)) outputs, grid = res}
+    {inputs = ins, outputs = map (fn ((p, d, _), r) => (p, d, !r)) outputs, grid = res}
   end
 
 type gate = {
@@ -393,7 +382,7 @@ type loaded_gate = {
   outputs: io_port list,
   height: int,
   width: int,
-  grid: bexp array array
+  grid: unit -> bexp array array
 }
 
 fun prepare ({inputs, outputs, height, width, grid}: loaded_gate) =
@@ -404,20 +393,20 @@ fun prepare ({inputs, outputs, height, width, grid}: loaded_gate) =
     width = width,
     inputs = inputs,
     outputs = map (fn d => (d, ref False)) outputs,
-    the_grid = ref grid,
+    the_grid = ref (grid ()),
     the_next_grid = ref (new_grid (width * 150 + 20) (height * 150 + 20))
   }
 
-fun load ({filename, inputs, outputs, height, width}: gate): loaded_gate = let
-  val grid = new_grid (width * 150 + 20) (height * 150 + 20)
-  val _ = init_from_rle (read_file ("gates/" ^ filename)) 10 10 True grid
-  in
-    { height = height,
-      width = width,
-      inputs = inputs,
-      outputs = outputs,
-      grid = grid }
-  end
+fun load ({filename, inputs, outputs, height, width}: gate): loaded_gate = {
+  height = height,
+  width = width,
+  inputs = inputs,
+  outputs = outputs,
+  grid = fn () => let
+    val grid = new_grid (width * 150 + 20) (height * 150 + 20)
+    val _ = init_from_rle (read_file ("gates/" ^ filename)) 10 10 True grid
+    in grid end
+}
 
 fun rotate_dir E = S
   | rotate_dir S = W
@@ -427,25 +416,28 @@ fun rotate_dir E = S
 fun rotate
   ({grid = original_grid,
     inputs, outputs, width, height}: loaded_gate): loaded_gate = let
-  val (cols,rows) = get_width_height original_grid
-  val grid = new_grid rows cols
-  val _ = for_loop 0 cols (fn i =>
-    for_loop 0 rows (fn j =>
-      update_cell i j grid (get_cell ((rows-1)-j) i original_grid)))
-  val inputs = map (fn ((x,y),d) => ((2*(height-1)-y,x),rotate_dir d)) inputs
-  val outputs = map (fn ((x,y),d) => ((2*(height-1)-y,x),rotate_dir d)) outputs
-  val st = prepare {
-    inputs = inputs,
-    outputs = outputs,
-    width = height,
-    height = width,
-    grid = grid
-  }
-  val _ = for_loop 0 30 (fn i => compute_next_state st true)
-  val _ = C List.app outputs (fn ((x,y),d) =>
-    ignore $ delete_box (75*x-6) (75*y-6) 12 12 grid)
+  val inputs = map (fn ((x,y),d,r) => ((2*(height-1)-y,x),rotate_dir d, r)) inputs
+  val outputs = map (fn ((x,y),d,r) => ((2*(height-1)-y,x),rotate_dir d, r)) outputs
+  fun grid () = let
+    val original_grid = original_grid ()
+    val (cols, rows) = (width * 150 + 20, height * 150 + 20)
+    val grid = new_grid rows cols
+    val _ = for_loop 0 cols (fn i =>
+      for_loop 0 rows (fn j =>
+        update_cell i j grid (get_cell ((rows-1)-j) i original_grid)))
+    val st as STATE {the_grid, ...} = prepare {
+      inputs = inputs,
+      outputs = outputs,
+      width = height,
+      height = width,
+      grid = K grid
+    }
+    val _ = for_loop 0 30 (fn i => compute_next_state st true)
+    val _ = C List.app outputs (fn ((x,y),d,_) =>
+      ignore $ delete_box (75*x-6) (75*y-6) 12 12 (!the_grid))
+    in !the_grid end
   in
-    { grid = (fn STATE {the_grid, ...} => !the_grid) st,
+    { grid = grid,
       inputs = inputs,
       outputs = outputs,
       width = height,
@@ -453,108 +445,120 @@ fun rotate
   end
 
 val and_en_e =
-  { filename = "and-en-e.rle" ,
-    inputs   = [((~1,0),E),((0,1),N)] ,
-    outputs  = [((1,0),E)] ,
-    height   = 1 ,
+  { filename = "and-en-e.rle",
+    inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
+    outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
+    height   = 1,
     width    = 1 } : gate;
 
 val and_es_e =
-  { filename = "and-es-e.rle" ,
-    inputs   = [((~1,0),E),((0,~1),S)] ,
-    outputs  = [((1,0),E)] ,
-    height   = 1 ,
+  { filename = "and-es-e.rle",
+    inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
+    outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
+    height   = 1,
     width    = 1 } : gate;
 
 val and_ew_n =
-  { filename = "and-ew-n.rle" ,
-    inputs   = [((1,0),W),((~1,0),E)] ,
-    outputs  = [((0,~1),N)] ,
-    height   = 1 ,
+  { filename = "and-ew-n.rle",
+    inputs   = [((1, 0), W, Var (0, 7)), ((~1, 0), E, Var (1, 10))],
+    outputs  = [((0, ~1), N, And (Var (0, 3), Var (1, 0)))],
+    height   = 1,
     width    = 1 } : gate;
 
 val or_en_e =
-  { filename = "or-en-e.rle" ,
-    inputs   = [((~1,0),E),((0,1),N)] ,
-    outputs  = [((1,0),E)] ,
-    height   = 1 ,
+  { filename = "or-en-e.rle",
+    inputs   = [((~1, 0), E, Var (0, 8)), ((0, 1), N, Var (1, 6))],
+    outputs  = [((1, 0), E, Or (Var (0, 0), Var (1, 2)))],
+    height   = 1,
     width    = 1 } : gate;
 
 val not_e_e =
-  { filename = "not-e-e.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((1,0),E)] ,
-    height   = 1 ,
+  { filename = "not-e-e.rle",
+    inputs   = [((~1, 0), E, Var (0, 9))],
+    outputs  = [((1, 0), E, Not (Var (0, 1)))],
+    height   = 1,
     width    = 1 } : gate;
 
 val half_adder_ee_es =
-  { filename = "half-adder-ee-es.rle" ,
-    inputs   = [((~1,0),E),((~1,2),E)] ,
-    outputs  = [((3,0),E),((2,3),S)] ,
-    height   = 2 ,
+  { filename = "half-adder-ee-es.rle",
+    inputs   = [((~1, 0), E, Var (0, 20)), ((~1, 2), E, Var (1, 19))],
+    outputs  = [
+      ((3, 0), E, Or (
+        And (Var (0, 4), Or (
+          And (Var (0, 7), Not (Var (1, 1))),
+          And (Not (Var (0, 7)), And (Var (1, 4), Not (Var (1, 1)))))),
+        And (Not (Var (0, 4)), Or (Var (0, 7), Var (1, 4))))),
+      ((2, 3), S, And (Var (0, 0), Var (1, 2)))],
+    height   = 2,
     width    = 2 } : gate;
 
 val half_adder_ee_ee =
-  { filename = "half-adder-ee-ee.rle" ,
-    inputs   = [((~1,0),E),((~1,2),E)] ,
-    outputs  = [((3,0),E),((3,2),E)] ,
-    height   = 2 ,
+  { filename = "half-adder-ee-ee.rle",
+    inputs   = [((~1, 0), E, Var (0, 18)), ((~1, 2), E, Var (1, 19))],
+    outputs  = [
+      ((3, 0), E, Or (
+        And (Var (0, 3), Or (
+          And (Var (0, 6), Not (Var (1, 0))),
+          And (Not (Var (0, 6)), And (Var (1, 3), Not (Var (1, 0)))))),
+        And (Not (Var (0, 3)), Or (Var (0, 6), Var (1, 3))))),
+      ((3, 2), E, And (Var (0, 1), Var (1, 3)))],
+    height   = 2,
     width    = 2 } : gate;
 
 val turn_e_s =
-  { filename = "turn-e-s.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((0,1),S)] ,
-    height   = 1 ,
+  { filename = "turn-e-s.rle",
+    inputs   = [((~1, 0), E, Var (0, 8))],
+    outputs  = [((0, 1), S, Var (0, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val turn_e_n =
-  { filename = "turn-e-n.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((0,~1),N)] ,
-    height   = 1 ,
+  { filename = "turn-e-n.rle",
+    inputs   = [((~1, 0), E, Var (0, 7))],
+    outputs  = [((0, ~1), N, Var (0, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val fork_e_es =
-  { filename = "fork-e-es.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((1,0),E),((0,1),S)] ,
-    height   = 1 ,
+  { filename = "fork-e-es.rle",
+    inputs   = [((~1, 0), E, Var (0, 7))],
+    outputs  = [((1, 0), E, Var (0, 1)), ((0, 1), S, Var (0, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val fork_e_en =
-  { filename = "fork-e-en.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((1,0),E),((0,~1),N)] ,
-    height   = 1 ,
+  { filename = "fork-e-en.rle",
+    inputs   = [((~1, 0), E, Var (0, 8))],
+    outputs  = [((1, 0), E, Var (0, 2)), ((0, ~1), N, Var (0, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val wire_e_e =
-  { filename = "empty.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((1,0),E)] ,
-    height   = 1 ,
+  { filename = "empty.rle",
+    inputs   = [((~1, 0), E, Var (0, 6))],
+    outputs  = [((1, 0), E, Var (0, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val cross_es_es =
-  { filename = "empty.rle" ,
-    inputs   = [((~1,0),E),((0,~1),S)] ,
-    outputs  = [((1,0),E),((0,1),S)] ,
-    height   = 1 ,
+  { filename = "empty.rle",
+    inputs   = [((~1, 0), E, Var (0, 6)), ((0, ~1), S, Var (1, 6))],
+    outputs  = [((1, 0), E, Var (0, 0)), ((0, 1), S, Var (1, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val cross_en_en =
-  { filename = "empty.rle" ,
-    inputs   = [((~1,0),E),((0,1),N)] ,
-    outputs  = [((1,0),E),((0,~1),N)] ,
-    height   = 1 ,
+  { filename = "empty.rle",
+    inputs   = [((~1, 0), E, Var (0, 6)), ((0, 1), N, Var (1, 6))],
+    outputs  = [((1, 0), E, Var (0, 0)), ((0, ~1), N, Var (1, 0))],
+    height   = 1,
     width    = 1 } : gate;
 
 val slow_wire_e_e =
-  { filename = "slow-wire-e-e.rle" ,
-    inputs   = [((~1,0),E)] ,
-    outputs  = [((7,0),E)] ,
-    height   = 1 ,
+  { filename = "slow-wire-e-e.rle",
+    inputs   = [((~1, 0), E, Var (0, 156))],
+    outputs  = [((7, 0), E, Var (0, 0))],
+    height   = 1,
     width    = 4 } : gate;
 
 end
