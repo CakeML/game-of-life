@@ -1,11 +1,20 @@
 (*
   A formalisation of the rules of Conway's Game of Life (GOL).
 *)
-open preamble;
+open HolKernel Parse boolLib bossLib pred_setTheory pairTheory
+     dep_rewrite arithmeticTheory listTheory alistTheory rich_listTheory
+     combinTheory
 
 val _ = new_theory "gol_rules";
 
+Overload LLOOKUP = “λl n. oEL n l”;
 Overload "U" = “BIGUNION”;
+
+Theorem MAP_EQ_ID:
+ !f ls. (MAP f ls = ls) = (!x. MEM x ls ==> (f x = x))
+Proof
+PROVE_TAC[MAP_EQ_f,MAP_ID,combinTheory.I_THM]
+QED
 
 (* There is an unbounded 2D plane of cells *)
 Type state[pp] = “:(int # int) set”;
@@ -1653,7 +1662,7 @@ Theorem get_bvars_thm:
   ∀x acc. set (get_bvars x acc) = vars_of x ∪ set acc
 Proof
   Induct \\ gvs [get_bvars_def,vars_of_def, AC UNION_COMM UNION_ASSOC]
-  \\ induct_on ‘acc’ \\ gvs [add_to_sorted_def] \\ rw []
+  \\ Induct_on ‘acc’ \\ gvs [add_to_sorted_def] \\ rw []
   \\ gvs [EXTENSION] \\ rw [] \\ eq_tac \\ rw []
   \\ rpt (PairCases_on ‘h’ \\ gvs [])
   \\ PairCases_on ‘x’ \\ gvs []
