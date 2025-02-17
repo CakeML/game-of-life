@@ -447,14 +447,15 @@ Definition circ_mod_wf_def:
     (∀x y r. ((x,y),r) ∈ ins ∪ outs ∪ as ⇒ ((x % 2 = 0) ≠ (y % 2 = 0))) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ ins ∧ ((x,y),r2) ∈ ins ⇒ r1 = r2) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ outs ∪ as ∧ ((x,y),r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
-    (∀x y r. ((x,y),N,r) ∈ ins ⇒ (x,y-1) ∈ area) ∧
-    (∀x y r. ((x,y),S,r) ∈ ins ⇒ (x,y+1) ∈ area) ∧
-    (∀x y r. ((x,y),E,r) ∈ ins ⇒ (x+1,y) ∈ area) ∧
-    (∀x y r. ((x,y),W,r) ∈ ins ⇒ (x-1,y) ∈ area) ∧
-    (∀x y r. ((x,y),N,r) ∈ outs ⇒ (x,y+1) ∈ area) ∧
-    (∀x y r. ((x,y),S,r) ∈ outs ⇒ (x,y-1) ∈ area) ∧
-    (∀x y r. ((x,y),E,r) ∈ outs ⇒ (x-1,y) ∈ area) ∧
-    (∀x y r. ((x,y),W,r) ∈ outs ⇒ (x+1,y) ∈ area)
+    (∀x y r. ((x,y),N,r) ∈ ins ∪ as ⇒ (x,y-1) ∈ area) ∧
+    (∀x y r. ((x,y),S,r) ∈ ins ∪ as ⇒ (x,y+1) ∈ area) ∧
+    (∀x y r. ((x,y),E,r) ∈ ins ∪ as ⇒ (x+1,y) ∈ area) ∧
+    (∀x y r. ((x,y),W,r) ∈ ins ∪ as ⇒ (x-1,y) ∈ area) ∧
+    (∀x y r. ((x,y),N,r) ∈ outs ∪ as ⇒ (x,y+1) ∈ area) ∧
+    (∀x y r. ((x,y),S,r) ∈ outs ∪ as ⇒ (x,y-1) ∈ area) ∧
+    (∀x y r. ((x,y),E,r) ∈ outs ∪ as ⇒ (x-1,y) ∈ area) ∧
+    (∀x y r. ((x,y),W,r) ∈ outs ∪ as ⇒ (x+1,y) ∈ area) ∧
+    (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉outs)
 End
 
 Definition circ_area_def:
@@ -582,11 +583,91 @@ Definition circ_mod_def:
        assert_content := circ_io_lwss (outs ∪ as) n |>
 End
 
+Theorem IN_from_row:
+  ∀row i j x y.
+    (x,y) ∈ from_row (i,j) row ⇔
+    y = j ∧ ∃n. oEL n row = SOME T ∧ x = i + &n
+Proof
+  Induct \\ gvs [from_row_def,oEL_def]
+  \\ rw [] \\ gvs [from_row_def,oEL_def]
+  \\ Cases_on ‘h’ \\ gvs [from_row_def,oEL_def]
+  \\ Cases_on ‘y = j’ \\ gvs []
+  \\ eq_tac \\ rw []
+  >- (qexists_tac ‘0’ \\ gvs [])
+  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ gvs [AllCaseEqs()]
+  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
+  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
+QED
+
+Theorem IN_from_rows:
+  ∀rows i j x y.
+    (x,y) ∈ from_rows (i,j) rows ⇔
+      ∃dx dy row.
+        x = i + & dx ∧ y = j + & dy ∧
+        oEL dy rows = SOME row ∧
+        oEL dx row = SOME T
+Proof
+  Induct \\ gvs [from_rows_def] \\ gvs [oEL_def,IN_from_row]
+  \\ rpt gen_tac \\ eq_tac \\ strip_tac
+  >- (pop_assum $ irule_at Any \\ qrefinel [‘_’,‘0’] \\ gvs [])
+  >- (qrefinel [‘dx’,‘1+dy’] \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ Cases_on ‘dy’ \\ gvs []
+  \\ rpt $ pop_assum $ irule_at Any
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem io_gate_lenth:
+  LENGTH (io_gate d) = 10 ∧
+  ∀row. MEM row (io_gate d) ⇒ LENGTH row = 10
+Proof
+  Cases_on ‘d’ \\ gvs [io_gate_def, SF DNF_ss]
+QED
+
+Theorem lwss_at_imp_io_box:
+  (x,y) ∈ lwss_at n ((i,j),r) ⇒ (x,y) ∈ io_box (i,j)
+Proof
+  PairCases_on ‘r’ \\ rw [lwss_at_def,io_box_def, lwss_as_set_def]
+  \\ gvs [box_def,IN_from_rows]
+  \\ qexists_tac ‘dx + 1’
+  \\ qexists_tac ‘dy + 1’
+  \\ qsuff_tac ‘dx < 10 ∧ dy < 10’ >- intLib.COOPER_TAC
+  \\ gvs [oEL_THM]
+  \\ rename [‘io_gate d’]
+  \\ strip_assume_tac io_gate_lenth
+  \\ gvs [MEM_EL,PULL_EXISTS]
+QED
+
 Theorem mods_wf_circ_mod:
   circ_mod_wf area ins outs as ⇒
   mods_wf (circ_mod area ins outs as)
 Proof
-  cheat
+  rw [circ_mod_wf_def]
+  \\ gvs [mods_wf_def,mod_wf_def,circ_mod_def] \\ rw []
+  >-
+   (gvs [circ_output_area_def,circ_area_def] \\ rw []
+    \\ gvs [circ_io_area_def,SUBSET_DEF,PULL_EXISTS]
+    \\ gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD]
+    \\ metis_tac [])
+  >-
+   (gvs [circ_output_area_def,circ_area_def] \\ rw []
+    \\ gvs [circ_io_area_def,SUBSET_DEF,PULL_EXISTS]
+    \\ rpt gen_tac \\ strip_tac
+    >-
+     (PairCases_on ‘r’ \\ gvs []
+      \\ gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD]
+      \\ metis_tac [])
+    \\ cheat)
+  \\ rw [circ_io_lwss_def]
+  \\ simp [circ_io_area_def,circ_output_area_def,
+           SUBSET_DEF,FORALL_PROD,PULL_EXISTS,EXISTS_PROD]
+  \\ rewrite_tac [GSYM AND_IMP_INTRO]
+  \\ rpt gen_tac
+  \\ rpt $ disch_then assume_tac
+  \\ pop_assum $ irule_at Any
+  \\ pop_assum $ irule_at Any
+  \\ imp_res_tac lwss_at_imp_io_box \\ gvs []
 QED
 
 Definition circuit_run_def:
@@ -931,10 +1012,13 @@ Definition check_mask_def':
 End
 
 Theorem check_mask_def:
-  check_mask rows mask =
+  ∀rows mask.
+    check_mask rows mask =
     LIST_REL (λr m. LIST_REL (λe m. m ∨ e = False) r m) rows mask
 Proof
-  cheat
+  Induct \\ Cases_on ‘mask’ \\ gvs [check_mask_def']
+  \\ qsuff_tac ‘∀x y. check_mask1 x y = LIST_REL (λe m. m ∨ e = False) x y’ >- gvs []
+  \\ Induct \\ Cases_on ‘y’ \\ gvs [check_mask1_def]
 QED
 
 Definition gol_checked_steps_def:
@@ -1398,41 +1482,6 @@ Theorem IN_step_lemma:
      (x-1,y+1) ∈ s, (x,y+1) ∈ s, (x+1,y+1) ∈ s)
 Proof
   gvs [step_def,IN_DEF,live_adj_def,decide_step_def]
-QED
-
-Theorem IN_from_row:
-  ∀row i j x y.
-    (x,y) ∈ from_row (i,j) row ⇔
-    y = j ∧ ∃n. oEL n row = SOME T ∧ x = i + &n
-Proof
-  Induct \\ gvs [from_row_def,oEL_def]
-  \\ rw [] \\ gvs [from_row_def,oEL_def]
-  \\ Cases_on ‘h’ \\ gvs [from_row_def,oEL_def]
-  \\ Cases_on ‘y = j’ \\ gvs []
-  \\ eq_tac \\ rw []
-  >- (qexists_tac ‘0’ \\ gvs [])
-  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
-  \\ gvs [AllCaseEqs()]
-  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
-  >- (qexists_tac ‘n+1’ \\ gvs [] \\ intLib.COOPER_TAC)
-  >- (qexists_tac ‘n-1’ \\ gvs [] \\ intLib.COOPER_TAC)
-QED
-
-Theorem IN_from_rows:
-  ∀rows i j x y.
-    (x,y) ∈ from_rows (i,j) rows ⇔
-      ∃dx dy row.
-        x = i + & dx ∧ y = j + & dy ∧
-        oEL dy rows = SOME row ∧
-        oEL dx row = SOME T
-Proof
-  Induct \\ gvs [from_rows_def] \\ gvs [oEL_def,IN_from_row]
-  \\ rpt gen_tac \\ eq_tac \\ strip_tac
-  >- (pop_assum $ irule_at Any \\ qrefinel [‘_’,‘0’] \\ gvs [])
-  >- (qrefinel [‘dx’,‘1+dy’] \\ gvs [] \\ intLib.COOPER_TAC)
-  \\ Cases_on ‘dy’ \\ gvs []
-  \\ rpt $ pop_assum $ irule_at Any
-  \\ intLib.COOPER_TAC
 QED
 
 Theorem y_SUB_IN_from_rows:
@@ -2040,13 +2089,6 @@ Proof
   \\ gvs [ADD1,intLib.COOPER_PROVE “& (m + n) = & n + & m:int”]
   \\ gvs [from_row_or_row, AC UNION_COMM UNION_ASSOC,
           AC integerTheory.INT_ADD_COMM integerTheory.INT_ADD_ASSOC]
-QED
-
-Theorem io_gate_lenth:
-  LENGTH (io_gate d) = 10 ∧
-  ∀row. MEM row (io_gate d) ⇒ LENGTH row = 10
-Proof
-  Cases_on ‘d’ \\ gvs [io_gate_def, SF DNF_ss]
 QED
 
 Theorem age_0[simp]:
