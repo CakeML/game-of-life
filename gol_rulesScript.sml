@@ -639,6 +639,12 @@ Proof
   \\ gvs [MEM_EL,PULL_EXISTS]
 QED
 
+Theorem IN_io_box_io_box:
+  (a0,a1) ∈ io_box (x,y) ⇒ ((a0,a1) ∈ io_box (x1,y1) ⇔ x = x1 ∧ y = y1)
+Proof
+  gvs [io_box_def,box_def] \\ intLib.COOPER_TAC
+QED
+
 Theorem mods_wf_circ_mod:
   circ_mod_wf area ins outs as ⇒
   mods_wf (circ_mod area ins outs as)
@@ -654,11 +660,51 @@ Proof
    (gvs [circ_output_area_def,circ_area_def] \\ rw []
     \\ gvs [circ_io_area_def,SUBSET_DEF,PULL_EXISTS]
     \\ rpt gen_tac \\ strip_tac
+    \\ PairCases_on ‘r’ \\ gvs []
+    >- (gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD] \\ metis_tac [])
     >-
-     (PairCases_on ‘r’ \\ gvs []
-      \\ gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD]
-      \\ metis_tac [])
-    \\ cheat)
+     (disj1_tac
+      \\ first_x_assum drule \\ strip_tac \\ gvs []
+      \\ rename [‘a ∈ io_box (x,y)’] \\ PairCases_on ‘a’
+      \\ ‘(x,y − 1) ∈ area ∧ (x,y + 1) ∈ area’ by
+        (gvs [IN_DEF,is_ns_def,SF DNF_ss] \\ res_tac \\ gvs [])
+      \\ drule IN_io_box_io_box
+      \\ disch_then (fn th => rewrite_tac [th])
+      \\ reverse conj_tac >- metis_tac []
+      \\ gvs [base_area_def,PULL_EXISTS,box_def,io_box_def]
+      \\ Cases_on ‘j < 6’
+      >-
+       (qexists_tac ‘x’ \\ qexists_tac ‘y-1’ \\ gvs []
+        \\ qexists_tac ‘75 - 6 + i’
+        \\ qexists_tac ‘150 - 6 + j’
+        \\ intLib.COOPER_TAC)
+      >-
+       (qexists_tac ‘x’ \\ qexists_tac ‘y+1’ \\ gvs []
+        \\ qexists_tac ‘75 - 6 + i’
+        \\ qexists_tac ‘j - 6’
+        \\ intLib.COOPER_TAC))
+    >- (gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD] \\ metis_tac [])
+    >-
+     (disj1_tac
+      \\ first_x_assum drule \\ strip_tac \\ gvs []
+      \\ rename [‘a ∈ io_box (x,y)’] \\ PairCases_on ‘a’
+      \\ ‘(x − 1,y) ∈ area ∧ (x + 1,y) ∈ area’ by
+        (gvs [IN_DEF,is_ew_def,SF DNF_ss] \\ res_tac \\ gvs [])
+      \\ drule IN_io_box_io_box
+      \\ disch_then (fn th => rewrite_tac [th])
+      \\ reverse conj_tac >- metis_tac []
+      \\ gvs [base_area_def,PULL_EXISTS,box_def,io_box_def]
+      \\ Cases_on ‘i < 6’
+      >-
+       (qexists_tac ‘x-1’ \\ qexists_tac ‘y’ \\ gvs []
+        \\ qexists_tac ‘150 - 6 + i’
+        \\ qexists_tac ‘75 - 6 + j’
+        \\ intLib.COOPER_TAC)
+      >-
+       (qexists_tac ‘x+1’ \\ qexists_tac ‘y’ \\ gvs []
+        \\ qexists_tac ‘i - 6’
+        \\ qexists_tac ‘75 - 6 + j’
+        \\ intLib.COOPER_TAC)))
   \\ rw [circ_io_lwss_def]
   \\ simp [circ_io_area_def,circ_output_area_def,
            SUBSET_DEF,FORALL_PROD,PULL_EXISTS,EXISTS_PROD]
