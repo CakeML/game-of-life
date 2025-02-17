@@ -1,5 +1,6 @@
 structure gol_simLib :> gol_simLib =
 struct
+open HolKernel
 
 datatype bexp = False
               | True

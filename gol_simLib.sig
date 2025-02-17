@@ -25,4 +25,20 @@ val load: gate -> state
 
 val run_to_fixpoint: state -> bexp vector vector
 
+val and_en_e: gate;
+val and_es_e: gate;
+val and_ew_n: gate;
+val or_en_e: gate;
+val not_e_e: gate;
+val half_adder_ee_es: gate;
+val half_adder_ee_ee: gate;
+val turn_e_s: gate;
+val turn_e_n: gate;
+val fork_e_es: gate;
+val fork_e_en: gate;
+val wire_e_e: gate;
+val cross_es_es: gate;
+val cross_en_en: gate;
+val slow_wire_e_e: gate;
+
 end;

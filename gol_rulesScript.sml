@@ -819,8 +819,8 @@ QED
 
 Definition get_bvars8_def:
   get_bvars8 (y1,y2,y3,y4,y5,y6,y7,y8) =
-    (get_bvars y1 o get_bvars y2 o get_bvars y3 o get_bvars y4 o
-     get_bvars y5 o get_bvars y6 o get_bvars y7 o get_bvars y8) []
+    (get_bvars y1 $ get_bvars y2 $ get_bvars y3 $ get_bvars y4 $
+     get_bvars y5 $ get_bvars y6 $ get_bvars y7 $ get_bvars y8 [])
 End
 
 Definition num_of_bool_def[simp]:
@@ -833,7 +833,7 @@ Definition eval_bexp_def[simp]:
   eval_bexp env False     = F ∧
   eval_bexp env (Not x)   = ~(eval_bexp env x) ∧
   eval_bexp env (And x y) = (eval_bexp env x ∧ eval_bexp env y) ∧
-  eval_bexp env (And x y) = (eval_bexp env x ∨ eval_bexp env y) ∧
+  eval_bexp env (Or x y)  = (eval_bexp env x ∨ eval_bexp env y) ∧
   eval_bexp env (Var v n) = case ALOOKUP env (v,n) of SOME b => b | NONE => F
 End
 
@@ -921,10 +921,26 @@ Definition gol_step_rows_def:
   gol_step_rows (x::xs) = gol_rows (REPLICATE (LENGTH x) False) (x::xs)
 End
 
-Definition check_mask_def:
+Definition check_mask1_def:
+  (* check_mask1 = LIST_REL (λe m. m ∨ e = False) *)
+  (check_mask1 [] [] ⇔ T) ∧ (check_mask1 (a::as) [] ⇔ F) ∧
+  (check_mask1 [] (b::bs) ⇔ F) ∧
+  (check_mask1 (a::as) (b::bs) ⇔ (b ∨ a = False) ∧ check_mask1 as bs)
+End
+
+Definition check_mask_def':
+  (* check_mask = LIST_REL (LIST_REL (λe m. m ∨ e = False)) *)
+  (check_mask [] [] ⇔ T) ∧ (check_mask (a::as) [] ⇔ F) ∧
+  (check_mask [] (b::bs) ⇔ F) ∧
+  (check_mask (a::as) (b::bs) ⇔ check_mask1 a b ∧ check_mask as bs)
+End
+
+Theorem check_mask_def:
   check_mask rows mask =
     LIST_REL (λr m. LIST_REL (λe m. m ∨ e = False) r m) rows mask
-End
+Proof
+  cheat
+QED
 
 Definition gol_checked_steps_def:
   gol_checked_steps 0 rows mask = SOME rows ∧

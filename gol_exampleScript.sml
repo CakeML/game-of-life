@@ -1,4 +1,4 @@
-open bossLib gol_rulesTheory;
+open HolKernel bossLib gol_rulesTheory;
 
 val _ = new_theory "gol_example";
 
