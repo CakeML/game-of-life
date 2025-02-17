@@ -20,10 +20,14 @@ type gate =
     width : int };
 
 type state
-
-val load: gate -> state
-
-val run_to_fixpoint: state -> bexp vector vector
+type loaded_gate
+val load: gate -> loaded_gate
+val prepare: loaded_gate -> state
+val rotate: loaded_gate -> loaded_gate
+val run_to_fixpoint: state ->
+  { inputs: (io_port * bexp) list,
+    outputs: (io_port * bexp) list,
+    grid: bexp vector vector }
 
 val and_en_e: gate;
 val and_es_e: gate;

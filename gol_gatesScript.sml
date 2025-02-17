@@ -43,50 +43,52 @@ fun tr_dir N = N_tm
   | tr_dir S = S_tm
   | tr_dir W = W_tm
 
-fun tr_io_port i (((a, b), d):io_port) =
+fun tr_io_port (((a, b), d):io_port, v) =
   pairSyntax.mk_pair (
     pairSyntax.mk_pair (
       intSyntax.term_of_int (Arbint.fromInt a),
       intSyntax.term_of_int (Arbint.fromInt b)),
-    pairSyntax.mk_pair (
-      tr_dir d,
-      mk_var (tr_var_i i, numSyntax.term_of_int 0 (* ?? *))))
+    pairSyntax.mk_pair (tr_dir d, tr_bexp v))
 
 val tr_io_ports = let
   val ty = ``:(int # int) # dir # bexp``
-  in fn l => listSyntax.mk_list (mapi tr_io_port l, ty) end
+  in fn l => listSyntax.mk_list (map tr_io_port l, ty) end
 
 end
 
-fun translate_gate stem gate = let
-  val board = run_to_fixpoint (load gate)
-  val tm = tr_bexpss board
-  val defn = boolLib.new_definition (stem^"_def",
-    mk_eq (mk_var (stem, ``:bexp list list``), tm))
-  val rows = lhs (concl defn)
-  val w = numSyntax.term_of_int (#width gate)
-  val h = numSyntax.term_of_int (#height gate)
-  val ins = tr_io_ports (#inputs gate)
-  val outs = tr_io_ports (#outputs gate)
-  val thm = store_thm (stem^"_thm",
-    ``simulation_ok ^w ^h ^ins ^outs ^rows``,
-    CONV_TAC cv_eval)
-  in (defn, thm) end;
+fun translate_gate stems gate = let
+  val start = load gate
+  fun tr (stem, i) = let
+    val {inputs, outputs, grid} = run_to_fixpoint (prepare (funpow i rotate start))
+    val tm = tr_bexpss grid
+    val defn = boolLib.new_definition (stem^"_def",
+      mk_eq (mk_var (stem, ``:bexp list list``), tm))
+    val _ = cv_trans_deep_embedding EVAL defn
+    val rows = lhs (concl defn)
+    val w = numSyntax.term_of_int (#width gate)
+    val h = numSyntax.term_of_int (#height gate)
+    val ins = tr_io_ports inputs
+    val outs = tr_io_ports outputs
+    val thm = store_thm (stem^"_thm",
+      ``simulation_ok ^w ^h ^ins ^outs ^rows``,
+      CONV_TAC cv_eval)
+    in (defn, thm) end
+  in map tr stems end;
 
-val _ = translate_gate "and_en_e" and_en_e;
-(* val _ = translate_gate "and_es_e" and_es_e;
-val _ = translate_gate "and_ew_n" and_ew_n;
-val _ = translate_gate "or_en_e" or_en_e;
-val _ = translate_gate "not_e_e" not_e_e;
-val _ = translate_gate "turn_e_s" turn_e_s;
-val _ = translate_gate "turn_e_n" turn_e_n;
-val _ = translate_gate "wire_e_e" wire_e_e;
-val _ = translate_gate "fork_e_es" fork_e_es;
-val _ = translate_gate "fork_e_en" fork_e_en;
-val _ = translate_gate "cross_es_es" cross_es_es;
-val _ = translate_gate "cross_en_en" cross_en_en;
-val _ = translate_gate "half_adder_ee_es" half_adder_ee_es;
-val _ = translate_gate "half_adder_ee_ee" half_adder_ee_ee;
-val _ = translate_gate "slow_wire_e_e" slow_wire_e_e; *)
+val _ = translate_gate [("and_en_e", 0)] and_en_e;
+(* val _ = translate_gate [("and_es_e", 0)] and_es_e;
+val _ = translate_gate [("and_ew_n", 0)] and_ew_n;
+val _ = translate_gate [("or_en_e", 0)] or_en_e;
+val _ = translate_gate [("not_e_e", 0)] not_e_e;
+val _ = translate_gate [("turn_e_s", 0)] turn_e_s;
+val _ = translate_gate [("turn_e_n", 0)] turn_e_n;
+val _ = translate_gate [("wire_e_e", 0)] wire_e_e;
+val _ = translate_gate [("fork_e_es", 0)] fork_e_es;
+val _ = translate_gate [("fork_e_en", 0)] fork_e_en;
+val _ = translate_gate [("cross_es_es", 0)] cross_es_es;
+val _ = translate_gate [("cross_en_en", 0)] cross_en_en;
+val _ = translate_gate [("half_adder_ee_es", 0)] half_adder_ee_es;
+val _ = translate_gate [("half_adder_ee_ee", 0)] half_adder_ee_ee;
+val _ = translate_gate [("slow_wire_e_e", 0)] slow_wire_e_e; *)
 
 val _ = export_theory();

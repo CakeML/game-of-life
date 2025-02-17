@@ -155,16 +155,20 @@ fun toY y = y+75+10;
 fun delete_box x y w h grid =
   let
     fun tab k n f = if k < n then (f k; tab (k+1) n f) else ()
+    val search = ref False
     fun del_cell r c =
       let
         val a = Array.sub(grid,r)
       in
-        Array.update(a,c,False)
+        case Array.sub(a,c) of
+          False => ()
+        | v => (search := v; Array.update(a,c,False))
       end handle Subscript => ();
   in
     tab 0 w (fn i =>
       tab 0 h (fn j =>
-        del_cell (toY(y+j)) (toX(x+i))))
+        del_cell (toY(y+j)) (toX(x+i))));
+    !search
   end
 
 fun get_width_height grid =
@@ -226,7 +230,7 @@ datatype dir = N | S | W | E;
 
 type io_port = (int * int) * dir;
 
-fun snapshot grid =
+fun snapshot gen_count ins outs grid =
   let
     val (cols,rows) = get_width_height grid
     val min_a = ref (~1);
@@ -240,20 +244,27 @@ fun snapshot grid =
                               if s = "b" then smart_min min_b g else ())
       | min_var _ = ()
     val _ = for_loop 0 rows (fn row =>
-              for_loop 0 cols (fn col =>
-                 min_var (get_cell row col grid)))
+      for_loop 0 cols (fn col =>
+        min_var (get_cell row col grid)))
+    val gen_count = gen_count - !min_b
     val a = !min_a
-    val b = !min_a
+    val b = !min_b
     fun sub_var (Not(x)) = Not(sub_var x)
       | sub_var (And(x,y)) = And(sub_var x, sub_var y)
       | sub_var (Or(x,y)) = Or(sub_var x, sub_var y)
       | sub_var (Var(s,g)) = (if s = "a" then Var(s,g-a) else
                               if s = "b" then Var(s,g-b) else Var(s,g))
       | sub_var x = x
+    val grid =
+      Vector.tabulate (rows, fn row =>
+        Vector.tabulate (cols, fn col =>
+          sub_var (get_cell row col grid)))
+    fun mk_in 0 = Var ("a", gen_count + 1 - !min_a)
+      | mk_in 1 = Var ("b", gen_count + 1 - !min_b)
+      | mk_in _ = raise Fail "too many"
+    val ins = mapi (fn i => fn d => (d, mk_in i)) ins
   in
-    Vector.tabulate (rows, fn row =>
-      Vector.tabulate (cols, fn col =>
-        sub_var (get_cell row col grid)))
+    (ins, grid)
   end
 
 fun read_file filename =
@@ -280,13 +291,15 @@ datatype state = STATE of {
   step_count: int ref,
   gen_count: int ref,
   inputs: io_port list,
-  outputs: io_port list,
+  outputs: (io_port * bexp ref) list,
+  height: int,
+  width: int,
   the_grid: bexp array array ref,
   the_next_grid: bexp array array ref
 }
 
 fun compute_next_state
-  (STATE {step_count, gen_count, inputs, outputs, the_grid, the_next_grid})
+  (STATE {step_count, gen_count, inputs, outputs, the_grid, the_next_grid, ...})
   ignore_input =
   let
     val varnames = ["a","b","c"]
@@ -307,9 +320,9 @@ fun compute_next_state
                        y8 = get_cell (row+1) (col+1) grid })))
      val _ = if !step_count <> 59 then [] else
                let
-                 val _ = List.app (fn ((x,y),dir) =>
+                 val _ = List.app (fn (((x,y),dir),r) =>
                            if dir = E orelse dir = W then
-                             delete_box (75*x-6) (75*y-6) 12 12 next_grid
+                             r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
                            else ()) outputs
                in
                  if ignore_input then [] else
@@ -326,9 +339,9 @@ fun compute_next_state
                end
      val _ = if !step_count <> 29 then [] else
                let
-                 val _ = List.app (fn ((x,y),dir) =>
+                 val _ = List.app (fn (((x,y),dir),r) =>
                            if dir = N orelse dir = S then
-                             delete_box (75*x-6) (75*y-6) 12 12 next_grid
+                             r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
                            else ()) outputs
                in
                  if ignore_input then [] else
@@ -349,7 +362,7 @@ fun compute_next_state
     (the_grid := next_grid; the_next_grid := grid)
   end;
 
-fun run_to_fixpoint (st as STATE {the_grid, ...}) =
+fun run_to_fixpoint (st as STATE {gen_count, the_grid, inputs, outputs, ...}) =
   let
     val _ = print "Rounds:"
     val prev = Vector.fromList[Vector.fromList([]:bexp list)]
@@ -357,35 +370,86 @@ fun run_to_fixpoint (st as STATE {the_grid, ...}) =
       let
         val _ = print (" " ^ Int.toString n)
         val _ = for_loop 0 60 (fn i => compute_next_state st false);
-        val snap = snapshot (!the_grid)
+        val snap = snapshot (!gen_count) inputs outputs (!the_grid)
       in
-        if prev = snap then snap else loop (n+1) snap
+        if prev = #2 snap then snap else loop (n+1) (#2 snap)
       end
-    val res = loop 1 prev
+    val (ins, res) = loop 1 prev
     val _ = print " done\n"
   in
-    res
+    {inputs = ins, outputs = map (fn (d, r) => (d, !r)) outputs, grid = res}
   end
 
-type gate =
-  { filename : string ,
-    inputs : io_port list ,
-    outputs : io_port list ,
-    height : int ,
-    width : int };
+type gate = {
+  filename : string,
+  inputs : io_port list,
+  outputs : io_port list,
+  height : int,
+  width : int
+}
 
-fun load ({filename, inputs, outputs, height, width}: gate) = let
-  val the_grid = new_grid (width * 150 + 20) (height * 150 + 20)
-  val _ = init_from_rle (read_file ("gates/" ^ filename)) 10 10 True the_grid
+type loaded_gate = {
+  inputs: io_port list,
+  outputs: io_port list,
+  height: int,
+  width: int,
+  grid: bexp array array
+}
+
+fun prepare ({inputs, outputs, height, width, grid}: loaded_gate) =
+  STATE {
+    step_count = ref 0,
+    gen_count = ref 0,
+    height = height,
+    width = width,
+    inputs = inputs,
+    outputs = map (fn d => (d, ref False)) outputs,
+    the_grid = ref grid,
+    the_next_grid = ref (new_grid (width * 150 + 20) (height * 150 + 20))
+  }
+
+fun load ({filename, inputs, outputs, height, width}: gate): loaded_gate = let
+  val grid = new_grid (width * 150 + 20) (height * 150 + 20)
+  val _ = init_from_rle (read_file ("gates/" ^ filename)) 10 10 True grid
   in
-    STATE {
-      step_count = ref 0,
-      gen_count = ref 0,
+    { height = height,
+      width = width,
       inputs = inputs,
       outputs = outputs,
-      the_grid = ref the_grid,
-      the_next_grid = ref (new_grid (width * 150 + 20) (height * 150 + 20))
-    }
+      grid = grid }
+  end
+
+fun rotate_dir E = S
+  | rotate_dir S = W
+  | rotate_dir W = N
+  | rotate_dir N = E;
+
+fun rotate
+  ({grid = original_grid,
+    inputs, outputs, width, height}: loaded_gate): loaded_gate = let
+  val (cols,rows) = get_width_height original_grid
+  val grid = new_grid rows cols
+  val _ = for_loop 0 cols (fn i =>
+    for_loop 0 rows (fn j =>
+      update_cell i j grid (get_cell ((rows-1)-j) i original_grid)))
+  val inputs = map (fn ((x,y),d) => ((2*(height-1)-y,x),rotate_dir d)) inputs
+  val outputs = map (fn ((x,y),d) => ((2*(height-1)-y,x),rotate_dir d)) outputs
+  val st = prepare {
+    inputs = inputs,
+    outputs = outputs,
+    width = height,
+    height = width,
+    grid = grid
+  }
+  val _ = for_loop 0 30 (fn i => compute_next_state st true)
+  val _ = C List.app outputs (fn ((x,y),d) =>
+    ignore $ delete_box (75*x-6) (75*y-6) 12 12 grid)
+  in
+    { grid = (fn STATE {the_grid, ...} => !the_grid) st,
+      inputs = inputs,
+      outputs = outputs,
+      width = height,
+      height = width }
   end
 
 val and_en_e =
