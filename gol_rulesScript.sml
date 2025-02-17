@@ -904,7 +904,9 @@ Definition gol_rows_def:
   gol_rows prev (row :: rest) =
     gol_row False prev
             False row
-            False (case rest of [] => MAP (K False) row | r :: _ => r)
+            False (case rest of
+                   | [] => REPLICATE (LENGTH row) False
+                   | r :: _ => r)
     :: gol_rows row rest ∧
   gol_rows prev [] = []
 End
@@ -1363,7 +1365,8 @@ Theorem LLOOKUP_gol_rows:
     n < LENGTH xs ∧
     ys = gol_row False (if n = 0 then prev else EL (n-1) xs)
                  False (EL n xs)
-                 False (if n+1 < LENGTH xs then EL (n+1) xs else MAP (K False) (EL n xs))
+                 False (if n+1 < LENGTH xs then EL (n+1) xs
+                        else REPLICATE (LENGTH (EL n xs)) False)
 Proof
   Induct \\ gvs [gol_rows_def,oEL_def] \\ rpt gen_tac
   \\ IF_CASES_TAC
@@ -1677,8 +1680,8 @@ Proof
       \\ gvs [oEL_THM])
   >- (rw [] \\ gvs [oEL_THM])
   >- (Cases_on ‘dx’ \\ gvs [oEL_def,oEL_MAP_EQ_SOME,PULL_EXISTS]
-      \\ rw [] \\ gvs [oEL_THM,EL_MAP])
-  \\ rw [] \\ gvs [oEL_THM,EL_MAP]
+      \\ rw [] \\ gvs [oEL_THM,EL_MAP,EL_REPLICATE])
+  \\ rw [] \\ gvs [oEL_THM,EL_MAP,EL_REPLICATE]
 QED
 
 Theorem check_mask_thm:
