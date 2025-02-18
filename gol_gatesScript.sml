@@ -57,7 +57,7 @@ fun tr_dir N = N_tm
   | tr_dir S = S_tm
   | tr_dir W = W_tm
 
-fun tr_io_port (((a, b), d):io_port, v) =
+fun tr_io_port (((a, b), d, v):io_port) =
   pairSyntax.mk_pair (
     pairSyntax.mk_pair (
       intSyntax.term_of_int (Arbint.fromInt a),
@@ -90,7 +90,7 @@ fun translate_gate stems gate = let
   in map tr stems end;
 
 val _ = translate_gate [("and_en_e", 0)] and_en_e;
-(* val _ = translate_gate [("and_es_e", 0)] and_es_e;
+val _ = translate_gate [("and_es_e", 0)] and_es_e;
 val _ = translate_gate [("and_ew_n", 0)] and_ew_n;
 val _ = translate_gate [("or_en_e", 0)] or_en_e;
 val _ = translate_gate [("not_e_e", 0)] not_e_e;
@@ -103,6 +103,6 @@ val _ = translate_gate [("cross_es_es", 0)] cross_es_es;
 val _ = translate_gate [("cross_en_en", 0)] cross_en_en;
 val _ = translate_gate [("half_adder_ee_es", 0)] half_adder_ee_es;
 val _ = translate_gate [("half_adder_ee_ee", 0)] half_adder_ee_ee;
-val _ = translate_gate [("slow_wire_e_e", 0)] slow_wire_e_e; *)
+val _ = translate_gate [("slow_wire_e_e", 0)] slow_wire_e_e;
 
 val _ = export_theory();
