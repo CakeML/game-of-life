@@ -73,6 +73,7 @@ end
 fun translate_gate stems gate = let
   val start = load gate
   fun tr (stem, i) = let
+    val _ = print ("translate: " ^ stem ^ "\n")
     val {inputs, outputs, grid} = run_to_fixpoint (prepare (funpow i rotate start))
     val tm = tr_bexpss grid
     val defn = boolLib.new_definition (stem^"_def",
@@ -89,6 +90,9 @@ fun translate_gate stems gate = let
     in (defn, thm) end
   in map tr stems end;
 
+val _ = translate_gate [("wire_e_e", 0)] wire_e_e;
+val _ = translate_gate [("cross_es_es", 0)] cross_es_es;
+val _ = translate_gate [("cross_en_en", 0)] cross_en_en;
 val _ = translate_gate [("and_en_e", 0)] and_en_e;
 val _ = translate_gate [("and_es_e", 0)] and_es_e;
 val _ = translate_gate [("and_ew_n", 0)] and_ew_n;
@@ -96,11 +100,8 @@ val _ = translate_gate [("or_en_e", 0)] or_en_e;
 val _ = translate_gate [("not_e_e", 0)] not_e_e;
 val _ = translate_gate [("turn_e_s", 0)] turn_e_s;
 val _ = translate_gate [("turn_e_n", 0)] turn_e_n;
-val _ = translate_gate [("wire_e_e", 0)] wire_e_e;
 val _ = translate_gate [("fork_e_es", 0)] fork_e_es;
 val _ = translate_gate [("fork_e_en", 0)] fork_e_en;
-val _ = translate_gate [("cross_es_es", 0)] cross_es_es;
-val _ = translate_gate [("cross_en_en", 0)] cross_en_en;
 val _ = translate_gate [("half_adder_ee_es", 0)] half_adder_ee_es;
 val _ = translate_gate [("half_adder_ee_ee", 0)] half_adder_ee_ee;
 val _ = translate_gate [("slow_wire_e_e", 0)] slow_wire_e_e;

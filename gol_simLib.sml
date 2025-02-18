@@ -254,7 +254,7 @@ fun snapshot gen_count ins grid =
       Vector.tabulate (rows, fn row =>
         Vector.tabulate (cols, fn col =>
           sub_var (get_cell row col grid)))
-    fun mk_in i = Var (i, gen_count + 1 - Array.sub(min_i, i))
+    fun mk_in i = Var (i, gen_count - Array.sub(min_i, i))
     val ins = mapi (fn i => fn (p, d, _) => (p, d, mk_in i)) ins
   in
     (ins, grid)
