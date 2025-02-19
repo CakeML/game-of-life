@@ -34,6 +34,8 @@ val run_to_fixpoint: state ->
 val array_to_svg: bexp array array -> string -> unit
 val vector_to_svg: bexp vector vector -> string -> unit
 
+val for_loop: int -> int -> (int -> unit) -> unit
+val rotate_dir: dir -> dir
 val inc: bexp -> bexp
 val is_ew: io_port -> bool
 val is_ns: io_port -> bool
