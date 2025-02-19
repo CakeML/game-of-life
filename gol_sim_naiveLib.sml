@@ -168,9 +168,6 @@ fun make_base_area w h = let
   val trues = REPLICATE (h * 150) (REPLICATE (w * 150) true)
   in add_margin false 10 trues end
 
-fun is_ns ((x,y),d,r) = (d = N orelse d = S)
-fun is_ew ((x,y),d,r) = (d = E orelse d = W)
-
 fun or_box_row x w [] = []
   | or_box_row x w (r::rs) =
   if x = 0 then if w = 0 then r :: rs else true :: or_box_row x (w-1) rs
@@ -301,13 +298,6 @@ fun or_lwss rows [] = SOME rows
   | SOME rows1 =>
       SOME (or_at (x * 75 - 5 + 85) (y * 75 - 5 + 85)
               (map (map (fn b => if b then v else False)) (io_gate d)) rows1)
-
-fun inc (Var (n, g)) = Var (n, g+1)
-  | inc (And (x, y)) = And (inc x, inc y)
-  | inc (Or (x, y))  = Or (inc x, inc y)
-  | inc (Not x)   = Not (inc x)
-  | inc True      = True
-  | inc False     = False
 
 fun inc_vars rows = map (map inc) rows
 

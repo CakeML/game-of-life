@@ -230,57 +230,44 @@ datatype dir = N | S | W | E;
 
 type io_port = (int * int) * dir * bexp;
 
-fun snapshot gen_count ins outs grid =
-  let
-    val (cols,rows) = get_width_height grid
-    val min_i = Array.array (2, ~1);
-    fun smart_min i n = let
-      val v = Array.sub (min_i, i)
-      in Array.update (min_i, i, if v < 0 then n else Int.min(n, v)) end
-    fun min_var (Not(x)) = min_var x
-      | min_var (And(x,y)) = (min_var x ; min_var y)
-      | min_var (Or(x,y)) = (min_var x ; min_var y)
-      | min_var (Var(s,g)) = smart_min s g
-      | min_var _ = ()
-    val _ = for_loop 0 rows (fn row =>
-      for_loop 0 cols (fn col =>
-        min_var (get_cell row col grid)))
-    fun sub_var (Not(x)) = Not(sub_var x)
-      | sub_var (And(x,y)) = And(sub_var x, sub_var y)
-      | sub_var (Or(x,y)) = Or(sub_var x, sub_var y)
-      | sub_var (Var(s,g)) = Var(s, g - Array.sub (min_i, s))
-      | sub_var x = x
-    val grid =
-      Vector.tabulate (rows, fn row =>
-        Vector.tabulate (cols, fn col =>
-          sub_var (get_cell row col grid)))
-    fun mk_in i = Var (i, gen_count - Array.sub(min_i, i))
-    val ins = mapi (fn i => fn (p, d, _) => (p, d, mk_in i)) ins
-    val _ = Array.modify (fn i => i - 1) min_i
-    val outs = mapi (fn i => fn ((p, d, _), r) => (p, d, sub_var (!r))) outs
-  in
-    ((ins, outs), grid)
-  end
+fun mk_min () = let
+  val mins = Array.array (2, ~1)
+  fun smart_min i n = let
+    val v = Array.sub (mins, i)
+    in Array.update (mins, i, if v < 0 then n else Int.min(n, v)) end
+  fun min_var (Not(x)) = min_var x
+    | min_var (And(x,y)) = (min_var x ; min_var y)
+    | min_var (Or(x,y)) = (min_var x ; min_var y)
+    | min_var (Var(s,g)) = smart_min s g
+    | min_var _ = ()
+  fun sub_var (Not(x)) = Not(sub_var x)
+    | sub_var (And(x,y)) = And(sub_var x, sub_var y)
+    | sub_var (Or(x,y)) = Or(sub_var x, sub_var y)
+    | sub_var (Var(s,g)) = Var(s, g - Array.sub (mins, s))
+    | sub_var x = x
+  in (mins, min_var, sub_var) end
 
-fun read_file filename =
-  let
-    val f = TextIO.openIn(filename)
-    val res = TextIO.inputAll(f)
-    val _ = TextIO.closeIn(f)
-  in
-    res
-  end;
+fun snapshot gen_count ins outs grid = let
+  val (cols, rows) = get_width_height grid
+  val (mins, min_var, sub_var) = mk_min ()
+  val _ = for_loop 0 rows (fn row =>
+    for_loop 0 cols (fn col =>
+      min_var (get_cell row col grid)))
+  val grid =
+    Vector.tabulate (rows, fn row =>
+      Vector.tabulate (cols, fn col =>
+        sub_var (get_cell row col grid)))
+  fun mk_in i = Var (i, gen_count - Array.sub(mins, i))
+  val ins = mapi (fn i => fn (p, d, _) => (p, d, mk_in i)) ins
+  val _ = Array.modify (fn i => i - 1) mins
+  val outs = mapi (fn i => fn ((p, d, _), r) => (p, d, sub_var (!r))) outs
+  in ((ins, outs), grid) end
 
-(* --- state --- *)
-
-(* val step_count = ref 0;
-val gen_count = ref 0;
-val inputs = ref ([] : io_port list);
-val outputs = ref ([] : io_port list);
-val the_grid = ref (new_grid 10 10);
-val the_next_grid = ref (new_grid 10 10);
-val block_height = ref 1;
-val block_width = ref 1; *)
+fun read_file filename = let
+  val f = TextIO.openIn(filename)
+  val res = TextIO.inputAll(f)
+  val _ = TextIO.closeIn(f)
+  in res end
 
 datatype state = STATE of {
   step_count: int ref,
@@ -377,6 +364,7 @@ fun run_to_fixpoint (st as STATE {gen_count, the_grid, inputs, outputs, ...}) =
 
 type gate = {
   filename : string,
+  stems : string list,
   inputs : io_port list,
   outputs : io_port list,
   height : int,
@@ -403,7 +391,7 @@ fun prepare ({inputs, outputs, height, width, grid}: loaded_gate) =
     the_next_grid = ref (new_grid (width * 150 + 20) (height * 150 + 20))
   }
 
-fun load ({filename, inputs, outputs, height, width}: gate): loaded_gate = {
+fun load ({filename, inputs, outputs, height, width, ...}: gate): loaded_gate = {
   height = height,
   width = width,
   inputs = inputs,
@@ -419,11 +407,51 @@ fun rotate_dir E = S
   | rotate_dir W = N
   | rotate_dir N = E;
 
-fun rotate
+fun inc (Var (n, g)) = Var (n, g+1)
+  | inc (And (x, y)) = And (inc x, inc y)
+  | inc (Or (x, y))  = Or (inc x, inc y)
+  | inc (Not x)   = Not (inc x)
+  | inc True      = True
+  | inc False     = False
+
+fun is_ns ((_,d,_):io_port) = (d = N orelse d = S)
+fun is_ew ((_,d,_):io_port) = (d = E orelse d = W)
+
+fun rotate_180
   ({grid = original_grid,
     inputs, outputs, width, height}: loaded_gate): loaded_gate = let
-  val inputs = map (fn ((x,y),d,r) => ((2*(height-1)-y,x),rotate_dir d, r)) inputs
-  val outputs = map (fn ((x,y),d,r) => ((2*(height-1)-y,x),rotate_dir d, r)) outputs
+  fun flip ((x,y),d,r) =
+    ((2*(width-1)-x, 2*(height-1)-y),rotate_dir (rotate_dir d), r)
+  val inputs = map flip inputs
+  val outputs = map flip outputs
+  fun grid () = let
+    val original_grid = original_grid ()
+    val (cols, rows) = (width * 150 + 20, height * 150 + 20)
+    val grid = new_grid cols rows
+    val _ = for_loop 0 cols (fn i =>
+      for_loop 0 rows (fn j =>
+        update_cell i j grid
+          (get_cell ((cols-1)-i) ((rows-1)-j) original_grid)))
+    in grid end
+  in
+    { grid = grid,
+      inputs = inputs,
+      outputs = outputs,
+      width = height,
+      height = width }
+  end
+
+fun rotate_90
+  ({grid = original_grid,
+    inputs, outputs, width, height}: loaded_gate): loaded_gate = let
+  val (mins, min_var, sub_var) = mk_min ()
+  fun bump_ns (port as (p,d,r)) = (p,d, if is_ns port then inc r else r)
+  val inputs = map ((fn ((x,y),d,r) =>
+    ((2*(height-1)-y,x),rotate_dir d, r)) o bump_ns) inputs
+  val outputs = map ((fn ((x,y),d,r) =>
+    (min_var r; ((2*(height-1)-y,x),rotate_dir d, r))) o bump_ns) outputs
+  val inputs = map (fn (p, d, r) => (p, d, sub_var r)) inputs
+  val outputs = map (fn (p, d, r) => (p, d, sub_var r)) outputs
   fun grid () = let
     val original_grid = original_grid ()
     val (cols, rows) = (width * 150 + 20, height * 150 + 20)
@@ -449,6 +477,10 @@ fun rotate
       width = height,
       height = width }
   end
+
+fun rotate 0 gate = gate
+  | rotate 1 gate = rotate_90 gate
+  | rotate n gate = rotate (n - 2) (rotate_180 gate)
 
 fun fun_to_svg (rows, cols, g) filename =
   let
@@ -516,8 +548,33 @@ fun vector_to_svg grid =
   fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
     fn i => fn j => Vector.sub(Vector.sub(grid,i),j));
 
+val wire_e_e =
+  { filename = "empty.rle",
+    stems    = ["wire_e_e", "wire_s_s", "wire_w_w", "wire_n_n"],
+    inputs   = [((~1, 0), E, Var (0, 5))],
+    outputs  = [((1, 0), E, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
+val cross_es_es =
+  { filename = "empty.rle",
+    stems    = ["cross_es_es", "cross_sw_sw", "cross_wn_wn", "cross_ne_ne"],
+    inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
+    outputs  = [((1, 0), E, Var (0, 0)), ((0, 1), S, Var (1, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
+val cross_en_en =
+  { filename = "empty.rle",
+    stems    = ["cross_en_en", "cross_se_se", "cross_ws_ws", "cross_nw_nw"],
+    inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
+    outputs  = [((1, 0), E, Var (0, 0)), ((0, ~1), N, Var (1, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
 val and_en_e =
   { filename = "and-en-e.rle",
+    stems    = ["and_en_e", "and_se_s", "and_ws_w", "and_nw_n"],
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
@@ -525,6 +582,7 @@ val and_en_e =
 
 val and_es_e =
   { filename = "and-es-e.rle",
+    stems    = ["and_es_e", "and_sw_s", "and_wn_w", "and_ne_n"],
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
     outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
@@ -532,6 +590,7 @@ val and_es_e =
 
 val and_ew_n =
   { filename = "and-ew-n.rle",
+    stems    = ["and_ew_n", "and_sn_e", "and_we_s", "and_ns_w"],
     inputs   = [((1, 0), W, Var (0, 6)), ((~1, 0), E, Var (1, 9))],
     outputs  = [((0, ~1), N, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
@@ -539,6 +598,7 @@ val and_ew_n =
 
 val or_en_e =
   { filename = "or-en-e.rle",
+    stems    = ["or_en_e", "or_se_s", "or_ws_w", "or_nw_n"],
     inputs   = [((~1, 0), E, Var (0, 7)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, Or (Var (0, 0), Var (1, 0)))],
     height   = 1,
@@ -546,13 +606,47 @@ val or_en_e =
 
 val not_e_e =
   { filename = "not-e-e.rle",
+    stems    = ["not_e_e", "not_s_s", "not_w_w", "not_n_n"],
     inputs   = [((~1, 0), E, Var (0, 8))],
     outputs  = [((1, 0), E, Not (Var (0, 1)))],
     height   = 1,
     width    = 1 } : gate;
 
+val turn_e_s =
+  { filename = "turn-e-s.rle",
+    stems    = ["turn_e_s", "turn_s_w", "turn_w_n", "turn_n_e"],
+    inputs   = [((~1, 0), E, Var (0, 7))],
+    outputs  = [((0, 1), S, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
+val turn_e_n =
+  { filename = "turn-e-n.rle",
+    stems    = ["turn_e_n", "turn_s_e", "turn_w_s", "turn_n_w"],
+    inputs   = [((~1, 0), E, Var (0, 6))],
+    outputs  = [((0, ~1), N, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
+val fork_e_es =
+  { filename = "fork-e-es.rle",
+    stems    = ["fork_e_es", "fork_s_sw", "fork_w_wn", "fork_n_ne"],
+    inputs   = [((~1, 0), E, Var (0, 6))],
+    outputs  = [((1, 0), E, Var (0, 1)), ((0, 1), S, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
+val fork_e_en =
+  { filename = "fork-e-en.rle",
+    stems    = ["fork_e_en", "fork_s_se", "fork_w_ws", "fork_n_nw"],
+    inputs   = [((~1, 0), E, Var (0, 7))],
+    outputs  = [((1, 0), E, Var (0, 2)), ((0, ~1), N, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
 val half_adder_ee_es =
   { filename = "half-adder-ee-es.rle",
+    stems    = ["half_adder_ee_es", "half_adder_ss_sw", "half_adder_ww_wn", "half_adder_nn_ne"],
     inputs   = [((~1, 0), E, Var (0, 19)), ((~1, 2), E, Var (1, 18))],
     outputs  = [
       ((3, 0), E, Or (
@@ -566,6 +660,7 @@ val half_adder_ee_es =
 
 val half_adder_ee_ee =
   { filename = "half-adder-ee-ee.rle",
+    stems    = ["half_adder_ee_ee", "half_adder_ss_ss", "half_adder_ww_ww", "half_adder_nn_nn"],
     inputs   = [((~1, 0), E, Var (0, 17)), ((~1, 2), E, Var (1, 18))],
     outputs  = [
       ((3, 0), E, Or (
@@ -577,57 +672,9 @@ val half_adder_ee_ee =
     height   = 2,
     width    = 2 } : gate;
 
-val turn_e_s =
-  { filename = "turn-e-s.rle",
-    inputs   = [((~1, 0), E, Var (0, 7))],
-    outputs  = [((0, 1), S, Var (0, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
-val turn_e_n =
-  { filename = "turn-e-n.rle",
-    inputs   = [((~1, 0), E, Var (0, 6))],
-    outputs  = [((0, ~1), N, Var (0, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
-val fork_e_es =
-  { filename = "fork-e-es.rle",
-    inputs   = [((~1, 0), E, Var (0, 6))],
-    outputs  = [((1, 0), E, Var (0, 1)), ((0, 1), S, Var (0, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
-val fork_e_en =
-  { filename = "fork-e-en.rle",
-    inputs   = [((~1, 0), E, Var (0, 7))],
-    outputs  = [((1, 0), E, Var (0, 2)), ((0, ~1), N, Var (0, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
-val wire_e_e =
-  { filename = "empty.rle",
-    inputs   = [((~1, 0), E, Var (0, 5))],
-    outputs  = [((1, 0), E, Var (0, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
-val cross_es_es =
-  { filename = "empty.rle",
-    inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
-    outputs  = [((1, 0), E, Var (0, 0)), ((0, 1), S, Var (1, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
-val cross_en_en =
-  { filename = "empty.rle",
-    inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
-    outputs  = [((1, 0), E, Var (0, 0)), ((0, ~1), N, Var (1, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
 val slow_wire_e_e =
   { filename = "slow-wire-e-e.rle",
+    stems    = ["slow_wire_e_e", "slow_wire_s_s", "slow_wire_w_w", "slow_wire_n_n"],
     inputs   = [((~1, 0), E, Var (0, 155))],
     outputs  = [((7, 0), E, Var (0, 0))],
     height   = 1,

@@ -12,18 +12,20 @@ datatype dir = N | S | W | E;
 
 type io_port = (int * int) * dir * bexp;
 
-type gate =
-  { filename : string ,
-    inputs : io_port list ,
-    outputs : io_port list ,
-    height : int ,
-    width : int };
+type gate = {
+  filename : string,
+  stems : string list,
+  inputs : io_port list,
+  outputs : io_port list,
+  height : int,
+  width : int
+}
 
 type state
 type loaded_gate
 val load: gate -> loaded_gate
 val prepare: loaded_gate -> state
-val rotate: loaded_gate -> loaded_gate
+val rotate: int -> loaded_gate -> loaded_gate
 val run_to_fixpoint: state ->
   { inputs: io_port list,
     outputs: io_port list,
@@ -31,6 +33,10 @@ val run_to_fixpoint: state ->
 
 val array_to_svg: bexp array array -> string -> unit
 val vector_to_svg: bexp vector vector -> string -> unit
+
+val inc: bexp -> bexp
+val is_ew: io_port -> bool
+val is_ns: io_port -> bool
 
 val and_en_e: gate;
 val and_es_e: gate;
