@@ -17,6 +17,7 @@ type gate = {
   stems : string list,
   inputs : io_port list,
   outputs : io_port list,
+  reindex : int list,
   height : int,
   width : int
 }
