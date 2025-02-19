@@ -230,7 +230,8 @@ datatype dir = N | S | W | E;
 
 type io_port = (int * int) * dir * bexp;
 
-fun mk_min mins = let
+fun mk_min init = let
+  val mins = Array.array (2, init)
   fun smart_min i n = let
     val v = Array.sub (mins, i)
     in Array.update (mins, i, if v < 0 then n else Int.min(n, v)) end
@@ -244,12 +245,11 @@ fun mk_min mins = let
     | sub_var (Or(x,y)) = Or(sub_var x, sub_var y)
     | sub_var (Var(s,g)) = Var(s, g - Array.sub (mins, s))
     | sub_var x = x
-  in (min_var, sub_var) end
+  in (mins, min_var, sub_var) end
 
 fun snapshot gen_count ins outs grid = let
   val (cols, rows) = get_width_height grid
-  val mins = Array.array (2, ~1)
-  val (min_var, sub_var) = mk_min mins
+  val (mins, min_var, sub_var) = mk_min gen_count
   val _ = for_loop 0 rows (fn row =>
     for_loop 0 cols (fn col =>
       min_var (get_cell row col grid)))
@@ -367,7 +367,6 @@ type gate = {
   stems : string list,
   inputs : io_port list,
   outputs : io_port list,
-  reindex : int list,
   height : int,
   width : int
 }
@@ -375,13 +374,12 @@ type gate = {
 type loaded_gate = {
   inputs: io_port list,
   outputs: io_port list,
-  reindex: int list,
   height: int,
   width: int,
   grid: unit -> bexp array array
 }
 
-fun prepare ({inputs, outputs, height, width, grid, ...}: loaded_gate) =
+fun prepare ({inputs, outputs, height, width, grid}: loaded_gate) =
   STATE {
     step_count = ref 0,
     gen_count = ref 0,
@@ -393,12 +391,11 @@ fun prepare ({inputs, outputs, height, width, grid, ...}: loaded_gate) =
     the_next_grid = ref (new_grid (width * 150 + 20) (height * 150 + 20))
   }
 
-fun load ({filename, inputs, outputs, reindex, height, width, ...}: gate): loaded_gate = {
+fun load ({filename, inputs, outputs, height, width, ...}: gate): loaded_gate = {
   height = height,
   width = width,
   inputs = inputs,
   outputs = outputs,
-  reindex = reindex,
   grid = fn () => let
     val grid = new_grid (width * 150 + 20) (height * 150 + 20)
     val _ = init_from_rle (read_file ("gates/" ^ filename)) 10 10 True grid
@@ -422,7 +419,7 @@ fun is_ew ((_,d,_):io_port) = (d = E orelse d = W)
 
 fun rotate_180
   ({grid = original_grid,
-    inputs, outputs, reindex, width, height}: loaded_gate): loaded_gate = let
+    inputs, outputs, width, height}: loaded_gate): loaded_gate = let
   fun flip ((x,y),d,r) =
     ((2*(width-1)-x, 2*(height-1)-y),rotate_dir (rotate_dir d), r)
   val inputs = map flip inputs
@@ -440,21 +437,20 @@ fun rotate_180
     { grid = grid,
       inputs = inputs,
       outputs = outputs,
-      reindex = reindex,
       width = width,
       height = height }
   end
 
 fun rotate_90
   ({grid = original_grid,
-    inputs, outputs, reindex, width, height}: loaded_gate): loaded_gate = let
-  val mins = Array.array (2, ~1)
-  val (_, sub_var) = mk_min mins
-  fun bump_ns (port as (p,d,r)) = (p,d, if is_ns port then inc r else r)
-  fun rotport ((x,y),d,r) = ((2*(height-1)-y,x),rotate_dir d, r)
-  val inputs = map (rotport o bump_ns) inputs
-  val outputs = map (rotport o bump_ns) outputs
-  val _ = appi (fn i => fn v => Array.update (mins, i, v)) reindex
+    inputs, outputs, width, height}: loaded_gate): loaded_gate = let
+  val (mins, min_var, sub_var) = mk_min ~1
+  fun rotport (port as ((x,y),d,r)) = let
+    val r = if is_ns port then inc r else r
+    val _ = min_var r
+    in ((2*(height-1)-y,x),rotate_dir d, r) end
+  val inputs = map rotport inputs
+  val outputs = map rotport outputs
   val inputs = map (fn (p, d, r) => (p, d, sub_var r)) inputs
   val outputs = map (fn (p, d, r) => (p, d, sub_var r)) outputs
   fun grid () = let
@@ -467,7 +463,6 @@ fun rotate_90
     val st as STATE {the_grid, ...} = prepare {
       inputs = inputs,
       outputs = outputs,
-      reindex = reindex,
       width = height,
       height = width,
       grid = K grid
@@ -480,7 +475,6 @@ fun rotate_90
     { grid = grid,
       inputs = inputs,
       outputs = outputs,
-      reindex = reindex,
       width = height,
       height = width }
   end
@@ -560,7 +554,6 @@ val terminator_e =
     stems    = ["terminator_e", "terminator_s", "terminator_w", "terminator_n"],
     inputs   = [((~1, 0), E, Var (0, 1))],
     outputs  = [],
-    reindex  = [~2],
     height   = 1,
     width    = 1 } : gate;
 
@@ -569,7 +562,6 @@ val wire_e_e =
     stems    = ["wire_e_e", "wire_s_s", "wire_w_w", "wire_n_n"],
     inputs   = [((~1, 0), E, Var (0, 5))],
     outputs  = [((1, 0), E, Var (0, 0))],
-    reindex  = [0],
     height   = 1,
     width    = 1 } : gate;
 
@@ -578,7 +570,6 @@ val cross_es_es =
     stems    = ["cross_es_es", "cross_sw_sw", "cross_wn_wn", "cross_ne_ne"],
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
     outputs  = [((1, 0), E, Var (0, 0)), ((0, 1), S, Var (1, 0))],
-    reindex  = [0, 1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -587,7 +578,6 @@ val cross_en_en =
     stems    = ["cross_en_en", "cross_se_se", "cross_ws_ws", "cross_nw_nw"],
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, Var (0, 0)), ((0, ~1), N, Var (1, 0))],
-    reindex  = [0, 1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -596,7 +586,6 @@ val and_en_e =
     stems    = ["and_en_e", "and_se_s", "and_ws_w", "and_nw_n"],
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
-    reindex  = [0, 0],
     height   = 1,
     width    = 1 } : gate;
 
@@ -605,7 +594,6 @@ val and_es_e =
     stems    = ["and_es_e", "and_sw_s", "and_wn_w", "and_ne_n"],
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
     outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
-    reindex  = [0, 0],
     height   = 1,
     width    = 1 } : gate;
 
@@ -614,7 +602,6 @@ val and_ew_n =
     stems    = ["and_ew_n", "and_sn_e", "and_we_s", "and_ns_w"],
     inputs   = [((1, 0), W, Var (0, 6)), ((~1, 0), E, Var (1, 9))],
     outputs  = [((0, ~1), N, And (Var (0, 0), Var (1, 0)))],
-    reindex  = [1, 1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -623,7 +610,6 @@ val or_en_e =
     stems    = ["or_en_e", "or_se_s", "or_ws_w", "or_nw_n"],
     inputs   = [((~1, 0), E, Var (0, 7)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, Or (Var (0, 0), Var (1, 0)))],
-    reindex  = [0, 0],
     height   = 1,
     width    = 1 } : gate;
 
@@ -632,7 +618,6 @@ val not_e_e =
     stems    = ["not_e_e", "not_s_s", "not_w_w", "not_n_n"],
     inputs   = [((~1, 0), E, Var (0, 8))],
     outputs  = [((1, 0), E, Not (Var (0, 1)))],
-    reindex  = [1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -641,7 +626,6 @@ val turn_e_s =
     stems    = ["turn_e_s", "turn_s_w", "turn_w_n", "turn_n_e"],
     inputs   = [((~1, 0), E, Var (0, 7))],
     outputs  = [((0, 1), S, Var (0, 0))],
-    reindex  = [1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -650,7 +634,6 @@ val turn_e_n =
     stems    = ["turn_e_n", "turn_s_e", "turn_w_s", "turn_n_w"],
     inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((0, ~1), N, Var (0, 0))],
-    reindex  = [1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -659,7 +642,6 @@ val fork_e_es =
     stems    = ["fork_e_es", "fork_s_sw", "fork_w_wn", "fork_n_ne"],
     inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((1, 0), E, Var (0, 1)), ((0, 1), S, Var (0, 0))],
-    reindex  = [1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -668,7 +650,6 @@ val fork_e_en =
     stems    = ["fork_e_en", "fork_s_se", "fork_w_ws", "fork_n_nw"],
     inputs   = [((~1, 0), E, Var (0, 7))],
     outputs  = [((1, 0), E, Var (0, 2)), ((0, ~1), N, Var (0, 0))],
-    reindex  = [1],
     height   = 1,
     width    = 1 } : gate;
 
@@ -683,7 +664,6 @@ val half_adder_ee_es =
           And (Not (Var (0, 7)), And (Var (1, 3), Not (Var (1, 0)))))),
         And (Not (Var (0, 4)), Or (Var (0, 7), Var (1, 3))))),
       ((2, 3), S, And (Var (0, 0), Var (1, 1)))],
-    reindex  = [1, 0],
     height   = 2,
     width    = 2 } : gate;
 
@@ -698,7 +678,6 @@ val half_adder_ee_ee =
           And (Not (Var (0, 5)), And (Var (1, 3), Not (Var (1, 0)))))),
         And (Not (Var (0, 2)), Or (Var (0, 5), Var (1, 3))))),
       ((3, 2), E, And (Var (0, 0), Var (1, 3)))],
-    reindex  = [0, 0],
     height   = 2,
     width    = 2 } : gate;
 
@@ -707,7 +686,6 @@ val slow_wire_e_e =
     stems    = ["slow_wire_e_e", "slow_wire_s_s", "slow_wire_w_w", "slow_wire_n_n"],
     inputs   = [((~1, 0), E, Var (0, 155))],
     outputs  = [((7, 0), E, Var (0, 0))],
-    reindex  = [0],
     height   = 1,
     width    = 4 } : gate;
 
