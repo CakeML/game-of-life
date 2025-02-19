@@ -136,7 +136,6 @@ fun translate_gate dirs gate = let
 val _ = translate_gate [0,1,2,3] terminator_e;
 val _ = translate_gate [0,1,2,3] wire_e_e;
 val _ = translate_gate [0,1,2,3] cross_es_es;
-val _ = translate_gate [0,1,2,3] cross_en_en;
 val _ = translate_gate [0,1,2,3] and_en_e;
 val _ = translate_gate [0,1,2,3] and_es_e;
 val _ = translate_gate [0,1,2,3] and_ew_n;

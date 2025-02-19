@@ -573,14 +573,6 @@ val cross_es_es =
     height   = 1,
     width    = 1 } : gate;
 
-val cross_en_en =
-  { filename = "empty.rle",
-    stems    = ["cross_en_en", "cross_se_se", "cross_ws_ws", "cross_nw_nw"],
-    inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
-    outputs  = [((1, 0), E, Var (0, 0)), ((0, ~1), N, Var (1, 0))],
-    height   = 1,
-    width    = 1 } : gate;
-
 val and_en_e =
   { filename = "and-en-e.rle",
     stems    = ["and_en_e", "and_se_s", "and_ws_w", "and_nw_n"],

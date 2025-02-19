@@ -485,13 +485,6 @@ val cross_es_es =
     height   = 1 ,
     width    = 1 } : gate;
 
-val cross_en_en =
-  { filename = "empty.rle" ,
-    inputs   = [((~1,0),E),((0,1),N)] ,
-    outputs  = [((1,0),E),((0,~1),N)] ,
-    height   = 1 ,
-    width    = 1 } : gate;
-
 val slow_wire_e_e =
   { filename = "slow-wire-e-e.rle" ,
     inputs   = [((~1,0),E)] ,
@@ -523,7 +516,6 @@ val _ = (load wire_e_e ; run_to_fixpoint ());
 val _ = (load fork_e_es ; run_to_fixpoint ());
 val _ = (load fork_e_en ; run_to_fixpoint ());
 val _ = (load cross_es_es ; run_to_fixpoint ());
-val _ = (load cross_en_en ; run_to_fixpoint ());
 val _ = (load half_adder_ee_es ; run_to_fixpoint ());
 val _ = (load half_adder_ee_ee ; run_to_fixpoint ());
 val _ = (load slow_wire_e_e ; run_to_fixpoint ());
