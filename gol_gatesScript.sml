@@ -146,6 +146,7 @@ val _ = translate_gate [("fork_e_es", 0)] fork_e_es;
 val _ = translate_gate [("fork_e_en", 0)] fork_e_en;
 val _ = translate_gate [("half_adder_ee_es", 0)] half_adder_ee_es;
 val _ = translate_gate [("half_adder_ee_ee", 0)] half_adder_ee_ee;
-(* val _ = translate_gate [("slow_wire_e_e", 0)] slow_wire_e_e; *)
+val _ = translate_gate [("slow_wire_e_e", 0)] slow_wire_e_e;
 
+val _ = (max_print_depth := 10); (* avoids blow up in size of Theory.sig file *)
 val _ = export_theory();
