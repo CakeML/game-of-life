@@ -915,7 +915,7 @@ QED
 
 Definition bvar_lt_def:
   bvar_lt (n1,g1) (n2,g2:num) =
-    if n1 = n2 then g1 ≤ g2 else n1 = A
+    if n1 = n2 then g1 < g2 else n1 = A
 End
 
 Definition add_to_sorted_def:
@@ -1315,12 +1315,12 @@ Definition simulation_ok_def:
     simple_checks w h ins outs rows ∧
     let bools = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) F) in
     let (m1,m2) = masks w h ins outs in
-    let del1 = or_io_areas (FILTER is_ns outs) bools in
-    let del2 = or_io_areas (FILTER is_ew outs) bools in
     let ins1 = FILTER is_ns ins in
     let ins2 = FILTER is_ew ins in
     let outs1 = FILTER is_ns outs in
     let outs2 = FILTER is_ew outs in
+    let del1 = or_io_areas outs1 bools in
+    let del2 = or_io_areas outs2 bools in
     let empty = REPLICATE (150 * h + 20) (REPLICATE (150 * w + 20) False) in
       case gol_checked_steps 30 rows (shrink m1) of
       | NONE => F

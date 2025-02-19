@@ -230,7 +230,7 @@ datatype dir = N | S | W | E;
 
 type io_port = (int * int) * dir * bexp;
 
-fun snapshot gen_count ins grid =
+fun snapshot gen_count ins outs grid =
   let
     val (cols,rows) = get_width_height grid
     val min_i = Array.array (2, ~1);
@@ -256,8 +256,10 @@ fun snapshot gen_count ins grid =
           sub_var (get_cell row col grid)))
     fun mk_in i = Var (i, gen_count - Array.sub(min_i, i))
     val ins = mapi (fn i => fn (p, d, _) => (p, d, mk_in i)) ins
+    val _ = Array.modify (fn i => i - 1) min_i
+    val outs = mapi (fn i => fn ((p, d, _), r) => (p, d, sub_var (!r))) outs
   in
-    (ins, grid)
+    ((ins, outs), grid)
   end
 
 fun read_file filename =
@@ -359,14 +361,18 @@ fun run_to_fixpoint (st as STATE {gen_count, the_grid, inputs, outputs, ...}) =
       let
         val _ = print (" " ^ Int.toString n)
         val _ = for_loop 0 60 (fn i => compute_next_state st false);
-        val snap = snapshot (!gen_count) inputs (!the_grid)
+        val snap = snapshot (!gen_count) inputs outputs (!the_grid)
       in
         if prev = #2 snap then snap else loop (n+1) (#2 snap)
       end
-    val (ins, res) = loop 1 prev
-    val _ = print " done\n"
+    val ((ins, outs), res) = loop 1 prev
+    val _ = if (inputs, map #1 outputs) = (ins, outs) then print " done\n" else
+      (print "\nIO mismatch\n";
+      PolyML.print (inputs, map #1 outputs);
+      PolyML.print (ins, outs);
+      ());
   in
-    {inputs = ins, outputs = map (fn ((p, d, _), r) => (p, d, !r)) outputs, grid = res}
+    {inputs = ins, outputs = outs, grid = res}
   end
 
 type gate = {
@@ -468,11 +474,11 @@ fun fun_to_svg (rows, cols, g) filename =
         "\" height=\"", Int.toString (cell_size * rows),
         "\" fill=\"black\" />\n"])
     fun fmla cell = case cell of
-        False => "⊥"
-      | True => "⊤"
-      | And(a, b) => "("^fmla a^" ∧ "^fmla b^")"
-      | Or(a, b) => "("^fmla a^" ∨ "^fmla b^")"
-      | Not(a) => "¬"^fmla a
+        False => "\226\138\165"
+      | True => "\226\138\164"
+      | And(a, b) => "("^fmla a^" \226\136\167 "^fmla b^")"
+      | Or(a, b) => "("^fmla a^" \226\136\168 "^fmla b^")"
+      | Not(a) => "\194\172"^fmla a
       | Var(0, i) => "a"^Int.toString i
       | Var(1, i) => "b"^Int.toString i
       | Var _ => "*"
@@ -526,103 +532,103 @@ val and_es_e =
 
 val and_ew_n =
   { filename = "and-ew-n.rle",
-    inputs   = [((1, 0), W, Var (0, 7)), ((~1, 0), E, Var (1, 10))],
-    outputs  = [((0, ~1), N, And (Var (0, 3), Var (1, 0)))],
+    inputs   = [((1, 0), W, Var (0, 6)), ((~1, 0), E, Var (1, 9))],
+    outputs  = [((0, ~1), N, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
     width    = 1 } : gate;
 
 val or_en_e =
   { filename = "or-en-e.rle",
-    inputs   = [((~1, 0), E, Var (0, 8)), ((0, 1), N, Var (1, 6))],
-    outputs  = [((1, 0), E, Or (Var (0, 0), Var (1, 2)))],
+    inputs   = [((~1, 0), E, Var (0, 7)), ((0, 1), N, Var (1, 5))],
+    outputs  = [((1, 0), E, Or (Var (0, 0), Var (1, 0)))],
     height   = 1,
     width    = 1 } : gate;
 
 val not_e_e =
   { filename = "not-e-e.rle",
-    inputs   = [((~1, 0), E, Var (0, 9))],
+    inputs   = [((~1, 0), E, Var (0, 8))],
     outputs  = [((1, 0), E, Not (Var (0, 1)))],
     height   = 1,
     width    = 1 } : gate;
 
 val half_adder_ee_es =
   { filename = "half-adder-ee-es.rle",
-    inputs   = [((~1, 0), E, Var (0, 20)), ((~1, 2), E, Var (1, 19))],
+    inputs   = [((~1, 0), E, Var (0, 19)), ((~1, 2), E, Var (1, 18))],
     outputs  = [
       ((3, 0), E, Or (
         And (Var (0, 4), Or (
-          And (Var (0, 7), Not (Var (1, 1))),
-          And (Not (Var (0, 7)), And (Var (1, 4), Not (Var (1, 1)))))),
-        And (Not (Var (0, 4)), Or (Var (0, 7), Var (1, 4))))),
-      ((2, 3), S, And (Var (0, 0), Var (1, 2)))],
+          And (Var (0, 7), Not (Var (1, 0))),
+          And (Not (Var (0, 7)), And (Var (1, 3), Not (Var (1, 0)))))),
+        And (Not (Var (0, 4)), Or (Var (0, 7), Var (1, 3))))),
+      ((2, 3), S, And (Var (0, 0), Var (1, 1)))],
     height   = 2,
     width    = 2 } : gate;
 
 val half_adder_ee_ee =
   { filename = "half-adder-ee-ee.rle",
-    inputs   = [((~1, 0), E, Var (0, 18)), ((~1, 2), E, Var (1, 19))],
+    inputs   = [((~1, 0), E, Var (0, 17)), ((~1, 2), E, Var (1, 18))],
     outputs  = [
       ((3, 0), E, Or (
-        And (Var (0, 3), Or (
-          And (Var (0, 6), Not (Var (1, 0))),
-          And (Not (Var (0, 6)), And (Var (1, 3), Not (Var (1, 0)))))),
-        And (Not (Var (0, 3)), Or (Var (0, 6), Var (1, 3))))),
-      ((3, 2), E, And (Var (0, 1), Var (1, 3)))],
+        And (Var (0, 2), Or (
+          And (Var (0, 5), Not (Var (1, 0))),
+          And (Not (Var (0, 5)), And (Var (1, 3), Not (Var (1, 0)))))),
+        And (Not (Var (0, 2)), Or (Var (0, 5), Var (1, 3))))),
+      ((3, 2), E, And (Var (0, 0), Var (1, 3)))],
     height   = 2,
     width    = 2 } : gate;
 
 val turn_e_s =
   { filename = "turn-e-s.rle",
-    inputs   = [((~1, 0), E, Var (0, 8))],
+    inputs   = [((~1, 0), E, Var (0, 7))],
     outputs  = [((0, 1), S, Var (0, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val turn_e_n =
   { filename = "turn-e-n.rle",
-    inputs   = [((~1, 0), E, Var (0, 7))],
+    inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((0, ~1), N, Var (0, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val fork_e_es =
   { filename = "fork-e-es.rle",
-    inputs   = [((~1, 0), E, Var (0, 7))],
+    inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((1, 0), E, Var (0, 1)), ((0, 1), S, Var (0, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val fork_e_en =
   { filename = "fork-e-en.rle",
-    inputs   = [((~1, 0), E, Var (0, 8))],
+    inputs   = [((~1, 0), E, Var (0, 7))],
     outputs  = [((1, 0), E, Var (0, 2)), ((0, ~1), N, Var (0, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val wire_e_e =
   { filename = "empty.rle",
-    inputs   = [((~1, 0), E, Var (0, 6))],
+    inputs   = [((~1, 0), E, Var (0, 5))],
     outputs  = [((1, 0), E, Var (0, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val cross_es_es =
   { filename = "empty.rle",
-    inputs   = [((~1, 0), E, Var (0, 6)), ((0, ~1), S, Var (1, 6))],
+    inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
     outputs  = [((1, 0), E, Var (0, 0)), ((0, 1), S, Var (1, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val cross_en_en =
   { filename = "empty.rle",
-    inputs   = [((~1, 0), E, Var (0, 6)), ((0, 1), N, Var (1, 6))],
+    inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, Var (0, 0)), ((0, ~1), N, Var (1, 0))],
     height   = 1,
     width    = 1 } : gate;
 
 val slow_wire_e_e =
   { filename = "slow-wire-e-e.rle",
-    inputs   = [((~1, 0), E, Var (0, 156))],
+    inputs   = [((~1, 0), E, Var (0, 155))],
     outputs  = [((7, 0), E, Var (0, 0))],
     height   = 1,
     width    = 4 } : gate;
