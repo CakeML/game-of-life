@@ -428,17 +428,17 @@ fun rotate_180
     val original_grid = original_grid ()
     val (cols, rows) = (width * 150 + 20, height * 150 + 20)
     val grid = new_grid cols rows
-    val _ = for_loop 0 cols (fn i =>
-      for_loop 0 rows (fn j =>
+    val _ = for_loop 0 rows (fn i =>
+      for_loop 0 cols (fn j =>
         update_cell i j grid
-          (get_cell ((cols-1)-i) ((rows-1)-j) original_grid)))
+          (get_cell ((rows-1)-i) ((cols-1)-j) original_grid)))
     in grid end
   in
     { grid = grid,
       inputs = inputs,
       outputs = outputs,
-      width = height,
-      height = width }
+      width = width,
+      height = height }
   end
 
 fun rotate_90
