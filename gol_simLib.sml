@@ -680,4 +680,12 @@ val slow_wire_e_e =
     height   = 1,
     width    = 4 } : gate;
 
+val terminator_e =
+  { filename = "terminator-e.rle",
+    stems    = ["terminator_e", "terminator_s", "terminator_w", "terminator_n"],
+    inputs   = [((~1, 0), E, Var (0, 1))],
+    outputs  = [],
+    height   = 1,
+    width    = 1 } : gate;
+
 end

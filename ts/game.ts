@@ -491,7 +491,19 @@ o37b3o47b3o47b3o9bo140b2o$24bo49bo49bo49bo49bo49bo49bo49bo49bo152b2o!
         width: 1,
         content: "!",
     },
+    {
+        name: "Terminator - E",
+        input: [[[-1,0],"E"]],
+        output: [],
+        height: 1,
+        width: 1,
+        content: `
+o68$12b2o$12bo$10bobo$o2bo6b2o$4bo$o3bo$b4o!
+`,
+    },
 ];
+
+
 
 // ************************************************************************* //
 //  Symbolic computation

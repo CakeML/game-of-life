@@ -53,5 +53,6 @@ val wire_e_e: gate;
 val cross_es_es: gate;
 val cross_en_en: gate;
 val slow_wire_e_e: gate;
+val terminator_e: gate;
 
 end;
