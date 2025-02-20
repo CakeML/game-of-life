@@ -133,24 +133,24 @@ fun translate_gate dirs gate = let
     in (defn, thm) end
   in map tr dirs end;
 
-val _ = translate_gate [0,1,2,3] terminator_e;
+val _ = translate_gate [2] terminator_e;
 val _ = translate_gate [0,1,2,3] wire_e_e;
 val _ = translate_gate [0,1,2,3] cross_es_es;
-val _ = translate_gate [0,1,2,3] and_en_e;
-val _ = translate_gate [0,1,2,3] and_es_e;
-val _ = translate_gate [0,1,2,3] and_ew_n;
+val _ = translate_gate [0] and_en_e;
+val _ = translate_gate [0] and_es_e;
+val _ = translate_gate [0] and_ew_n;
 val _ = translate_gate [0,1,2,3] or_en_e;
-val _ = translate_gate [0,1,2,3] not_e_e;
-val _ = translate_gate [0,1,2,3] turn_e_s;
+val _ = translate_gate [0,3] not_e_e;
+(* val _ = translate_gate [0,1,2,3] turn_e_s; *)
 val _ = translate_gate [0,1,2,3] turn_e_n;
 val _ = translate_gate [0,1,2,3] fast_turn_e_s;
-val _ = translate_gate [0,1,2,3] slow_turn_e_s;
-val _ = translate_gate [0,1,2,3] fork_e_es;
+val _ = translate_gate [3] slow_turn_e_s;
+val _ = translate_gate [0,1,2] fork_e_es;
 val _ = translate_gate [0,1,2,3] fork_e_en;
-val _ = translate_gate [0,1,2,3] half_adder_ee_es;
+val _ = translate_gate [1,2,3] half_adder_ee_es;
 val _ = translate_gate [0,1,2,3] half_adder_ee_ee;
 val _ = translate_gate [0,1,2,3] slow_wire_e_e;
-val _ = translate_gate [2] slower_wire_e_e;
+(* val _ = translate_gate [2] slower_wire_e_e; *)
 
 Definition delay_def:
   delay n a i = if i < n then F else a (i - n:num)

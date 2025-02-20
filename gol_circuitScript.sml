@@ -244,7 +244,6 @@ fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
 fun dirToXY d = case d of E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
 
 fun build d (gates:gates) period pulse (ins: io_port list, outs: io_port list) = let
-  fun prep (gate, i) = gol_simLib.rotate i (load gate)
   datatype target = Gate of (int * int) * int | Done of value
   val wireIn = ref $ foldl (fn ((w, d, v), map) =>
     Redblackmap.insert (map, wpos (w, dirToXY d), Done v)) (Redblackmap.mkDict int2cmp) outs
