@@ -789,6 +789,64 @@ Proof
   \\ pop_assum $ irule_at Any \\ gvs []
 QED
 
+Definition list_disjoint_def:
+  list_disjoint xs ys ⇔ EVERY (λx. ~ MEM x ys) xs
+End
+
+Definition io_compatible_def:
+  io_compatible area ins [] = T ∧
+  io_compatible area ins (((x,y),d,_)::rest) =
+    (io_compatible area ins rest ∧
+     if x % 2 = 0 then
+       MEM (x,y-1) area ∧ MEM (x,y+1) area ⇒
+       case ALOOKUP ins (x,y) of
+       | NONE => F
+       | SOME (d1,_) => d = d1
+     else
+       MEM (x-1,y) area ∧ MEM (x+1,y) area ⇒
+       case ALOOKUP ins (x,y) of
+       | NONE => F
+       | SOME (d1,_) => d = d1)
+End
+
+Definition no_overlap_def:
+  no_overlap area1 ins1 outs1 as1
+             area2 ins2 outs2 as2 ⇔
+    list_disjoint area1 area2 ∧
+    list_disjoint (MAP FST ins1) (MAP FST ins2) ∧
+    list_disjoint (MAP FST outs1) (MAP FST outs2) ∧
+    list_disjoint (MAP FST as1) (MAP FST as2) ∧
+    let area = area1 ++ area2 in
+    let ins  = ins1  ++ ins2  in
+    let outs = outs1 ++ outs2 in
+      io_compatible area ins outs ∧
+      io_compatible area outs ins
+End
+
+Theorem circuit_compose:
+  circuit area1 ins1 outs1 as1 init1 ∧
+  circuit area2 ins2 outs2 as2 init2
+  ⇒
+  no_overlap area1 ins1 outs1 as1
+             area2 ins2 outs2 as2
+  ⇒
+  circuit (area1 ++ area2)
+          (ins1  ++  ins2)
+          (outs1 ++ outs2)
+          (as1   ++   as2)
+          (init1 ∪  init2)
+Proof
+  cheat
+QED
+
+Theorem circuit_internalise:
+  ∀ins1 ins2 x outs1 outs2.
+    circuit area (ins1 ++ x ++ ins2) (outs1 ++ x ++ outs2) as init ⇒
+    circuit area (ins1 ++      ins2) (outs1 ++      outs2) as init
+Proof
+  cheat
+QED
+
 Datatype:
   var = A | B
 End
@@ -2783,6 +2841,12 @@ Definition from_blist_def:
   from_blist (Cell e b) = e :: from_blist b
 End
 
+Definition mask_length_def:
+  mask_length End = 0 ∧
+  mask_length (Allow k m) = k + mask_length m ∧
+  mask_length (Forbid k m) = k + mask_length m
+End
+
 Definition mk_Allow_def:
   mk_Allow (Allow n rest) = Allow (n+1) rest ∧
   mk_Allow other = Allow 1 other
@@ -2873,39 +2937,6 @@ Proof
   \\ gvs []
 QED
 
-Definition blist_gol_checked_steps_def:
-  blist_gol_checked_steps (n:num) rows mask = SOME (rows : blist list)
-End
-
-Theorem blist_gol_checked_steps_thm:
-  gol_checked_steps n (MAP from_blist rows) (MAP from_mask mask) =
-  OPTION_MAP (MAP from_blist) (blist_gol_checked_steps n rows mask)
-Proof
-  cheat
-QED
-
-Definition mask_or_io_areas_def:
-  mask_or_io_areas outs bools = (bools : mask list)
-End
-
-Theorem mask_or_io_areas_thm:
-  or_io_areas outs (MAP from_mask bools) =
-  MAP from_mask (mask_or_io_areas outs bools)
-Proof
-  cheat
-QED
-
-Definition blist_diff_rows_def:
-  blist_diff_rows rows del = rows : blist list
-End
-
-Theorem blist_diff_rows_thm:
-  diff_rows (MAP from_blist rows) (MAP from_mask del) =
-  MAP from_blist (blist_diff_rows rows del)
-Proof
-  cheat
-QED
-
 Definition mask_hd_def:
   mask_hd End = NONE ∧
   mask_hd (Forbid n rest) = (if n = 0 then mask_hd rest else SOME F) ∧
@@ -2922,26 +2953,6 @@ Definition mask_drop_def:
     (if n = 0 then Allow k rest else
      if n ≤ k then Allow (k - n) rest else
        mask_drop (n - k) rest)
-End
-
-Definition blist_inter_row_def:
-  blist_inter_row r b =
-    case r of
-    | Nil => Nil
-    | Falses k rest =>
-       mk_Falses k (blist_inter_row rest (mask_drop k b))
-    | Cell e l =>
-       (case mask_hd b of
-        | NONE => mk_Cell e l
-        | SOME T => mk_Cell e (blist_inter_row l (mask_drop 1 b))
-        | SOME F => mk_Falses 1 (blist_inter_row l (mask_drop 1 b)))
-End
-
-Definition blist_inter_rows_def:
-  blist_inter_rows [] del = [] ∧
-  blist_inter_rows r [] = r ∧
-  blist_inter_rows (r::rows) (b::bools) =
-    blist_inter_row r b :: blist_inter_rows rows bools
 End
 
 Theorem from_mask_cases:
@@ -2976,6 +2987,26 @@ Proof
   Induct \\ gvs [mask_hd_def,mask_drop_def,AllCaseEqs()]
 QED
 
+Definition blist_inter_row_def:
+  blist_inter_row r b =
+    case r of
+    | Nil => Nil
+    | Falses k rest =>
+       mk_Falses k (blist_inter_row rest (mask_drop k b))
+    | Cell e l =>
+       (case mask_hd b of
+        | NONE => mk_Cell e l
+        | SOME T => mk_Cell e (blist_inter_row l (mask_drop 1 b))
+        | SOME F => mk_Falses 1 (blist_inter_row l (mask_drop 1 b)))
+End
+
+Definition blist_inter_rows_def:
+  blist_inter_rows [] del = [] ∧
+  blist_inter_rows r [] = r ∧
+  blist_inter_rows (r::rows) (b::bools) =
+    blist_inter_row r b :: blist_inter_rows rows bools
+End
+
 Theorem inter_row_replicate:
   ∀n ys.
     inter_row (REPLICATE n False ⧺ xs) (from_mask ys) =
@@ -3009,6 +3040,61 @@ Proof
   \\ Cases_on ‘mask_hd ys’ \\ gvs []
   \\ gvs [inter_row_def,from_blist_def]
   \\ IF_CASES_TAC \\ gvs [inter_row_def,from_blist_def] \\ EVAL_TAC
+QED
+
+Definition blist_diff_row_def:
+  blist_diff_row r b =
+    case r of
+    | Nil => Nil
+    | Falses k rest =>
+       mk_Falses k (blist_diff_row rest (mask_drop k b))
+    | Cell e l =>
+       (case mask_hd b of
+        | NONE => mk_Cell e l
+        | SOME F => mk_Cell e (blist_diff_row l (mask_drop 1 b))
+        | SOME T => mk_Falses 1 (blist_diff_row l (mask_drop 1 b)))
+End
+
+Definition blist_diff_rows_def:
+  blist_diff_rows [] del = [] ∧
+  blist_diff_rows r [] = r ∧
+  blist_diff_rows (r::rows) (b::bools) =
+    blist_diff_row r b :: blist_diff_rows rows bools
+End
+
+Theorem diff_row_replicate:
+  ∀n ys.
+    diff_row (REPLICATE n False ⧺ xs) (from_mask ys) =
+    REPLICATE n False ⧺ diff_row xs (from_mask (mask_drop n ys))
+Proof
+  Induct \\ rpt strip_tac \\ gvs []
+  >- simp [Once mask_drop_def,mask_drop_0]
+  \\ qspec_then ‘ys’ assume_tac from_mask_cases
+  \\ Cases_on ‘mask_hd ys’ \\ gvs []
+  \\ gvs [diff_row_def,mask_drop_End,from_mask_def]
+  >- (Cases_on ‘xs’ \\ gvs [diff_row_def])
+  \\ Cases_on ‘x’ \\ gvs [diff_row_def,ADD1]
+  \\ gvs [mask_drop_mask_drop]
+QED
+
+Theorem blist_diff_rows_thm:
+  ∀rows del.
+    diff_rows (MAP from_blist rows) (MAP from_mask del) =
+    MAP from_blist (blist_diff_rows rows del)
+Proof
+  Induct \\ Cases_on ‘del’ \\ gvs [diff_rows_def,blist_diff_rows_def]
+  \\ pop_assum kall_tac
+  \\ gen_tac \\ rename [‘blist_diff_row xs ys’]
+  \\ qid_spec_tac ‘ys’
+  \\ qid_spec_tac ‘xs’
+  \\ ho_match_mp_tac blist_diff_row_ind \\ rw []
+  \\ Cases_on ‘xs’ \\ simp [Once blist_diff_row_def] \\ gvs []
+  \\ gvs [from_blist_def,diff_row_def]
+  >- gvs [diff_row_replicate]
+  \\ qspec_then ‘ys’ strip_assume_tac from_mask_cases
+  \\ Cases_on ‘mask_hd ys’ \\ gvs []
+  \\ gvs [diff_row_def,from_blist_def]
+  \\ IF_CASES_TAC \\ gvs [diff_row_def,from_blist_def] \\ EVAL_TAC
 QED
 
 Definition blist_or_row_def:
@@ -3112,6 +3198,245 @@ Theorem blist_inc_vars_thm:
 Proof
   Induct_on ‘rows’ \\ gvs [inc_vars_def,blist_inc_vars_def]
   \\ Induct \\ gvs [blist_inc_def,from_blist_def,inc_def]
+QED
+
+Definition mask_or_io_areas_def:
+  mask_or_io_areas outs bools =
+    (* this is a bit lazy, but this is not a performance critical part *)
+    MAP to_mask (or_io_areas outs (MAP from_mask bools))
+End
+
+Theorem mask_or_io_areas_thm:
+  ∀outs bools.
+    or_io_areas outs (MAP from_mask bools) =
+    MAP from_mask (mask_or_io_areas outs bools)
+Proof
+  gvs [mask_or_io_areas_def,MAP_MAP_o,from_mask_o_to_mask]
+QED
+
+Definition fast_forward_def:
+  fast_forward mask x0 (Falses x1 xs) y0 (Falses y1 ys) z0 (Falses z1 zs) acc =
+    (if x0 = False ∨ y0 = False ∨ z0 = False then
+     if 1 < x1 ∧ 1 < y1 ∧ 1 < z1 then
+       let m = MIN x1 (MIN y1 z1) in
+         SOME (mask_drop m mask,
+               mk_Falses (x1 - m) xs,
+               mk_Falses (y1 - m) ys,
+               mk_Falses (z1 - m) zs,
+               mk_Falses m acc)
+     else NONE else NONE) ∧
+  fast_forward mask x0 _ y0 _ z0 _ acc = NONE
+End
+
+Definition blist_hd_def:
+  blist_hd Nil = NONE ∧
+  blist_hd (Falses n b) = (if n = 0 then blist_hd b else SOME False) ∧
+  blist_hd (Cell e b) = SOME e
+End
+
+Definition blist_hd3_def:
+  blist_hd3 x y z =
+    case (blist_hd x, blist_hd y, blist_hd z) of
+    | (SOME h1, SOME h2, SOME h3) => SOME (h1,h2,h3)
+    | _ => NONE
+End
+
+Definition blist_hd_of_false_def:
+  blist_hd_of_false Nil = False ∧
+  blist_hd_of_false (Cell e b) = e ∧
+  blist_hd_of_false (Falses n b) = if n = 0 then blist_hd_of_false b else False
+End
+
+Definition blist_tl_def:
+  blist_tl Nil = Nil ∧
+  blist_tl (Cell e b) = b ∧
+  blist_tl (Falses n b) =
+    if n = 0 then blist_tl b else
+    if n = 1 then b else Falses (n-1) b
+End
+
+Definition blist_rev_def:
+  blist_rev Nil acc = acc ∧
+  blist_rev (Cell e b) acc = blist_rev b (mk_Cell e acc) ∧
+  blist_rev (Falses n b) acc = blist_rev b (mk_Falses n acc)
+End
+
+Theorem blist_length_mk_Falses:
+  blist_length (mk_Falses n b) = blist_length (Falses n b)
+Proof
+  Cases_on ‘b’ \\ rw [blist_length_def,mk_Falses_def]
+QED
+
+Theorem blist_length_tl:
+  ∀ys. blist_length (blist_tl ys) = blist_length ys - 1
+Proof
+  Induct \\ gvs [blist_tl_def,blist_length_def]
+  \\ rw [] \\ gvs [blist_tl_def,blist_length_def]
+QED
+
+Theorem blist_hd_some:
+  ∀ys e. blist_hd ys = SOME e ⇒ blist_length ys ≠ 0
+Proof
+  Induct \\ gvs [blist_hd_def,blist_length_def]
+QED
+
+Theorem blist_rev_thm:
+  ∀xs acc.
+    from_blist (blist_rev xs acc) = REVERSE (from_blist xs) ++ from_blist acc
+Proof
+  Induct \\ gvs [blist_rev_def,from_blist_def]
+QED
+
+Definition blist_gol_row_acc_def:
+  blist_gol_row_acc mask x0 xs y0 ys z0 zs acc =
+    case fast_forward mask x0 xs y0 ys z0 zs acc of
+    | SOME (mask1,xs1,ys1,zs1,acc1) =>
+        blist_gol_row_acc mask1 False xs1 False ys1 False zs1 acc1
+    | NONE =>
+        case blist_hd3 xs ys zs of
+        | NONE => SOME (blist_rev acc Nil)
+        | SOME (x1,y1,z1) =>
+            if y1 ≠ False ∧ mask_hd mask ≠ SOME F then NONE else
+              let xs = blist_tl xs in
+              let ys = blist_tl ys in
+              let zs = blist_tl zs in
+              let x2 = blist_hd_of_false xs in
+              let y2 = blist_hd_of_false ys in
+              let z2 = blist_hd_of_false zs in
+              let c = gol_cell y1 (x0,x1,x2,y0,y2,z0,z1,z2) in
+                blist_gol_row_acc mask x1 xs y1 ys z0 zs (mk_Cell c acc)
+Termination
+  WF_REL_TAC ‘measure $ λ(mask,x0,xs,y0,ys,z0,zs,acc). blist_length ys’
+  \\ rw [] \\ gvs [blist_hd3_def,AllCaseEqs(),oneline fast_forward_def]
+  \\ gvs [blist_length_def,blist_length_mk_Falses,blist_length_tl]
+  \\ imp_res_tac blist_hd_some \\ gvs [blist_hd_def]
+  \\ gvs [blist_length_def,blist_length_mk_Falses,blist_length_tl]
+End
+
+Definition blist_gol_row_def:
+  blist_gol_row mask x0 xs y0 ys z0 zs =
+    if blist_length ys = mask_length mask then
+      blist_gol_row_acc mask x0 xs y0 ys z0 zs Nil
+    else NONE
+End
+
+Definition blist_gol_rows_def:
+  blist_gol_rows (mask::masks) prev (row::rest) =
+    (case blist_gol_row mask False prev False row False
+            (case rest of [] => Falses (blist_length row) Nil | (r::_) => r) of
+     | NONE => NONE
+     | SOME row1 =>
+         case blist_gol_rows masks row rest of
+         | NONE => NONE
+         | SOME rows1 => SOME (row1 :: rows1)) ∧
+  blist_gol_rows [] prev [] = SOME [] ∧
+  blist_gol_rows _  prev _  = NONE
+End
+
+Definition blist_gol_checked_step_def:
+  blist_gol_checked_step mask [] = (if NULL mask then SOME [] else NONE) ∧
+  blist_gol_checked_step mask (r::rs) =
+    blist_gol_rows mask (Falses (blist_length r) Nil) (r::rs)
+End
+
+Definition blist_gol_checked_steps_def:
+  blist_gol_checked_steps (n:num) rows (mask : mask list) =
+    if n = 0 then SOME rows else
+      case blist_gol_checked_step mask rows of
+      | NONE => NONE
+      | SOME rows1 => blist_gol_checked_steps (n-1) rows1 mask
+End
+
+Theorem blist_gol_row_acc_thm:
+  ∀m y ys z zs q qs acc.
+    blist_length zs = mask_length m ⇒
+    case blist_gol_row_acc m y ys z zs q qs acc of
+    | NONE => ~LIST_REL (λe m. m ∨ e = False) (from_blist zs) (from_mask m)
+    | SOME rows =>
+        LIST_REL (λe m. m ∨ e = False) (from_blist zs) (from_mask m) ∧
+        from_blist rows =
+        REVERSE (from_blist acc) ++
+        gol_row y (from_blist ys) z (from_blist zs) q (from_blist qs)
+Proof
+  ho_match_mp_tac blist_gol_row_acc_ind \\ rw []
+  \\ simp [Once blist_gol_row_acc_def]
+  \\ Cases_on ‘fast_forward m y ys z zs q qs acc’ \\ gvs []
+  >-
+   (Cases_on ‘blist_hd3 ys zs qs’ \\ gvs [blist_rev_thm,from_blist_def]
+    \\ cheat)
+  \\ PairCases_on ‘x’ \\ gvs []
+  \\ cheat
+QED
+
+Theorem mask_length_thm:
+  ∀mask. mask_length mask = LENGTH (from_mask mask)
+Proof
+  Induct \\ gvs [mask_length_def,from_mask_def]
+QED
+
+Theorem blist_gol_row_thm:
+  ∀m y ys z zs q qs acc.
+    case blist_gol_row m y ys z zs q qs of
+    | NONE => ~LIST_REL (λe m. m ∨ e = False) (from_blist zs) (from_mask m)
+    | SOME rows =>
+        LIST_REL (λe m. m ∨ e = False) (from_blist zs) (from_mask m) ∧
+        from_blist rows =
+        gol_row y (from_blist ys) z (from_blist zs) q (from_blist qs)
+Proof
+  rw []
+  \\ mp_tac (SPEC_ALL blist_gol_row_acc_thm |> Q.GEN ‘acc’ |> Q.SPEC ‘Nil’)
+  \\ gvs [blist_gol_row_def]
+  \\ IF_CASES_TAC >- gvs [from_blist_def]
+  \\ gvs []
+  \\ gvs [LIST_REL_EL_EQN]
+  \\ gvs [blist_length_thm,mask_length_thm]
+QED
+
+Theorem blist_gol_checked_steps_thm:
+  ∀n rows mask.
+    gol_checked_steps n (MAP from_blist rows) (MAP from_mask mask) =
+    OPTION_MAP (MAP from_blist) (blist_gol_checked_steps n rows mask)
+Proof
+  Induct
+  \\ simp [Once gol_checked_steps_def, Once blist_gol_checked_steps_def]
+  \\ rpt gen_tac
+  \\ qsuff_tac
+     ‘OPTION_MAP (MAP from_blist) (blist_gol_checked_step mask rows) =
+      if check_mask (MAP from_blist rows) (MAP from_mask mask) then
+        SOME (gol_step_rows (MAP from_blist rows))
+      else NONE’
+  >- (Cases_on ‘blist_gol_checked_step mask rows’ \\ gvs [])
+  \\ pop_assum kall_tac
+  \\ Cases_on ‘rows’
+  >- (Cases_on ‘mask’
+      \\ gvs [blist_gol_checked_step_def, gol_step_rows_def,check_mask_def])
+  \\ gvs [blist_gol_checked_step_def, gol_step_rows_def]
+  \\ rewrite_tac [GSYM MAP]
+  \\ qspec_tac (‘h::t’,‘xs’)
+  \\ qabbrev_tac ‘ys = Falses (blist_length h) Nil’
+  \\ ‘REPLICATE (LENGTH (from_blist h)) False = from_blist ys’ by
+        gvs [Abbr‘ys’,from_blist_def,blist_length_thm]
+  \\ gvs [] \\ qid_spec_tac ‘ys’ \\ qid_spec_tac ‘mask’
+  \\ Induct_on ‘xs’ \\ gvs []
+  >- (Cases_on ‘mask’ \\ gvs [check_mask_def,blist_gol_rows_def,gol_rows_def])
+  \\ Cases_on ‘mask’ >- gvs [check_mask_def,blist_gol_rows_def,gol_rows_def]
+  \\ gvs [check_mask_def] \\ gvs [GSYM check_mask_def]
+  \\ gvs [gol_rows_def] \\ rpt gen_tac
+  \\ rename [‘blist_gol_rows (x::xs) ys (z::zs)’]
+  \\ gvs [blist_gol_rows_def]
+  \\ qabbrev_tac ‘qs = case zs of [] => Falses (blist_length z) Nil | r::v1 => r’
+  \\ qabbrev_tac ‘ts = case MAP from_blist zs of
+                       | [] => REPLICATE (LENGTH (from_blist z)) False
+                       | r::v1 => r’
+  \\ ‘ts = from_blist qs’ by
+    (unabbrev_all_tac \\ Cases_on ‘zs’ \\ gvs [from_blist_def,blist_length_thm])
+  \\ gvs []
+  \\ qspecl_then [‘x’,‘False’,‘ys’,‘False’,‘z’,‘False’,‘qs’] mp_tac
+       blist_gol_row_thm
+  \\ Cases_on ‘blist_gol_row x False ys False z False qs’ \\ gvs []
+  \\ gvs [from_blist_def,listTheory.SWAP_REVERSE_SYM]
+  \\ first_x_assum $ qspecl_then [‘xs’,‘z’] mp_tac
+  \\ Cases_on ‘blist_gol_rows xs z zs’ \\ gvs []
 QED
 
 Definition blist_simulation_ok_def:
