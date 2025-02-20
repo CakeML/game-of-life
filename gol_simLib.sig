@@ -22,7 +22,13 @@ type gate = {
 }
 
 type state
-type loaded_gate
+type loaded_gate = {
+  inputs: io_port list,
+  outputs: io_port list,
+  height: int,
+  width: int,
+  grid: unit -> bexp array array
+}
 val load: gate -> loaded_gate
 val prepare: loaded_gate -> state
 val rotate: int -> loaded_gate -> loaded_gate
