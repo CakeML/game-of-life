@@ -266,7 +266,29 @@ obo48b2o$13b2o3b2o17bo2b2o46b2o$202b2o$201bobo$16bo184bo$17b2o181b2o2$
 `,
     },
     {
-        name: "Turn clockwise",
+        name: "Turn clockwise faster",
+        input: [[[-1,0],"E"]],
+        output: [[[0,1],"S"]],
+        height: 1,
+        width: 1,
+        content: `
+o2$88b2o$88b2o6$54b2o$54b2o4$70b2o14b2o3b2o$31b2o37b2o16b3o$31b2o54bo
+3bo$88bobo$89bo2$53b3o$32bo19bo3bo$32bo18bo5bo$31bobo18bo3bo33b3o$30b
+2ob2o18b3o28bobo$29bo5bo17b3o11b2o3b2o10b2o4bobo$32bo52bo3b5o$29b2o3b
+2o32bo3bo15b2o3b2o$69b3o16b2o3b2o$69b3o$30b4o21b3o$30bo2b2o15bo3b2ob2o
+19bo$31bob2o13b2o4b2ob2o17b2o12b2o$49b2o3b5o18b2o$32b2o19b2o3b2o$33bo
+34bo5bo6b2o$67b3o5bo4b2o$67b3o3b3o6bo$27b2obob2o$27bo5bo5bo14b2o9b2o3b
+2o19b2obob2o$28bo3bo7bo24b2o3b2o19bo5bo$29b3o6b3o51bo3bo$89bo3b3o$56b
+2o10bo19b2o$56b2o9bobo18bobo$66b2o6bobo$66b2o9bo6b2o$66b3o8bo6bobo$67b
+obo4bo2bo3b2obobo$29b2o37b2o5b3o3bobobo$29b2o52bo8bo$83b2o7bo$83b3o5bo
+bo$83b3o4b2ob2o$54bo28b3o3bo5bo$55bo27b2o7bo$53b3o27bo5b2o3b2o$81bobob
+o$81b2obobo$84bobo6bo$84b2o7bo$94bo3$91b2o$91b2o4$69bo$70bo$o2bo64b3o$
+4bo$o3bo$b4o6$89bo$87b3o$86bo$86b2o3$79bobo$79b2o$80bo2$84bo$83b3o$82b
+5o$81b2o3b2o3$83bo$83bo2$86b2o$86bo$87b3o$89bo!
+`,
+    },
+    {
+        name: "Turn clockwise normal",
         input: [[[-1,0],"E"]],
         output: [[[0,1],"S"]],
         height: 1,
@@ -288,25 +310,27 @@ o3$63b2o$63b2o9$60b2obob2o2$60bo5bo14b2o$81b2o$61b2ob2o$63bo2$83b2o12b
 `,
     },
     {
-        name: "Turn clockwise faster",
+        name: "Turn clockwise slower",
         input: [[[-1,0],"E"]],
         output: [[[0,1],"S"]],
         height: 1,
         width: 1,
         content: `
-o2$88b2o$88b2o6$54b2o$54b2o4$70b2o14b2o3b2o$31b2o37b2o16b3o$31b2o54bo
-3bo$88bobo$89bo2$53b3o$32bo19bo3bo$32bo18bo5bo$31bobo18bo3bo33b3o$30b
-2ob2o18b3o28bobo$29bo5bo17b3o11b2o3b2o10b2o4bobo$32bo52bo3b5o$29b2o3b
-2o32bo3bo15b2o3b2o$69b3o16b2o3b2o$69b3o$30b4o21b3o$30bo2b2o15bo3b2ob2o
-19bo$31bob2o13b2o4b2ob2o17b2o12b2o$49b2o3b5o18b2o$32b2o19b2o3b2o$33bo
-34bo5bo6b2o$67b3o5bo4b2o$67b3o3b3o6bo$27b2obob2o$27bo5bo5bo14b2o9b2o3b
-2o19b2obob2o$28bo3bo7bo24b2o3b2o19bo5bo$29b3o6b3o51bo3bo$89bo3b3o$56b
-2o10bo19b2o$56b2o9bobo18bobo$66b2o6bobo$66b2o9bo6b2o$66b3o8bo6bobo$67b
-obo4bo2bo3b2obobo$29b2o37b2o5b3o3bobobo$29b2o52bo8bo$83b2o7bo$83b3o5bo
-bo$83b3o4b2ob2o$54bo28b3o3bo5bo$55bo27b2o7bo$53b3o27bo5b2o3b2o$81bobob
-o$81b2obobo$84bobo6bo$84b2o7bo$94bo3$91b2o$91b2o4$69bo$70bo$o2bo64b3o$
-4bo$o3bo$b4o6$89bo$87b3o$86bo$86b2o3$79bobo$79b2o$80bo2$84bo$83b3o$82b
-5o$81b2o3b2o3$83bo$83bo2$86b2o$86bo$87b3o$89bo!
+o2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo22b2o$88bobo23b2o$
+89bo4$137b2o$90b3o21b3o20b2o$84bobo$67b2o3b2o10b2o4bobo21bobo$85bo3b5o
+19b5o19bo$68bo3bo15b2o3b2o17b2o3b2o17b3o$69b3o16b2o3b2o17b2o3b2o16bo3b
+o$69b3o65bo$134bo5bo$78bo35b2o18bo5bo$76b2o12b2o21b2ob2o17bo3bo$77b2o
+35bo2bo18b3o$114bo$68bo5bo6b2o34bo$67b3o5bo4b2o33b2o$67b3o3b3o6bo$135b
+o$65b2o3b2o19b2obob2o12b2o3b2o$65b2o3b2o19bo5bo13b5o5bo$92bo3bo15b3o7b
+2o11bo$89bo3b3o17bo7b2o12bobo$68bo19b2o45b2o$67bobo18bobo$66b2o6bobo$
+66b2o9bo6b2o$66b3o8bo6bobo49b2o3b2o$67bobo4bo2bo3b2obobo41bo$68b2o5b3o
+3bobobo41bo9bo3bo$83bo8bo19b2o13b3o8b3o$83b2o7bo19b2o24b3o$83b3o5bobo$
+83b3o4b2ob2o$83b3o3bo5bo$83b2o7bo$83bo5b2o3b2o43b2o$81bobobo53b2o$81b
+2obobo$84bobo6bo$84b2o7bo$94bo2$113bo$91b2o19bo$91b2o19b3o6$o2bo$4bo$o
+3bo$b4o$74bobo$77bo$77bo$74bo2bo20bo$75b3o19bo$97b3o13$83bo$82bo$82b3o
+10$74bobo$77bo$77bo$59bo8bo5bo2bo$59b3o5bo7b3o$62bo4b3o$61b2o2$64bo$
+63b3o$62bo3bo$64bo$61bo5bo$61bo5bo$62bo3bo$63b3o7$61b2o$62bo$59b3o$59b
+o!
 `,
     },
     {
