@@ -288,6 +288,28 @@ o3$63b2o$63b2o9$60b2obob2o2$60bo5bo14b2o$81b2o$61b2ob2o$63bo2$83b2o12b
 `,
     },
     {
+        name: "Turn clockwise faster",
+        input: [[[-1,0],"E"]],
+        output: [[[0,1],"S"]],
+        height: 1,
+        width: 1,
+        content: `
+o2$88b2o$88b2o6$54b2o$54b2o4$70b2o14b2o3b2o$31b2o37b2o16b3o$31b2o54bo
+3bo$88bobo$89bo2$53b3o$32bo19bo3bo$32bo18bo5bo$31bobo18bo3bo33b3o$30b
+2ob2o18b3o28bobo$29bo5bo17b3o11b2o3b2o10b2o4bobo$32bo52bo3b5o$29b2o3b
+2o32bo3bo15b2o3b2o$69b3o16b2o3b2o$69b3o$30b4o21b3o$30bo2b2o15bo3b2ob2o
+19bo$31bob2o13b2o4b2ob2o17b2o12b2o$49b2o3b5o18b2o$32b2o19b2o3b2o$33bo
+34bo5bo6b2o$67b3o5bo4b2o$67b3o3b3o6bo$27b2obob2o$27bo5bo5bo14b2o9b2o3b
+2o19b2obob2o$28bo3bo7bo24b2o3b2o19bo5bo$29b3o6b3o51bo3bo$89bo3b3o$56b
+2o10bo19b2o$56b2o9bobo18bobo$66b2o6bobo$66b2o9bo6b2o$66b3o8bo6bobo$67b
+obo4bo2bo3b2obobo$29b2o37b2o5b3o3bobobo$29b2o52bo8bo$83b2o7bo$83b3o5bo
+bo$83b3o4b2ob2o$54bo28b3o3bo5bo$55bo27b2o7bo$53b3o27bo5b2o3b2o$81bobob
+o$81b2obobo$84bobo6bo$84b2o7bo$94bo3$91b2o$91b2o4$69bo$70bo$o2bo64b3o$
+4bo$o3bo$b4o6$89bo$87b3o$86bo$86b2o3$79bobo$79b2o$80bo2$84bo$83b3o$82b
+5o$81b2o3b2o3$83bo$83bo2$86b2o$86bo$87b3o$89bo!
+`,
+    },
+    {
         name: "Turn anti-clockwise",
         input: [[[-1,0],"E"]],
         output: [[[0,-1],"N"]],
