@@ -55,6 +55,7 @@ val half_adder_ee_es: gate;
 val half_adder_ee_ee: gate;
 val turn_e_s: gate;
 val turn_e_n: gate;
+val fast_turn_e_s: gate;
 val slow_turn_e_s: gate;
 val fork_e_es: gate;
 val fork_e_en: gate;

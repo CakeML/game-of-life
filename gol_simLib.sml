@@ -621,8 +621,16 @@ val turn_e_s =
     height   = 1,
     width    = 1 } : gate;
 
+val fast_turn_e_s =
+  { filename = "fast-turn-e-s.rle",
+    stems    = ["fast_turn_e_s", "fast_turn_s_w", "fast_turn_w_n", "fast_turn_n_e"],
+    inputs   = [((~1, 0), E, Var (0, 6))],
+    outputs  = [((0, 1), S, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
 val slow_turn_e_s =
-  { filename = "turn-e-s.rle",
+  { filename = "slow-turn-e-s.rle",
     stems    = ["slow_turn_e_s", "slow_turn_s_w", "slow_turn_w_n", "slow_turn_n_e"],
     inputs   = [((~1, 0), E, Var (0, 8))],
     outputs  = [((0, 1), S, Var (0, 0))],
