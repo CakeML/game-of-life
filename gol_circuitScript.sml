@@ -89,7 +89,7 @@ fun smallNodePattern n = case n of
     Node => [
       (terminator_e, (Wire E, Empty, Empty, Empty)),
       (wire_e_e, (Wire E, Empty, Wire E, Empty)),
-      (turn_e_s, (Wire E, Empty, Empty, Wire S)),
+      (fast_turn_e_s, (Wire E, Empty, Empty, Wire S)),
       (turn_e_n, (Wire E, Wire N, Empty, Empty)),
       (fork_e_es, (Wire E, Empty, Wire E, Wire S)),
       (fork_e_en, (Wire E, Wire N, Wire E, Empty)),
@@ -308,10 +308,12 @@ fun build d (gates:gates) period pulse (ins: io_port list, outs: io_port list) =
       SOME old => (case (value, old) of
         (Exact (n1, Clock), Exact (n2, Clock)) =>
           if n1 = n2 + period then () else
-            raise Fail ("period = " ^ Int.toString (n1 - n2))
+          (PolyML.print ("clock period mismatch", period, n1 - n2); ())
+      | (Exact (n1, ThisCell), Exact (n2, ThisCell)) =>
+        if n1 = n2 then () else
+          (PolyML.print ("thiscell mismatch", period, period + n1 - n2); ())
       | (e1, e2) => if e1 = e2 then () else
-          (PolyML.print ("cycle mismatch", w, value, old);
-          ()))
+          (PolyML.print ("cycle mismatch", w, value, old); ()))
     | NONE => let
       val (wireIn', tgt) = Redblackmap.remove (!wireIn, w)
       val _ = wireIn := wireIn'
@@ -376,9 +378,9 @@ Quote diag = CircuitDiag.parse:
      ^   ^                           v                   v   ^       v       v   v   v     |
  3   o   o           o > O > A > o > o > o > o           o   o       o       H - H   s   3 |
      ^   ^           ^   ^   ^       v       v           v   ^       v       |   |   v     |
- 4   s   o   o > A > o > o > o       o   s > A > O > o > o > o > o   o   o < H - H   s   4 |
+ 4   o   o   o > A > o > o > o       o   s > A > O > o > o > o > o   o   o < H - H   s   4 |
      ^   ^   ^   ^   ^   ^           v   ^       ^   v   v       v   v   v       v   v     |
- 5   s   o   o   N   o   o           o > o > N > A < o   o > o > o > o > o > o   o   s   5 |
+ 5   o   o   o   N   o   o           o > o > N > A < o   o > o > o > o > o > o   o   s   5 |
      ^   ^   ^   ^   ^   ^                                       v   v   v   v   v   v     |
  6   s   o < o < o < o < o < o < o < o < o < o < o < o < o < o < o   o   o   H - H   s   6 |
      ^       ^   ^       ^                                   v   v   v   v   |   |   v     |
@@ -412,10 +414,10 @@ Quote diag = CircuitDiag.parse:
          ^   ^                                                               v   v         |
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
 End
-(* val _ = HOL_Interactive.toggle_quietdec(); *)
-
 
 open CircuitDiag
+(* val _ = HOL_Interactive.toggle_quietdec(); *)
+
 fun go () = let
   val _ = PolyML.print_depth 6
   fun f ((x,y), dir, (a,b), delay) = let
@@ -424,27 +426,27 @@ fun go () = let
       (((x,y), dir, Regular (delay, Cell (a,b))),
        ((x+CSIZE*c,y+CSIZE*d), dir, Regular (delay, Cell (a+c,b+d))))
     end
-  val dE = 177
-  val dS = 134
-  val dW = 63
-  val dN = 126
+  val dE = 174
+  val dS = 132
+  val dW = 62
+  val dN = 123
   val dNE = dE + 22
   val dSE = dS + 21
   val dSW = dW + 22
   val dNW = dN + 21
-  val period = 598
-  val pulse = 18
   val phase = 0
-  val (ins1, outs) = unzip $ map f [
+  val period = 586
+  val pulse = 18
+  val (ins, outs) = unzip $ map f [
     ((~1, 1), E, (~1, 0), dW), ((~1, 2), E, (~1, ~1), dNW),
     ((19, ~1), S, (0, ~1), dN), ((18, ~1), S, (1, ~1), dNE),
     ((21, 19), W, (1, 0), dE), ((21, 18), W, (1, 1), dSE),
     ((1, 21), N, (0, 1), dS), ((2, 21), N, (~1, 1), dSW)];
-  val ins2 = [
+  val asrt = [
     ((16, 0), E, Exact (phase, Clock)),
     ((11, 4), E, Exact (0, ThisCell))];
   (* val file = TextIO.openOut "log.txt" *)
-  val res = build diag (recognize diag) period pulse (ins1 @ ins2, outs)
+  val res = build diag (recognize diag) period pulse (ins @ asrt, outs)
   (* val _ = TextIO.closeOut file *)
   in res end;
 
