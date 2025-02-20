@@ -19,7 +19,7 @@ fun parse [QUOTE s]: diag = let
   | parse _ = raise Bind
 
 datatype small_gate = Node | SlowNode | AndG | OrG | NotG
-datatype large_gate = HalfAddG
+datatype large_gate = HalfAddG | SlowWire
 
 datatype sigil =
     Empty
@@ -43,6 +43,7 @@ fun coord ((_, lines):diag) (x, y) =
   | "O " => Small OrG
   | "N " => Small NotG
   | "H " => Large HalfAddG
+  | "S " => Large SlowWire
   | s => raise Fail s
 
 fun sigil_to_string s = case s of
@@ -59,6 +60,7 @@ fun sigil_to_string s = case s of
   | Small OrG => "O "
   | Small NotG => "N "
   | Large HalfAddG => "H "
+  | Large SlowWire => "S "
 
 fun lineHeader line =
   (String.substring (line, 0, 3), String.extract (line, 3 + 2 * SIZE, NONE))
@@ -107,8 +109,13 @@ fun smallNodePattern n = case n of
 fun rotate_sigils (a,b,c,d) =
   (rotate_sigil d, rotate_sigil a, rotate_sigil b, rotate_sigil c)
 
-fun rotate_sigilss (a,b,c,d) =
+fun rotate_sigils22 (a,b,c,d) =
   (rotate_sigils d, rotate_sigils a, rotate_sigils b, rotate_sigils c)
+
+fun rotate_sigils31 (false,a,b,c) =
+    (true, rotate_sigils a, rotate_sigils b, rotate_sigils c)
+  | rotate_sigils31 (true,a,b,c) =
+    (false, rotate_sigils c, rotate_sigils b, rotate_sigils a)
 
 fun match_with f pat nei = let
   exception Found of gate * int
@@ -132,6 +139,7 @@ fun recognize d = let
     for_loop 0 CSIZE (fn x => let
       fun push (x, y) (gate, i) = gates := ((x, y), (gate, i)) :: !gates
       val r = neighbors d (x, y)
+      fun nn p = #2 (neighbors d p)
       in
         (case r of
           (Empty, (Empty, Empty, Empty, Empty)) => ()
@@ -140,7 +148,7 @@ fun recognize d = let
           if #1 (neighbors d (x-1, y)) = Large n orelse
              #1 (neighbors d (x, y-1)) = Large n then () else
           (case n of
-            HalfAddG => push (x, y) $ match_with rotate_sigilss
+            HalfAddG => push (x, y) $ match_with rotate_sigils22
               [(half_adder_ee_es, (
                 (Wire E, Empty, Wall false, Wall true),
                 (Wall false, Empty, Wire E, Wall true),
@@ -151,11 +159,15 @@ fun recognize d = let
                 (Wall false, Empty, Wire E, Wall true),
                 (Wall false, Wall true, Wire E, Empty),
                 (Wire E, Wall true, Wall false, Empty)))]
-              (nei,
-                #2 (neighbors d (x+1, y)),
-                #2 (neighbors d (x+1, y+1)),
-                #2 (neighbors d (x, y+1)))
-          )
+              (nei, nn (x+1, y), nn (x+1, y+1), nn (x, y+1))
+          | SlowWire => push (x, y) $ match_with rotate_sigils31
+              [(slow_wire_e_e, (false,
+                (Wire E, Empty, Wall false, Empty),
+                (Wall false, Empty, Wall false, Empty),
+                (Wall false, Empty, Wire E, Empty)))]
+              (if #3 nei = Wall false then
+                (false, nn (x, y), nn (x+1, y), nn (x+2, y))
+              else (true, nn (x, y), nn (x, y+1), nn (x, y+2))))
         | _ => (PolyML.print ((x, y), r); raise Fail "unknown node type"))
         handle Match => (PolyML.print ((x, y), r); raise Fail "unknown connection pattern")
       end))
