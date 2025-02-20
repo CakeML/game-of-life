@@ -408,7 +408,7 @@ $23b2o62b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o15bo3bo$85b3o10$85b
         content: "!",
     },
     {
-        name: "Mini slow wire - E - E",
+        name: "Slow wire - E - E",
         input: [[[-1,0],"E"]],
         output: [[[1,0],"E"]],
         height: 1,
@@ -436,7 +436,7 @@ bo$8b5o3b2ob3o27bo5b2o13b2o4b2o53bo$17bobo51b2o$10b2obo3bobo52bo$10bob
 `,
     },
     {
-        name: "Slow wire - E - E",
+        name: "Slower wire - E - E",
         input: [[[-1,0],"E"]],
         output: [[[7,0],"E"]],
         height: 1,

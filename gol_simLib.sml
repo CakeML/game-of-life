@@ -690,7 +690,7 @@ val half_adder_ee_ee =
     width    = 2 } : gate;
 
 val slow_wire_e_e =
-  { filename = "empty.rle",
+  { filename = "slow-wire-e-e.rle",
     stems    = ["slow_wire_e_e", "slow_wire_s_s", "slow_wire_w_w", "slow_wire_n_n"],
     inputs   = [((~1, 0), E, Var (0, 9))],
     outputs  = [((1, 0), E, Var (0, 0))],
@@ -698,7 +698,7 @@ val slow_wire_e_e =
     width    = 1 } : gate;
 
 val slower_wire_e_e =
-  { filename = "slow-wire-e-e.rle",
+  { filename = "slower-wire-e-e.rle",
     stems    = ["slower_wire_e_e", "slower_wire_s_s", "slower_wire_w_w", "slower_wire_n_n"],
     inputs   = [((~1, 0), E, Var (0, 155))],
     outputs  = [((7, 0), E, Var (0, 0))],

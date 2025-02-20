@@ -149,7 +149,7 @@ val _ = translate_gate [0,1,2,3] fork_e_es;
 val _ = translate_gate [0,1,2,3] fork_e_en;
 val _ = translate_gate [0,1,2,3] half_adder_ee_es;
 val _ = translate_gate [0,1,2,3] half_adder_ee_ee;
-(* val _ = translate_gate [0,1,2,3] slow_wire_e_e; *)
+val _ = translate_gate [0,1,2,3] slow_wire_e_e;
 val _ = translate_gate [2] slower_wire_e_e;
 
 Definition delay_def:
