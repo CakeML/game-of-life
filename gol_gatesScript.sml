@@ -143,11 +143,13 @@ val _ = translate_gate [0,1,2,3] or_en_e;
 val _ = translate_gate [0,1,2,3] not_e_e;
 val _ = translate_gate [0,1,2,3] turn_e_s;
 val _ = translate_gate [0,1,2,3] turn_e_n;
+(* val _ = translate_gate [0,1,2,3] slow_turn_e_s; *)
 val _ = translate_gate [0,1,2,3] fork_e_es;
 val _ = translate_gate [0,1,2,3] fork_e_en;
 val _ = translate_gate [0,1,2,3] half_adder_ee_es;
 val _ = translate_gate [0,1,2,3] half_adder_ee_ee;
-val _ = translate_gate [2] slow_wire_e_e;
+(* val _ = translate_gate [0,1,2,3] slow_wire_e_e; *)
+val _ = translate_gate [2] slower_wire_e_e;
 
 Definition delay_def:
   delay n a i = if i < n then F else a (i - n:num)

@@ -55,11 +55,13 @@ val half_adder_ee_es: gate;
 val half_adder_ee_ee: gate;
 val turn_e_s: gate;
 val turn_e_n: gate;
+val slow_turn_e_s: gate;
 val fork_e_es: gate;
 val fork_e_en: gate;
 val wire_e_e: gate;
 val cross_es_es: gate;
 val slow_wire_e_e: gate;
+val slower_wire_e_e: gate;
 val terminator_e: gate;
 
 end;

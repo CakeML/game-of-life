@@ -621,6 +621,14 @@ val turn_e_s =
     height   = 1,
     width    = 1 } : gate;
 
+val slow_turn_e_s =
+  { filename = "turn-e-s.rle",
+    stems    = ["slow_turn_e_s", "slow_turn_s_w", "slow_turn_w_n", "slow_turn_n_e"],
+    inputs   = [((~1, 0), E, Var (0, 8))],
+    outputs  = [((0, 1), S, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
 val turn_e_n =
   { filename = "turn-e-n.rle",
     stems    = ["turn_e_n", "turn_s_e", "turn_w_s", "turn_n_w"],
@@ -674,8 +682,16 @@ val half_adder_ee_ee =
     width    = 2 } : gate;
 
 val slow_wire_e_e =
-  { filename = "slow-wire-e-e.rle",
+  { filename = "empty.rle",
     stems    = ["slow_wire_e_e", "slow_wire_s_s", "slow_wire_w_w", "slow_wire_n_n"],
+    inputs   = [((~1, 0), E, Var (0, 9))],
+    outputs  = [((1, 0), E, Var (0, 0))],
+    height   = 1,
+    width    = 1 } : gate;
+
+val slower_wire_e_e =
+  { filename = "slow-wire-e-e.rle",
+    stems    = ["slower_wire_e_e", "slower_wire_s_s", "slower_wire_w_w", "slower_wire_n_n"],
     inputs   = [((~1, 0), E, Var (0, 155))],
     outputs  = [((7, 0), E, Var (0, 0))],
     height   = 1,

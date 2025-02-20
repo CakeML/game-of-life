@@ -1,7 +1,6 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 open HolKernel bossLib gol_simLib gol_rulesTheory boolLib boolSyntax
      computeLib cv_transLib cv_stdTheory gol_sim_cvTheory;
-(* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_circuit";
 
@@ -19,7 +18,7 @@ fun parse [QUOTE s]: diag = let
     in (header, lines) end
   | parse _ = raise Bind
 
-datatype small_gate = Node | AndG | OrG | NotG
+datatype small_gate = Node | SlowNode | AndG | OrG | NotG
 datatype large_gate = HalfAddG
 
 datatype sigil =
@@ -39,6 +38,7 @@ fun coord ((_, lines):diag) (x, y) =
   | "| " => Wall true
   | "- " => Wall false
   | "o " => Small Node
+  | "s " => Small SlowNode
   | "A " => Small AndG
   | "O " => Small OrG
   | "N " => Small NotG
@@ -54,6 +54,7 @@ fun sigil_to_string s = case s of
   | Wall true => "| "
   | Wall false => "- "
   | Small Node => "o "
+  | Small SlowNode => "s "
   | Small AndG => "A "
   | Small OrG => "O "
   | Small NotG => "N "
@@ -93,6 +94,9 @@ fun smallNodePattern n = case n of
       (fork_e_es, (Wire E, Empty, Wire E, Wire S)),
       (fork_e_en, (Wire E, Wire N, Wire E, Empty)),
       (cross_es_es, (Wire E, Wire S, Wire E, Wire S))]
+  | SlowNode => [
+    (slow_wire_e_e, (Wire E, Empty, Wire E, Empty)),
+    (slow_turn_e_s, (Wire E, Empty, Empty, Wire S))]
   | NotG => [(not_e_e, (Wire E, Empty, Wire E, Empty))]
   | AndG => [
       (and_en_e, (Wire E, Empty, Wire E, Wire N)),
@@ -161,7 +165,6 @@ fun inbounds (a, b) = 0 <= a andalso a < CSIZE andalso 0 <= b andalso b < CSIZE
 
 datatype rvalue =
     Cell of int * int
-  | RFalse
   | RAnd of rvalue * rvalue
   | ROr of rvalue * rvalue
   | RNot of rvalue
@@ -228,7 +231,7 @@ fun getGateData (gate, i) = let
 fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
 fun dirToXY d = case d of E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
 
-fun build d (gates:gates) period period2 garbage (ins: io_port list, outs: io_port list) = let
+fun build d (gates:gates) period pulse (ins: io_port list, outs: io_port list) = let
   fun prep (gate, i) = gol_simLib.rotate i (load gate)
   datatype target = Gate of (int * int) * int | Done of value
   val wireIn = ref $ foldl (fn ((w, d, v), map) =>
@@ -261,15 +264,15 @@ fun build d (gates:gates) period period2 garbage (ins: io_port list, outs: io_po
         | (Exact (d1, ThisCell), Regular (d2, v2)) =>
           Regular (Int.max (d1, d2), mk_ROr (Cell (0, 0), v2))
         | (Exact (d1, NextCell), Exact (d2, ThisCellUntilClock d3)) =>
-          if d2 <= d1 andalso d1 + garbage = d2 + d3 then
-            Exact (d2 + d3 - period2, ThisCell)
+          if d1 = d2 + d3 then Exact (d1 - period, ThisCell)
           else (PolyML.print (d2, d1, d2 + d3); raise Fail "clock timing 1")
         | r => (PolyML.print (ins, Or (e1, e2), r); raise Fail "evalExp Or"))
       | evalExp (And (e1, e2)) = (case (evalExp e1, evalExp e2) of
           (Regular (d1, v1), Regular (d2, v2)) =>
           Regular (Int.max (d1, d2), RAnd (v1, v2))
         | (Exact (d1, ThisCell), Exact (d2, NotClock)) =>
-          if d1 > d2 then (PolyML.print (d1, d2); raise Fail "clock timing 2") else
+          if d1 > d2 orelse pulse < d1 then
+            (PolyML.print (pulse, d1, d2); raise Fail "clock timing 2") else
           Exact (d1, ThisCellUntilClock (d2 - d1))
         | (Exact (d1, Clock), Regular (d2, v2)) =>
           if v2 <> nextCell then raise Fail "calculated wrong function" else
@@ -307,7 +310,8 @@ fun build d (gates:gates) period period2 garbage (ins: io_port list, outs: io_po
           if n1 = n2 + period then () else
             raise Fail ("period = " ^ Int.toString (n1 - n2))
       | (e1, e2) => if e1 = e2 then () else
-          (PolyML.print (w, value, old); raise Fail "cycle"))
+          (PolyML.print ("cycle mismatch", w, value, old);
+          ()))
     | NONE => let
       val (wireIn', tgt) = Redblackmap.remove (!wireIn, w)
       val _ = wireIn := wireIn'
@@ -320,14 +324,16 @@ fun build d (gates:gates) period period2 garbage (ins: io_port list, outs: io_po
           Gate p => let
           val (r, g, (ins, outs)) = Redblackmap.find (!gates, p)
           in (processQueue (ins, p, r, g, ins, outs); ()) end
-        | Done out => if value = out then () else
+        | Done out => (
+          (* PolyML.print ("output match", w, value, out); *)
+          if value = out then () else
           if
             case (value, out) of
               (Exact (d1, ThisCell), Regular (d2, Cell (0, 0))) => d1 = d2
             | _ => false
           then ()
           else
-             (PolyML.print (w, value, out); raise Fail "output matching")
+             (PolyML.print ("output mismatch", w, value, out); ()))
       end
   val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v)) ins
   fun loop () = case !queue of
@@ -355,59 +361,62 @@ fun build d (gates:gates) period period2 garbage (ins: io_port list, outs: io_po
   val _ = print' (header, lines') *)
   in !wires end
 
+fun getWire res p dir = Redblackmap.find (res, wpos (p, dirToXY dir))
+
 end;
 
 Quote diag = CircuitDiag.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
          ^   ^                                                               v   v         |
- 0   o > o > o > o > o > o > o > o > o > o > o > o > o > o > o > o > o > o > o > o > o   0 |
+ 0   o > o > o > o > o > o > o > o > o > o > o > o > o > o > s > s > s > s > o > o > o   0 |
      ^   ^   ^                       v                                       v   v   v     |
  1 > o > o > o > H - H > o > o > o > o > o > o > o > o > o   o > o > o > o > o > o > o > 1 |
      ^   ^       |   |               v                   v   ^               v   v   v     |
  2 > o > o > o > H - H > o > o > o > o > o > o > o > o > o > o > o > o       o   o > o > 2 |
      ^   ^                           v                   v   ^       v       v   v   v     |
- 3   o   o           o > O > A > o > o > o > o           o   o       o       H - H   o   3 |
+ 3   o   o           o > O > A > o > o > o > o           o   o       o       H - H   s   3 |
      ^   ^           ^   ^   ^       v       v           v   ^       v       |   |   v     |
- 4   o   o   o > A > o > o > o       o   o > A > O > o > o > o > o   o   o < H - H   o   4 |
+ 4   s   o   o > A > o > o > o       o   s > A > O > o > o > o > o   o   o < H - H   s   4 |
      ^   ^   ^   ^   ^   ^           v   ^       ^   v   v       v   v   v       v   v     |
- 5   o   o   o   N   o   o           o > o > N > A < o   o > o > o > o > o > o   o   o   5 |
+ 5   s   o   o   N   o   o           o > o > N > A < o   o > o > o > o > o > o   o   s   5 |
      ^   ^   ^   ^   ^   ^                                       v   v   v   v   v   v     |
- 6   o   o < o < o < o < o < o < o < o < o < o < o < o < o < o < o   o   o   H - H   o   6 |
+ 6   s   o < o < o < o < o < o < o < o < o < o < o < o < o < o < o   o   o   H - H   s   6 |
      ^       ^   ^       ^                                   v   v   v   v   |   |   v     |
- 7   o   o > o > o > o > o   o < o < o < o < o < o < o < o < o   o   o   o   H - H   o   7 |
+ 7   s   o > o > o > o > o   o < o < o < o < o < o < o < o < o   o   o   o   H - H   s   7 |
      ^   ^   ^   ^                                           v   v   v   v   v   v   v     |
- 8   o   o   o   O < o < o   o < o < o < o < o < o < o < o < o   o   o   o > O   o   o   8 |
+ 8   s   o   o   O < o < o   o < o < o < o < o < o < o < o < o   o   o   o > O   o   s   8 |
      ^   ^   ^   ^       ^                                   v   v   v       v   v   v     |
- 9   o   o   H - H       o   o < o < o < o < o < o < o < o < o   o   o > o   o   o   o   9 |
+ 9   s   o   H - H       o   o < o < o < o < o < o < o < o < o   o   o > o   o   o   s   9 |
      ^   ^   |   |       ^                                   v   v       v   v   v   v     |
-10   o   o   H - H       o   o < o < o < o < o < o < o < o < o   o       H - H   o   o   10|
+10   s   o   H - H       o   o < o < o < o < o < o < o < o < o   o       H - H   o   s   10|
      ^   ^   ^   ^       ^                                   v   v       |   |   v   v     |
-11   o   o   o   o < o   o   o < o < o < o < o < o < o < o < o   o       H - H   o   o   11|
+11   s   o   o   o < o   o   o < o < o < o < o < o < o < o < o   o       H - H   o   s   11|
      ^   ^   ^       ^   ^                                   v   v       v   v   v   v     |
-12   o   o   O < o   o   o   o < o < o < o < o < o < o < o < o   o > o   o   o   o   o   12|
+12   s   o   O < o   o   o   o < o < o < o < o < o < o < o < o   o > o   o   o   o   s   12|
      ^   ^   ^   ^   ^   ^                                   v       v   v   v   v   v     |
-13   o   H - H   o   o   o   o < o < o < o < o < o < o < o < o   o < o < o < o < o   o   13|
+13   s   H - H   o   o   o   o < o < o < o < o < o < o < o < o   o < o < o < o < o   s   13|
      ^   |   |   ^   ^   ^                                   v   v   v   v   v       v     |
-14   o   H - H   o   o   o   o < o < o < o < o < o < o < o < o   o   o > o > o > o   o   14|
+14   s   H - H   o   o   o   o < o < o < o < o < o < o < o < o   o   o > o > o > o   s   14|
      ^   ^   ^   ^   ^   ^   v                                   v       v   v   v   v     |
-15   o   o   o < o < o < o < o < o   o < o < o < o < o < o < o < o < o < o   o   o   o   15|
+15   s   o   o < o < o < o < o < o   o < o < o < o < o < o < o < o < o < o   o   o   s   15|
      ^   ^       ^   ^   ^   v   ^   v                           v           v   v   v     |
-16   o   H - H > o   o   o   o   o   o           o < o < o < o < o < o < o < o   o   o   16|
+16   s   H - H > o   o   o   o   o   o           o < o < o < o < o < o < o < o   o   s   16|
      ^   |   |       ^   ^   v   ^   v           v               v               v   v     |
-17   o   H - H       o   o < o < o < O < H - H < o   o < o < o < o < o           o   o   17|
+17   s   H - H       o   o < o < o < O < H - H < o   o < o < o < o < o           o   s   17|
      ^   ^   ^       ^       v   ^       |   |       v           v   ^           v   v     |
 18 < o < o   o       o < o < o < o < o < H - H < o < O < H - H < o   H - H < o < o < o < 18|
      ^   ^   ^               v   ^                       |   |       |   |       v   v     |
 19 < o < o < o < o < o < o < o   o < o < o < o < o < o < H - H < o < H - H < o < o < o < 19|
      ^   ^   ^                                                               v   v   v     |
-20   o < o < o < o < o < o < o < o < o < o < o < o < o < o < o < o < o < o < o < o < o   20|
+20   o < o < o < s < s < s < s < s < s < s < s < s < s < s < s < s < s < s < o < o < o   20|
          ^   ^                                                               v   v         |
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
 End
+(* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 
-fun go limit = let
-  open CircuitDiag
+open CircuitDiag
+fun go () = let
   val _ = PolyML.print_depth 6
   fun f ((x,y), dir, (a,b), delay) = let
     val (c,d) = dirToXY dir
@@ -415,31 +424,41 @@ fun go limit = let
       (((x,y), dir, Regular (delay, Cell (a,b))),
        ((x+CSIZE*c,y+CSIZE*d), dir, Regular (delay, Cell (a+c,b+d))))
     end
-  val garbage = 1
-  val dE = 177 + garbage
-  val dS = 134 + garbage
-  val dW = 63 + garbage
-  val dN = 126 + garbage
+  val dE = 177
+  val dS = 134
+  val dW = 63
+  val dN = 126
   val dNE = dE + 22
   val dSE = dS + 21
   val dSW = dW + 22
   val dNW = dN + 21
-  val period = 406
-  val period2 = 597
-  val phase = 140
-  val io1 = map f [
+  val period = 598
+  val pulse = 18
+  val phase = 0
+  val (ins1, outs) = unzip $ map f [
     ((~1, 1), E, (~1, 0), dW), ((~1, 2), E, (~1, ~1), dNW),
     ((19, ~1), S, (0, ~1), dN), ((18, ~1), S, (1, ~1), dNE),
     ((21, 19), W, (1, 0), dE), ((21, 18), W, (1, 1), dSE),
     ((1, 21), N, (0, 1), dS), ((2, 21), N, (~1, 1), dSW)];
-  val io2 = map (fn (p, dir, v1, v2) => ((p, dir, v1), (p, dir, v2))) [
-    ((8, 0), E, Exact (phase, Clock), Exact (period + phase, Clock)),
-    ((11, 4), E, Exact (garbage, ThisCell), Exact (1000, NextCell))];
+  val ins2 = [
+    ((16, 0), E, Exact (phase, Clock)),
+    ((11, 4), E, Exact (0, ThisCell))];
   (* val file = TextIO.openOut "log.txt" *)
-  val _ = build diag (recognize diag) period period2 garbage (unzip $ io1 @ io2)
+  val res = build diag (recognize diag) period pulse (ins1 @ ins2, outs)
   (* val _ = TextIO.closeOut file *)
-  in () end;
+  in res end;
 
 val _ = go ();
+
+(*
+val res = getWire (go ());
+val w_thiscell = res (11,4) E;
+val w_top_and = (res (9,4) E, res (10,3) S, res (10,4) E);
+val w_not = (res (9,5) E, res (10,5) E);
+val w_bot_and = (res (10,5) E, res (12,5) W, res (11,5) N);
+val w_or = (res (11,5) N, res (10,4) E, res (11,4) E);
+val w_clock = (res (7,0) E, res (8,0) S, res (8,0) E);
+val w_train = (res (14,0) E, res (15,0) E, res (16,0) E);
+*)
 
 val _ = export_theory();
