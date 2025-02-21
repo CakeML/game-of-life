@@ -221,6 +221,7 @@ val nextCell = let
   end
 
 type io_port = (int*int)*dir*value
+type teleport = (int*int)*(int*int)*dir*rvalue*rvalue
 
 val gateData = ref (Redblackmap.mkDict String.compare)
 fun getGateData (gate, i) = let
@@ -243,10 +244,13 @@ fun getGateData (gate, i) = let
 fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
 fun dirToXY d = case d of E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
 
-fun build d (gates:gates) period pulse (ins: io_port list, outs: io_port list) = let
-  datatype target = Gate of (int * int) * int | Done of value
-  val wireIn = ref $ foldl (fn ((w, d, v), map) =>
-    Redblackmap.insert (map, wpos (w, dirToXY d), Done v)) (Redblackmap.mkDict int2cmp) outs
+fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport list) = let
+  datatype target = Gate of (int * int) * int | Teleport of (int * int) * rvalue * rvalue
+  val wireIn = ref $ foldl
+    (fn ((win, wout, d, vin, vout), map) =>
+      Redblackmap.insert (map, wpos (win, dirToXY d),
+        Teleport (wpos (wout, dirToXY d), vin, vout)))
+    (Redblackmap.mkDict int2cmp) teleport
   val gates = ref (foldl
     (fn ((p, gate), map) => let
       val (g, ls) = getGateData gate
@@ -337,16 +341,14 @@ fun build d (gates:gates) period pulse (ins: io_port list, outs: io_port list) =
           Gate p => let
           val (r, g, (ins, outs)) = Redblackmap.find (!gates, p)
           in (processQueue (ins, p, r, g, ins, outs); ()) end
-        | Done out => (
-          (* PolyML.print ("output match", w, value, out); *)
-          if value = out then () else
-          if
-            case (value, out) of
-              (Exact (d1, ThisCell), Regular (d2, Cell (0, 0))) => d1 = d2
-            | _ => false
-          then ()
-          else
-             (PolyML.print ("output mismatch", w, value, out); ()))
+        | Teleport (wout, vin, vout) => let
+          val (d, vin') = case value of
+              Regular v => v
+            | Exact (d, ThisCell) => (d, Cell (0, 0))
+            | _ => raise Fail "bad signal on teleport"
+          val _ = if vin = vin' then () else
+            (PolyML.print ("output mismatch", w, value, vin'); ())
+          in processWire (wout, Regular (d, vout)) end
       end
   val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v)) ins
   fun loop () = case !queue of
@@ -431,33 +433,22 @@ open CircuitDiag
 
 fun go () = let
   val _ = PolyML.print_depth 6
-  fun f ((x,y), dir, (a,b), delay) = let
+  fun f ((x,y), dir, (a,b)) = let
     val (c,d) = dirToXY dir
-    in
-      (((x,y), dir, Regular (delay, Cell (a,b))),
-       ((x+CSIZE*c,y+CSIZE*d), dir, Regular (delay, Cell (a+c,b+d))))
-    end
-  val dE = 174
-  val dS = 132
-  val dW = 62
-  val dN = 123
-  val dNE = dE + 22
-  val dSE = dS + 21
-  val dSW = dW + 22
-  val dNW = dN + 21
+    in ((x+CSIZE*c,y+CSIZE*d), (x,y), dir, Cell (a+c,b+d), Cell (a,b)) end
   val phase = 0
   val period = 586
   val pulse = 18
-  val (ins, outs) = unzip $ map f [
-    ((~1, 1), E, (~1, 0), dW), ((~1, 2), E, (~1, ~1), dNW),
-    ((19, ~1), S, (0, ~1), dN), ((18, ~1), S, (1, ~1), dNE),
-    ((21, 19), W, (1, 0), dE), ((21, 18), W, (1, 1), dSE),
-    ((1, 21), N, (0, 1), dS), ((2, 21), N, (~1, 1), dSW)];
+  val teleport = map f [
+    ((~1, 1), E, (~1, 0)), ((~1, 2), E, (~1, ~1)),
+    ((19, ~1), S, (0, ~1)), ((18, ~1), S, (1, ~1)),
+    ((21, 19), W, (1, 0)), ((21, 18), W, (1, 1)),
+    ((1, 21), N, (0, 1)), ((2, 21), N, (~1, 1))];
   val asrt = [
     ((16, 0), E, Exact (phase, Clock)),
     ((11, 4), E, Exact (0, ThisCell))];
   (* val file = TextIO.openOut "log.txt" *)
-  val res = build diag (recognize diag) period pulse (ins @ asrt, outs)
+  val res = build diag (recognize diag) period pulse (asrt, teleport)
   (* val _ = TextIO.closeOut file *)
   in res end;
 
