@@ -1,4 +1,4 @@
-open HolKernel bossLib gol_rulesTheory boolLib boolSyntax
+open HolKernel bossLib gol_simTheory boolLib boolSyntax
      computeLib cv_transLib cv_stdTheory;
 
 val _ = new_theory "gol_sim_cv";
