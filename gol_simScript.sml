@@ -3484,4 +3484,28 @@ Proof
   \\ gvs [blist_inc_vars_thm]
 QED
 
+Definition dir_to_xy_def:
+  dir_to_xy N = (0,-1) ∧
+  dir_to_xy S = (0,1) ∧
+  dir_to_xy E = (1,0) ∧
+  dir_to_xy W = (-1,0)
+End
+
+Definition translate_set_def:
+  translate_set (x,y) s (a,b) ⇔ (a-x,b-y) ∈ s
+End
+
+Definition translate_mod_def:
+  translate_mod p mod =
+    <|area           := translate_set p mod.area;
+      deletions      := translate_set p mod.deletions;
+      insertions     := translate_set p mod.insertions;
+      assert_area    := translate_set p mod.assert_area;
+      assert_content := translate_set p mod.assert_content|>
+End
+
+Definition translate_mods_def:
+  translate_mods p mod n = translate_mod p (mod n)
+End
+
 val _ = export_theory();
