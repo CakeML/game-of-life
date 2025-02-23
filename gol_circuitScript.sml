@@ -190,12 +190,12 @@ Proof
 QED
 
 Definition join_all_def:
-  join_all cst =
-    λn. <| area           := U { (c n).area           | ∃s t. (c,s,t) ∈ cst } ;
-           deletions      := U { (c n).deletions      | ∃s t. (c,s,t) ∈ cst } ;
-           insertions     := U { (c n).insertions     | ∃s t. (c,s,t) ∈ cst } ;
-           assert_area    := U { (c n).assert_area    | ∃s t. (c,s,t) ∈ cst } ;
-           assert_content := U { (c n).assert_content | ∃s t. (c,s,t) ∈ cst } |>
+  join_all (dom, cs) n =
+    <|area           := U { (cs i n).area           | i ∈ dom } ;
+      deletions      := U { (cs i n).deletions      | i ∈ dom } ;
+      insertions     := U { (cs i n).insertions     | i ∈ dom } ;
+      assert_area    := U { (cs i n).assert_area    | i ∈ dom } ;
+      assert_content := U { (cs i n).assert_content | i ∈ dom } |>
 End
 
 Theorem infl_bigunion:
@@ -217,86 +217,64 @@ Proof
   cheat
 QED
 
-Theorem mod_steps_compose_bigunion:
-  ∀k cst n.
-    (∀x y. x ∈ cst ∧ y ∈ cst ∧ x ≠ y ⇒ disjoint_mods (FST x) (FST y)) ∧
-    (∀c s t. (c,s,t) ∈ cst ⇒ mods_wf c ∧ mod_steps k c n s t)
+Theorem mod_step_compose_bigunion:
+  ∀n cs s t.
+    (∀x y. x ∈ dom ∧ y ∈ dom ∧ x ≠ y ⇒ disjoint_mods (cs x) (cs y)) ∧
+    (∀i. i ∈ dom ⇒ mods_wf (cs i) ∧ mod_step (cs i n) (s i) (t i))
     ⇒
-    mod_steps k (join_all cst) n
-                (U { s | ∃c t. (c,s,t) ∈ cst })
-                (U { t | ∃c s. (c,s,t) ∈ cst })
+    mod_step (join_all (dom, cs) n) (U { s i | i ∈ dom }) (U { t i | i ∈ dom })
+Proof
+  rw [mod_step_def, join_all_def, infl_bigunion]
+  >- (rw [BIGUNION_SUBSET] \\ irule SUBSET_BIGUNION_SUBSET_I
+    \\ simp [PULL_EXISTS] \\ metis_tac [])
+  \\ dep_rewrite.DEP_REWRITE_TAC [infl_compose_bigunion]
+  \\ (rw []
+    >- (`i ≠ i'` by metis_tac [] \\ `disjoint_mods (cs i) (cs i')` by rw []
+      \\ fs [disjoint_mods_def, disjoint_mod_def]
+      \\ metis_tac [IN_DISJOINT, SUBSET_DEF]))
+  >- (rw [Once EXTENSION, PULL_EXISTS] \\ eq_tac \\ rw []
+    >- (Cases_on `i = i'`
+      >- (gvs [mods_wf_def, mod_wf_def, SUBSET_DEF, EXTENSION] \\ metis_tac [])
+      \\ `disjoint_mods (cs i) (cs i')` by rw []
+      \\ fs [disjoint_mods_def, disjoint_mod_def, mods_wf_def, mod_wf_def]
+      \\ metis_tac [step_SUBSET_infl, IN_DISJOINT, SUBSET_DEF])
+    \\ rpt $ first_assum $ irule_at Any \\ fs [EXTENSION])
+  \\ rw [Once EXTENSION, PULL_EXISTS]
+  \\ fs [Once EXTENSION, Once EXTENSION, mods_wf_def, mod_wf_def, SUBSET_DEF]
+  \\ eq_tac \\ rw []
+  >- (first_assum $ drule_then (gvs o single)
+    >- metis_tac []
+    \\ `∀i. i ∈ dom ⇒ x ∉ (cs i n).deletions` suffices_by metis_tac []
+    \\ rw [] \\ Cases_on `i = i'`
+    >- (gvs [mods_wf_def, mod_wf_def, SUBSET_DEF, EXTENSION] \\ metis_tac [])
+    \\ `disjoint_mods (cs i) (cs i')` by rw []
+    \\ fs [disjoint_mods_def, disjoint_mod_def, mods_wf_def, mod_wf_def]
+    \\ metis_tac [step_SUBSET_infl, IN_DISJOINT, SUBSET_DEF])
+  \\ metis_tac []
+QED
+
+Theorem mod_steps_compose_bigunion:
+  ∀k cs n s t.
+    (∀x y. x ∈ dom ∧ y ∈ dom ∧ x ≠ y ⇒ disjoint_mods (cs x) (cs y)) ∧
+    (∀i. i ∈ dom ⇒ mods_wf (cs i) ∧ mod_steps k (cs i) n (s i) (t i))
+    ⇒
+    mod_steps k (join_all (dom, cs)) n (U { s i | i ∈ dom }) (U { t i | i ∈ dom })
 Proof
   Induct \\ gvs [mod_steps_def]
-  >-
-   (rw [] \\ simp [Once EXTENSION]
-    \\ rw [] \\ eq_tac \\ rw []
-    \\ res_tac \\ gvs [PULL_EXISTS]
-    \\ first_x_assum $ irule_at Any \\ gvs [])
-  \\ rpt strip_tac \\ gvs []
-  \\ qabbrev_tac ‘cst1 = { (c,s1,t) | ∃s. (c,s,t) ∈ cst ∧ mod_step (c n) s s1 }’
-  \\ last_x_assum $ qspecl_then [‘cst1’,‘n+1’] mp_tac
-  \\ impl_tac
-  >-
-   (gvs [Abbr‘cst1’,PULL_EXISTS]
-    \\ conj_tac
-    >-
-     (rw [] \\ res_tac \\ fs []
-      \\ first_x_assum $ irule
-      \\ CCONTR_TAC \\ gvs []
-      \\ gvs [mod_step_def])
-    >-
-     (rpt gen_tac
-      \\ strip_tac
-      \\ res_tac \\ gvs []
-      \\ gvs [mod_step_def]))
-  \\ strip_tac
-  \\ ‘∀t. (∃c s. (c,s,t) ∈ cst1) ⇔ (∃c s. (c,s,t) ∈ cst)’ by
-      (gvs [Abbr ‘cst1’] \\ metis_tac [])
-  \\ gvs [] \\ pop_assum kall_tac
-  \\ ‘join_all cst1 = join_all cst’ by
-   (simp [join_all_def,Once FUN_EQ_THM]
-    \\ gvs [Abbr ‘cst1’]
-    \\ once_rewrite_tac [EXTENSION] \\ simp [PULL_EXISTS]
-    \\ metis_tac [])
-  \\ gvs [] \\ pop_assum kall_tac
-  \\ pop_assum $ irule_at Any
-  \\ gvs [Abbr‘cst1’]
-  \\ gvs [mod_step_def,join_all_def,infl_bigunion]
-  \\ DEP_REWRITE_TAC [infl_compose_bigunion]
-  \\ rpt conj_tac
-  >-
-   (gvs [] \\ rpt strip_tac
-    \\ first_x_assum (fn th => qspec_then ‘c’ mp_tac th \\ qspec_then ‘c'’ mp_tac th)
-    \\ disch_then $ drule_then strip_assume_tac
-    \\ disch_then $ drule_then strip_assume_tac
-    \\ last_x_assum $ dxrule_then $ dxrule
-    \\ gvs [disjoint_mods_def]
-    \\ gvs [disjoint_mod_def]
-    \\ disch_then $ qspec_then ‘n’ assume_tac
-    \\ metis_tac [IN_DISJOINT,SUBSET_DEF])
-  >-
-   (gvs [SUBSET_DEF] \\ rw []
-    \\ first_x_assum $ drule_then $ strip_assume_tac
-    \\ gvs [PULL_EXISTS]
-    \\ last_x_assum $ irule_at $ Pos last \\ gvs [])
-  >-
-   (gvs [mods_wf_def,mod_wf_def]
-    \\ irule EQ_TRANS
-    \\ qexists_tac ‘U {step s ∩ (c n).assert_area | (∃c t. (c,s,t) ∈ cst)}’
-    \\ conj_tac
-    >- cheat
-    \\ cheat)
-  \\ cheat
+  >- (simp [Once EXTENSION, Once EXTENSION] \\ metis_tac [])
+  \\ metis_tac [mod_step_compose_bigunion]
 QED
 
 Theorem run_compose_bigunion:
-  ∀k cst n.
-    (∀x y. x ∈ cst ∧ y ∈ cst ∧ x ≠ y ⇒ disjoint_mods (FST x) (FST y)) ∧
-    (∀c s t. (c,s,t) ∈ cst ⇒ mods_wf c ∧ run c s)
+  ∀cs s.
+    (∀x y. x ∈ dom ∧ y ∈ dom ∧ x ≠ y ⇒ disjoint_mods (cs x) (cs y)) ∧
+    (∀i. i ∈ dom ⇒ mods_wf (cs i) ∧ run (cs i) (s i))
     ⇒
-    run (join_all cst) (U { s | ∃c t. (c,s,t) ∈ cst })
+    run (join_all (dom, cs)) (U { s i | i ∈ dom })
 Proof
-  cheat (* true if the above is *)
+  rw [run_def, run_to_def]
+  \\ `∀i. i ∈ dom ⇒ ∃t. mod_steps k (cs i) 0 (s i) t` by metis_tac []
+  \\ metis_tac [mod_steps_compose_bigunion]
 QED
 
 (*
