@@ -1,5 +1,5 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
-open HolKernel bossLib gol_simTheory listTheory
+open HolKernel bossLib gol_simTheory listTheory Parse
      gol_gatesTheory;
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 

@@ -46,17 +46,21 @@ in
   fun tr_vector ty f =
     Vector.foldr (fn (a, r) => listSyntax.mk_cons (f a, r)) (listSyntax.mk_nil ty)
 
+  val Nil_tm = prim_mk_const {Name = "Nil", Thy = "gol_sim"}
+  val Cell_tm = prim_mk_const {Name = "Cell", Thy = "gol_sim"}
+  val Falses_tm = prim_mk_const {Name = "Falses", Thy = "gol_sim"}
+  fun mk_Cell (e,l) = list_mk_comb (Cell_tm,[e,l])
+  fun mk_Falses (k,l) = list_mk_comb (Falses_tm,[numSyntax.term_of_int k, l])
+
   fun tr_falses (0, r) = r
-    | tr_falses (1, r) = listSyntax.mk_cons (false_tm, r)
-    | tr_falses (n, r) = mk_binop falses_tm (numSyntax.term_of_int n, r)
-      (* tr_falses (n, r) = if n = 0 then r else tr_falses (n-1, listSyntax.mk_cons (false_tm, r)) *)
+    | tr_falses (n, r) = mk_Falses (n, r)
 
   val tr_bexps = let
     fun go (False, (n, r)) = (n + 1, r)
-      | go (a, r) = (0, listSyntax.mk_cons (tr_bexp a, tr_falses r))
-    in tr_falses o Vector.foldr go (0, listSyntax.mk_nil bexp_ty) end
+      | go (a, r) = (0, mk_Cell(tr_bexp a, tr_falses r))
+    in tr_falses o Vector.foldr go (0, Nil_tm) end
 
-  val tr_bexpss = tr_vector ``:bexp list`` tr_bexps
+  val tr_bexpss = tr_vector ``:blist`` tr_bexps
 
   fun tr_dir N = N_tm
     | tr_dir E = E_tm
@@ -120,7 +124,7 @@ fun translate_gate dirs gate = let
     val {inputs, outputs, grid} = run_to_fixpoint (prepare (rotate i start))
     val tm = tr_bexpss grid
     val defn = boolLib.new_definition (stem^"_def",
-      mk_eq (mk_var (stem, ``:bexp list list``), tm))
+      mk_eq (mk_var (stem, ``:blist list``), tm))
     val _ = cv_trans_deep_embedding EVAL defn
     val rows = lhs (concl defn)
     val w = numSyntax.term_of_int (#width gate)
@@ -128,7 +132,7 @@ fun translate_gate dirs gate = let
     val ins = tr_io_ports inputs
     val outs = tr_io_ports outputs
     val thm = store_thm (stem^"_thm",
-      ``simulation_ok ^w ^h ^ins ^outs ^rows``,
+      ``blist_simulation_ok ^w ^h ^ins ^outs ^rows``,
       CONV_TAC cv_eval)
     in (defn, thm) end
   in map tr dirs end;
@@ -199,7 +203,8 @@ fun make_abbrev name tm =
   in SYM th end
 
 Theorem and_en_e_circuit =
-  MATCH_MP simulation_ok_2 (theorem "and_en_e_thm")
+  MATCH_MP blist_simulation_ok_thm (theorem "and_en_e_thm")
+  |> MATCH_MP simulation_ok_2
   |> CONV_RULE ((QUANT_CONV o QUANT_CONV o RAND_CONV o RAND_CONV)
        (REWRITE_CONV [definition "and_en_e_def"] THENC EVAL
         THENC make_abbrev "and_en_e_concrete"))
