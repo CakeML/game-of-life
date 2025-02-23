@@ -3,7 +3,7 @@ open HolKernel bossLib gol_simTheory listTheory Parse
      gol_gatesTheory;
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
-val _ = new_theory "gol_circuit2";
+val _ = new_theory "gol_in_gol_circuit2";
 
 Definition circuit_gen_def:
   circuit_gen area ins outs init ⇔

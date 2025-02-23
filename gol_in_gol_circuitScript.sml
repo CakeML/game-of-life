@@ -2,7 +2,7 @@
 open HolKernel bossLib gol_simLib gol_rulesTheory boolLib boolSyntax
      computeLib cv_transLib cv_stdTheory gol_sim_cvTheory;
 
-val _ = new_theory "gol_circuit";
+val _ = new_theory "gol_in_gol_circuit";
 
 structure CircuitDiag = struct
 
