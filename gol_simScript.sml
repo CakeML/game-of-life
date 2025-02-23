@@ -11,9 +11,9 @@ Overload LLOOKUP = “λl n. oEL n l”;
 Overload "U" = “BIGUNION”;
 
 Theorem MAP_EQ_ID:
- !f ls. (MAP f ls = ls) = (!x. MEM x ls ==> (f x = x))
+  ∀f ls. MAP f ls = ls ⇔ ∀x. MEM x ls ⇒ f x = x
 Proof
-PROVE_TAC[MAP_EQ_f,MAP_ID,combinTheory.I_THM]
+  metis_tac [MAP_EQ_f,MAP_ID,combinTheory.I_THM]
 QED
 
 (* consequences *)
@@ -3075,21 +3075,39 @@ Proof
   \\ IF_CASES_TAC \\ gvs [diff_row_def,from_blist_def] \\ EVAL_TAC
 QED
 
-Definition blist_or_row_def:
-  blist_or_row (x:num) [] (row:blist) = row ∧
-  blist_or_row (x:num) (p::ps) (row:blist) =
+Definition blist_append_def:
+  blist_append Nil ys = ys ∧
+  blist_append (Cell e xs) ys = Cell e (blist_append xs ys) ∧
+  blist_append (Falses k xs) ys = mk_Falses k (blist_append xs ys)
+End
+
+Definition blist_rev_def:
+  blist_rev Nil acc = acc ∧
+  blist_rev (Cell e b) acc = blist_rev b (mk_Cell e acc) ∧
+  blist_rev (Falses n b) acc = blist_rev b (mk_Falses n acc)
+End
+
+Definition blist_or_row_acc_def:
+  blist_or_row_acc (x:num) [] (row:blist) acc =
+    blist_append (blist_rev acc Nil) row ∧
+  blist_or_row_acc (x:num) (p::ps) (row:blist) acc =
     case row of
-    | Nil => Nil
+    | Nil => blist_rev acc Nil
     | Cell e b =>
         if x = 0 then
-          mk_Cell (build_Or p e) (blist_or_row 0 ps b)
+          blist_or_row_acc 0 ps b (mk_Cell (build_Or p e) acc)
         else
-          mk_Cell e (blist_or_row (x-1) (p::ps) b)
+          blist_or_row_acc (x-1) (p::ps) b (mk_Cell e acc)
     | Falses n b =>
         if n ≤ x then
-          mk_Falses n (blist_or_row (x - n) (p::ps) b)
+          blist_or_row_acc (x - n) (p::ps) b (mk_Falses n acc)
         else
-          mk_Falses x (mk_Cell p (blist_or_row 0 ps (mk_Falses (n - x - 1) b)))
+          blist_or_row_acc 0 ps (mk_Falses (n - x - 1) b)
+            (mk_Cell p (mk_Falses x acc))
+End
+
+Definition blist_or_row_def:
+  blist_or_row x ps row = blist_or_row_acc x ps row Nil
 End
 
 Definition blist_or_at_def:
@@ -3112,7 +3130,7 @@ Definition blist_or_lwss_def:
                (MAP (MAP (λb. if b then v else False)) (io_gate d)) rows1)
 End
 
-Theorem or_now_less_eq_lemma:
+Theorem or_row_less_eq_lemma:
   ∀n m.
     n ≤ m ⇒
     or_row m (p::ps) (REPLICATE n False ⧺ xs) =
@@ -3121,26 +3139,47 @@ Proof
   Induct \\ gvs [] \\ rw [] \\ simp [or_row_def,ADD1]
 QED
 
+Theorem blist_rev_thm:
+  ∀xs acc.
+    from_blist (blist_rev xs acc) = REVERSE (from_blist xs) ++ from_blist acc
+Proof
+  Induct \\ gvs [blist_rev_def,from_blist_def]
+QED
+
+Theorem blist_append_thm:
+  ∀xs ys. from_blist (blist_append xs ys) = from_blist xs ++ from_blist ys
+Proof
+  Induct \\ gvs [blist_append_def,from_blist_def]
+QED
+
 Theorem blist_or_row_thm:
   ∀m p row.
     or_row m p (from_blist row) = from_blist (blist_or_row m p row)
 Proof
-  ho_match_mp_tac blist_or_row_ind \\ rpt strip_tac
-  >- (gvs [blist_or_row_def] \\ Cases_on ‘from_blist row’ \\ gvs [or_row_def])
+  qsuff_tac ‘∀m p row acc.
+    from_blist (blist_or_row_acc m p row acc) =
+    REVERSE (from_blist acc) ++ or_row m p (from_blist row)’
+  >- gvs [blist_or_row_def,from_blist_def]
+  \\ ho_match_mp_tac blist_or_row_acc_ind \\ rpt strip_tac
+  >- (gvs [blist_or_row_acc_def]
+      \\ Cases_on ‘from_blist row’
+      \\ gvs [or_row_def,blist_append_thm,blist_rev_thm,from_blist_def])
   \\ Cases_on ‘row’ \\ gvs []
-  >- gvs [or_row_def,from_blist_def,blist_or_row_def]
-  \\ simp [Once blist_or_row_def] \\ rw [] \\ gvs []
+  >- gvs [or_row_def,blist_append_thm,blist_rev_thm,from_blist_def,blist_or_row_acc_def]
+  \\ simp [Once blist_or_row_acc_def] \\ rw [] \\ gvs []
   \\ gvs [from_blist_def] \\ gvs [or_row_def]
-  \\ gvs [or_now_less_eq_lemma]
+  \\ gvs [or_row_less_eq_lemma]
   \\ ‘n = m + (n - m)’ by decide_tac
+  \\ once_rewrite_tac [EQ_SYM_EQ]
   \\ pop_assum (fn th => CONV_TAC (RATOR_CONV $ ONCE_REWRITE_CONV [th]))
   \\ rewrite_tac [GSYM REPLICATE_APPEND,GSYM APPEND_ASSOC]
-  \\ DEP_ONCE_REWRITE_TAC [or_now_less_eq_lemma] \\ gvs []
+  \\ DEP_ONCE_REWRITE_TAC [or_row_less_eq_lemma] \\ gvs []
   \\ ‘n - m = 1 + (n - (m + 1))’ by decide_tac
   \\ pop_assum (fn th => CONV_TAC (RATOR_CONV $ ONCE_REWRITE_CONV [th]))
   \\ rewrite_tac [GSYM REPLICATE_APPEND,GSYM APPEND_ASSOC]
   \\ gvs [EVAL “REPLICATE 1 x ++ xs”]
-  \\ simp [or_row_def,build_Or_def] \\ rw [] \\ gvs []
+  \\ simp [or_row_def,build_Or_def]
+  \\ rw [] \\ gvs []
 QED
 
 Theorem blist_or_at_thm:
@@ -3234,12 +3273,6 @@ Definition blist_tl_def:
     if n = 1 then b else Falses (n-1) b
 End
 
-Definition blist_rev_def:
-  blist_rev Nil acc = acc ∧
-  blist_rev (Cell e b) acc = blist_rev b (mk_Cell e acc) ∧
-  blist_rev (Falses n b) acc = blist_rev b (mk_Falses n acc)
-End
-
 Theorem blist_length_mk_Falses:
   blist_length (mk_Falses n b) = blist_length (Falses n b)
 Proof
@@ -3265,13 +3298,6 @@ Theorem blist_hd_some:
   ∀ys e. blist_hd ys = SOME e ⇒ blist_length ys ≠ 0
 Proof
   Induct \\ gvs [blist_hd_def,blist_length_def]
-QED
-
-Theorem blist_rev_thm:
-  ∀xs acc.
-    from_blist (blist_rev xs acc) = REVERSE (from_blist xs) ++ from_blist acc
-Proof
-  Induct \\ gvs [blist_rev_def,from_blist_def]
 QED
 
 Definition blist_check_mask_def:

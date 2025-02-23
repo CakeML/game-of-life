@@ -78,8 +78,6 @@ Proof
   Induct_on ‘ys’ \\ gvs [] \\ simp [Once pre]
 QED
 
-val _ = cv_auto_trans_rec blist_or_row_def cheat
-
 Theorem blist_simple_checks_eq:
   blist_simple_checks w h ins outs rows
   ⇔
