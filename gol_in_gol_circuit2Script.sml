@@ -202,7 +202,7 @@ Definition floodfill_mod_def:
       (circ_mod (set area)
         (set (floodfill_ins env (i, j)) ∪
          set (MAP (λ(p,_,d). (p,d,FST s p (i, j))) crosses))
-        (set (MAP (λ(p,d,_). (p,d,FST s p (i, j))) outs ∪
+        (set (MAP (λ(p,d,_). (p,d,FST s p (i, j))) outs) ∪
          set (MAP (λ(_,p,d). (p,d,FST s p (i, j))) crosses)) {})
     | i, j | T}
 End
@@ -212,14 +212,14 @@ Definition floodfill_def:
     (outs: ((int # int) # dir # value) list) (* multiset *)
     (crosses: ((int # int) # (int # int) # dir) list)
     (init: (int # int) set) ⇔
-  (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < 2*&^tile) ∧
-  (∀x y. (x,y) ∈ area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < 2*&^tile) ∧
+  (∀x y. MEM (x,y) area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < 2 * &^tile) ∧
+  (∀x y. MEM (x,y) area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < 2 * &^tile) ∧
   ∀env. env_wf env ⇒
   ∃s. (∀v. MEM v outs ⇒ assign_sat env s v) ∧
   ∀s'. assign_ext s s' ∧
-  (∀i o d. MEM (i,o,d) crosses ⇒ ∃v.
-    assign_sat env s' (i,d,v) ∧
-    assign_sat env s' (o,d,v_delay 5 v)) ⇒
+  (∀pi po d. MEM (pi,po,d) crosses ⇒ ∃v.
+    assign_sat env s' (pi,d,v) ∧
+    assign_sat env s' (po,d,v_delay 5 v)) ⇒
   run (floodfill_mod area outs crosses env s') init
 End
 
@@ -254,9 +254,9 @@ Definition half_adder_ee_ee_concrete_def:
 End
 
 Theorem gate_half_adder_ee_ee:
-  gate 2 2 [((-1,0),a); ((-1,2),b)]
-    [((3,0), v_xor (v_delay 15 a) (v_delay 18 b));
-     ((3,2), v_and (v_delay 17 a) (v_delay 15 b))]
+  gate 2 2 [((-1,0),E,a); ((-1,2),E,b)]
+    [((3,0),E, v_xor (v_delay 15 a) (v_delay 18 b));
+     ((3,2),E, v_and (v_delay 17 a) (v_delay 15 b))]
   half_adder_ee_ee_concrete
 Proof
   cheat
