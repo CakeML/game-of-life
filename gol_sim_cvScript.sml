@@ -48,6 +48,8 @@ Proof
   \\ gvs [single_check_def] \\ eq_tac \\ rw [] \\ gvs []
 QED
 
+(*
+
 Theorem simple_checks_eq:
   simple_checks w h ins outs rows
   ⇔
@@ -69,6 +71,8 @@ QED
 
 val _ = cv_auto_trans simple_checks_eq;
 val _ = cv_auto_trans simulation_ok_def;
+
+*)
 
 val pre = cv_auto_trans_pre blist_gol_rows_def;
 
