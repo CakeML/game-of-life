@@ -3192,11 +3192,12 @@ Proof
   gvs [mask_or_io_areas_def,MAP_MAP_o,from_mask_o_to_mask]
 QED
 
+
 Definition fast_forward_def:
   fast_forward mask x0 (Falses x1 xs) y0 (Falses y1 ys) z0 (Falses z1 zs) acc =
     (if x0 = False ∨ y0 = False ∨ z0 = False then
      if 1 < x1 ∧ 1 < y1 ∧ 1 < z1 then
-       let m = MIN x1 (MIN y1 z1) in
+       let m = MIN x1 (MIN y1 z1) - 1 in
          SOME (mask_drop m mask,
                mk_Falses (x1 - m) xs,
                mk_Falses (y1 - m) ys,
@@ -3219,10 +3220,10 @@ Definition blist_hd3_def:
     | _ => NONE
 End
 
-Definition blist_hd_of_false_def:
-  blist_hd_of_false Nil = False ∧
-  blist_hd_of_false (Cell e b) = e ∧
-  blist_hd_of_false (Falses n b) = if n = 0 then blist_hd_of_false b else False
+Definition blist_hd_or_false_def:
+  blist_hd_or_false Nil = False ∧
+  blist_hd_or_false (Cell e b) = e ∧
+  blist_hd_or_false (Falses n b) = if n = 0 then blist_hd_or_false b else False
 End
 
 Definition blist_tl_def:
@@ -3245,6 +3246,14 @@ Proof
   Cases_on ‘b’ \\ rw [blist_length_def,mk_Falses_def]
 QED
 
+Theorem blist_tl_thm:
+  ∀m. from_blist (blist_tl m) = TL (from_blist m)
+Proof
+  Induct \\ gvs [blist_tl_def,from_blist_def]
+  \\ rw [] \\ gvs [EVAL “REPLICATE 1 x”]
+  \\ Cases_on ‘n’ \\ gvs [from_blist_def]
+QED
+
 Theorem blist_length_tl:
   ∀ys. blist_length (blist_tl ys) = blist_length ys - 1
 Proof
@@ -3265,6 +3274,16 @@ Proof
   Induct \\ gvs [blist_rev_def,from_blist_def]
 QED
 
+Definition blist_check_mask_def:
+  blist_check_mask Nil m = T ∧
+  blist_check_mask (Falses k rest) m =
+    blist_check_mask rest (mask_drop k m) ∧
+  blist_check_mask (Cell e rest) m =
+    case mask_hd m of
+    | SOME F => if e = False then blist_check_mask rest (mask_drop 1 m) else F
+    | _ => blist_check_mask rest (mask_drop 1 m)
+End
+
 Definition blist_gol_row_acc_def:
   blist_gol_row_acc mask x0 xs y0 ys z0 zs acc =
     case fast_forward mask x0 xs y0 ys z0 zs acc of
@@ -3272,23 +3291,24 @@ Definition blist_gol_row_acc_def:
         blist_gol_row_acc mask1 False xs1 False ys1 False zs1 acc1
     | NONE =>
         case blist_hd3 xs ys zs of
-        | NONE => SOME (blist_rev acc Nil)
+        | NONE => if blist_check_mask ys mask then SOME (blist_rev acc Nil) else NONE
         | SOME (x1,y1,z1) =>
-            if y1 ≠ False ∧ mask_hd mask ≠ SOME F then NONE else
+            if y1 ≠ False ∧ mask_hd mask ≠ SOME T then NONE else
               let xs = blist_tl xs in
               let ys = blist_tl ys in
               let zs = blist_tl zs in
-              let x2 = blist_hd_of_false xs in
-              let y2 = blist_hd_of_false ys in
-              let z2 = blist_hd_of_false zs in
+              let x2 = blist_hd_or_false xs in
+              let y2 = blist_hd_or_false ys in
+              let z2 = blist_hd_or_false zs in
               let c = gol_cell y1 (x0,x1,x2,y0,y2,z0,z1,z2) in
-                blist_gol_row_acc mask x1 xs y1 ys z0 zs (mk_Cell c acc)
+                blist_gol_row_acc (mask_drop 1 mask) x1 xs y1 ys z1 zs (mk_Cell c acc)
 Termination
   WF_REL_TAC ‘measure $ λ(mask,x0,xs,y0,ys,z0,zs,acc). blist_length ys’
   \\ rw [] \\ gvs [blist_hd3_def,AllCaseEqs(),oneline fast_forward_def]
   \\ gvs [blist_length_def,blist_length_mk_Falses,blist_length_tl]
   \\ imp_res_tac blist_hd_some \\ gvs [blist_hd_def]
   \\ gvs [blist_length_def,blist_length_mk_Falses,blist_length_tl]
+  \\ rw [MIN_DEF] \\ gvs []
 End
 
 Definition blist_gol_row_def:
@@ -3325,6 +3345,146 @@ Definition blist_gol_checked_steps_def:
       | SOME rows1 => blist_gol_checked_steps (n-1) rows1 mask
 End
 
+Triviality REPLICATE_eq_REPLICATE[simp]:
+  ∀n m x. REPLICATE n x = REPLICATE m x ⇔ m = n
+Proof
+  Induct \\ Cases_on ‘m’ \\ gvs []
+QED
+
+Theorem take_drop_mask:
+  ∀m n.
+    n ≤ LENGTH (from_mask m) ⇒
+    TAKE n (from_mask m) ⧺ from_mask (mask_drop n m) = from_mask m
+Proof
+  Induct_on ‘m’ \\ gvs [from_mask_def,mask_drop_def]
+  \\ rw [] \\ gvs [from_mask_def]
+  \\ imp_res_tac LESS_EQ_ADD_EXISTS \\ gvs []
+  \\ gvs [GSYM REPLICATE_APPEND,TAKE_APPEND2,TAKE_APPEND1]
+QED
+
+Theorem mask_length_thm:
+  ∀m. mask_length m = LENGTH (from_mask m)
+Proof
+  Induct \\ gvs [mask_length_def,from_mask_def]
+QED
+
+Theorem mask_length_mask_drop:
+  ∀n m. mask_length (mask_drop n m) = mask_length m - n
+Proof
+  Induct_on ‘m’ \\ gvs [mask_drop_def,mask_length_def]
+  \\ rw [] \\ gvs [mask_length_def]
+QED
+
+Theorem fast_forward_thm:
+  fast_forward m y ys z zs q qs acc = SOME (m1,ys1,zs1,qs1,acc1) ∧
+  blist_length zs = mask_length m
+  ⇒
+  ∃n ts ys2 zs2 qs2.
+    from_mask m = ts ++ from_mask m1 ∧ LENGTH ts = n ∧
+    from_blist ys = REPLICATE n False ++ from_blist ys1 ∧
+    from_blist zs = REPLICATE n False ++ from_blist zs1 ∧
+    from_blist qs = REPLICATE n False ++ from_blist qs1 ∧
+    from_blist ys1 = False :: ys2 ∧
+    from_blist zs1 = False :: zs2 ∧
+    from_blist qs1 = False :: qs2 ∧
+    acc1 = mk_Falses n acc ∧ 0 < n ∧
+    (y ≠ False ∧ z ≠ False ⇒ q = False) ∧
+    blist_length zs1 = mask_length m1
+Proof
+  gvs [oneline fast_forward_def,AllCaseEqs()] \\ rw []
+  \\ gvs [mk_Falses_thm,from_blist_def,blist_length_def]
+  \\ qabbrev_tac ‘n = MIN x1 (MIN y1 z1)’
+  \\ qexists_tac ‘TAKE (n-1) (from_mask m)’
+  \\ DEP_REWRITE_TAC [LENGTH_TAKE,take_drop_mask]
+  \\ gvs [REPLICATE_APPEND,blist_length_mk_Falses, take_drop_mask]
+  \\ first_x_assum $ assume_tac o SYM
+  \\ gvs [mask_length_mask_drop]
+  \\ ‘1 < n’ by (gvs [Abbr‘n’] \\ rw [MIN_DEF] \\ gvs [])
+  \\ ‘n <= x1’ by (gvs [Abbr‘n’] \\ rw [] \\ gvs [])
+  \\ ‘n <= y1’ by (gvs [Abbr‘n’] \\ rw [] \\ gvs [])
+  \\ ‘n <= z1’ by (gvs [Abbr‘n’] \\ rw [] \\ gvs [])
+  \\ gvs []
+  \\ Cases_on ‘x1 − (n − 1)’ \\ gvs []
+  \\ Cases_on ‘y1 − (n − 1)’ \\ gvs []
+  \\ Cases_on ‘z1 − (n − 1)’ \\ gvs []
+  \\ gvs [mask_length_thm,blist_length_def]
+QED
+
+Theorem LIST_REL_REPLICATE_APPEND:
+  ∀ts xs ys.
+    LIST_REL (λe m. m ∨ e = False) (REPLICATE (LENGTH ts) False ⧺ xs) (ts ⧺ ys) ⇔
+    LIST_REL (λe m. m ∨ e = False) xs ys
+Proof
+  Induct \\ gvs []
+QED
+
+Theorem blist_hd_thm:
+  ∀l x. blist_hd l = SOME x ⇔ ∃xs. from_blist l = x::xs
+Proof
+  Induct \\ gvs [blist_hd_def,from_blist_def]
+  \\ rw [] \\ gvs [] \\ Cases_on ‘n’ \\ gvs []
+QED
+
+Theorem blist_hd_none:
+  ∀l. blist_hd l = NONE ⇔ from_blist l = []
+Proof
+  Induct \\ gvs [blist_hd_def,from_blist_def]
+  \\ rw [] \\ gvs [] \\ Cases_on ‘n’ \\ gvs []
+QED
+
+Theorem hd_or_false_from_blist:
+  ∀ys. hd_or_false (from_blist ys) = blist_hd_or_false ys
+Proof
+  Induct \\ gvs [from_blist_def,hd_or_false_def,blist_hd_or_false_def]
+  \\ Cases \\ gvs [hd_or_false_def]
+  \\ gvs [from_blist_def,hd_or_false_def,blist_hd_or_false_def]
+QED
+
+Theorem from_blist_cons_tl:
+  ∀ys h1 xs.
+    from_blist ys = h1::xs ⇒ blist_hd_or_false (blist_tl ys) = hd_or_false xs
+Proof
+  Induct \\ gvs [from_blist_def,blist_tl_def]
+  \\ rw [] \\ gvs [EVAL “REPLICATE 1 x”,hd_or_false_from_blist]
+  \\ Cases_on ‘n’ \\ gvs []
+  \\ rename [‘Falses k’]
+  \\ Cases_on ‘k’ \\ gvs [blist_hd_or_false_def,hd_or_false_def]
+QED
+
+Theorem blist_check_mask_thm:
+  ∀zs m.
+    blist_length zs = mask_length m ⇒
+    (blist_check_mask zs m =
+     LIST_REL (λe m. m ∨ e = False) (from_blist zs) (from_mask m))
+Proof
+  gvs [blist_length_thm,mask_length_thm]
+  \\ Induct \\ gvs [from_blist_def,from_mask_def]
+  >- (Induct_on ‘m’ \\ gvs [from_mask_def,blist_check_mask_def])
+  >- (rw []
+      \\ ‘n ≤ LENGTH (from_mask m)’ by gvs []
+      \\ qpat_x_assum ‘n + _ = _’ mp_tac
+      \\ drule take_drop_mask
+      \\ disch_then $ (fn th => once_rewrite_tac [GSYM th])
+      \\ gvs [] \\ strip_tac
+      \\ last_x_assum drule \\ strip_tac
+      \\ gvs [blist_check_mask_def]
+      \\ DEP_REWRITE_TAC [listTheory.LIST_REL_APPEND_EQ]
+      \\ gvs [] \\ eq_tac \\ simp [] \\ rw []
+      \\ gvs [LIST_REL_EL_EQN,EL_REPLICATE])
+  \\ rw [] \\ gvs [blist_check_mask_def]
+  \\ qspec_then ‘m’ assume_tac from_mask_cases
+  \\ Cases_on ‘mask_hd m’ \\ gvs []
+  \\ Cases_on ‘x’ \\ gvs []
+QED
+
+Theorem mask_drop_1:
+  from_mask (mask_drop 1 m) = TL (from_mask m)
+Proof
+  Induct_on ‘m’ \\ gvs [mask_drop_def,from_mask_def]
+  \\ rw [] \\ gvs [from_mask_def]
+  \\ Cases_on ‘n’ \\ gvs []
+QED
+
 Theorem blist_gol_row_acc_thm:
   ∀m y ys z zs q qs acc.
     blist_length zs = mask_length m ⇒
@@ -3341,15 +3501,56 @@ Proof
   \\ Cases_on ‘fast_forward m y ys z zs q qs acc’ \\ gvs []
   >-
    (Cases_on ‘blist_hd3 ys zs qs’ \\ gvs [blist_rev_thm,from_blist_def]
-    \\ cheat)
+    >-
+     (gvs [blist_check_mask_thm]
+      \\ IF_CASES_TAC \\ gvs []
+      \\ gvs [blist_hd_none,blist_hd3_def,AllCaseEqs(),gol_row_def]
+      \\ gvs [oneline gol_row_def,AllCaseEqs(),blist_hd_thm,blist_rev_thm,from_blist_def])
+    \\ gvs [blist_hd3_def,AllCaseEqs(),METIS_PROVE [] “b ∨ c ⇔ ~b ⇒ c”]
+    \\ imp_res_tac blist_hd_some
+    \\ imp_res_tac blist_hd_some
+    \\ IF_CASES_TAC
+    >-
+     (gvs [] \\ qspec_then ‘m’ mp_tac from_mask_cases
+      \\ Cases_on ‘mask_hd m’ \\ gvs []
+      \\ CCONTR_TAC \\ gvs [mask_length_thm]
+      \\ gvs [blist_hd_thm])
+    \\ last_x_assum mp_tac
+    \\ impl_tac >- gvs []
+    \\ ‘LIST_REL (λe m. ¬m ⇒ e = False) (from_blist zs) (from_mask m) =
+        LIST_REL (λe m. ¬m ⇒ e = False) (from_blist (blist_tl zs))
+                 (from_mask (mask_drop 1 m))’ by
+      (gvs [blist_tl_thm,blist_hd_thm,mask_length_thm ]
+       \\ qspec_then ‘m’ mp_tac from_mask_cases
+       \\ CASE_TAC \\ gvs [] \\ CASE_TAC \\ gvs [])
+    \\ asm_rewrite_tac []
+    \\ pop_assum kall_tac
+    \\ pop_assum kall_tac
+    \\ impl_tac >-
+     (gvs [blist_length_thm,blist_tl_thm,mask_length_thm,mask_drop_1]
+      \\ gvs [blist_hd_thm] \\ Cases_on ‘from_mask m’ \\ gvs [])
+    \\ CASE_TAC \\ gvs [] \\ rw []
+    \\ gvs [blist_hd_thm,gol_row_def,blist_tl_thm]
+    \\ imp_res_tac from_blist_cons_tl \\ gvs [])
   \\ PairCases_on ‘x’ \\ gvs []
-  \\ cheat
-QED
-
-Theorem mask_length_thm:
-  ∀mask. mask_length mask = LENGTH (from_mask mask)
-Proof
-  Induct \\ gvs [mask_length_def,from_mask_def]
+  \\ drule fast_forward_thm \\ gvs [] \\ strip_tac \\ gvs []
+  \\ gvs [from_blist_def,LIST_REL_REPLICATE_APPEND]
+  \\ CASE_TAC \\ gvs []
+  \\ rewrite_tac [GSYM APPEND_ASSOC,APPEND,LIST_REL_REPLICATE_APPEND] \\ gvs []
+  \\ rewrite_tac [GSYM APPEND_ASSOC,APPEND,LIST_REL_REPLICATE_APPEND]
+  \\ Cases_on ‘ts’ \\ gvs []
+  \\ CONV_TAC (RAND_CONV $ SIMP_CONV std_ss [gol_row_def]) \\ gvs []
+  \\ rewrite_tac [GSYM APPEND_ASSOC,APPEND,LIST_REL_REPLICATE_APPEND]
+  \\ conj_tac
+  >-
+   (Cases_on ‘t’ \\ gvs [hd_or_false_def]
+    \\ gvs [gol_cell_def,count_falses_def]
+    \\ Cases_on ‘q = False’ \\ gvs [])
+  \\ rpt $ pop_assum kall_tac
+  \\ qid_spec_tac ‘t’
+  \\ Induct \\ gvs [gol_row_def]
+  \\ Cases_on ‘t’ \\ gvs [hd_or_false_def]
+  \\ gvs [gol_cell_def,count_falses_def]
 QED
 
 Theorem blist_gol_row_thm:

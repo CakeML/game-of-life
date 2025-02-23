@@ -70,4 +70,37 @@ QED
 val _ = cv_auto_trans simple_checks_eq;
 val _ = cv_auto_trans simulation_ok_def;
 
+val pre = cv_auto_trans_pre blist_gol_rows_def;
+
+Theorem blist_gol_rows_pre[cv_pre]:
+  ∀xs prev ys. blist_gol_rows_pre xs prev ys
+Proof
+  Induct_on ‘ys’ \\ gvs [] \\ simp [Once pre]
+QED
+
+val _ = cv_auto_trans_rec blist_or_row_def cheat
+
+Theorem blist_simple_checks_eq:
+  blist_simple_checks w h ins outs rows
+  ⇔
+  LENGTH rows = 150 * h + 20 ∧
+  EVERY (λrow. blist_length row = 150 * w + 20) rows ∧ h ≠ 0 ∧ w ≠ 0 ∧
+  ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
+  EVERY (λ((x,y),r).
+           (x % 2 = 0 ⇎ y % 2 = 0) ∧ -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w − 1 ∧
+           y ≤ 2 * &h − 1) (ins ++ outs) ∧
+  let
+     area = make_area w h
+  in
+    ALL_DISTINCT area ∧
+    check_io area ins 1 ∧
+    check_io area outs (-1)
+Proof
+  gvs [blist_simple_checks_def,check_io_thm, GSYM integerTheory.int_sub]
+  \\ gvs [AC CONJ_COMM CONJ_ASSOC]
+QED
+
+val _ = cv_auto_trans blist_simple_checks_eq;
+val _ = cv_auto_trans blist_simulation_ok_def;
+
 val _ = export_theory();
