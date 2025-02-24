@@ -1,9 +1,11 @@
 (*
   A formalisation of the rules of Conway's Game of Life (GOL).
 *)
-open HolKernel Parse boolLib bossLib pred_setTheory pairTheory
-     dep_rewrite arithmeticTheory listTheory alistTheory rich_listTheory
-     combinTheory gol_rulesTheory
+(* val _ = HOL_Interactive.toggle_quietdec(); *)
+open HolKernel bossLib boolLib Parse;
+open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
+     alistTheory rich_listTheory combinTheory gol_rulesTheory
+(* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_circuit";
 
@@ -854,7 +856,7 @@ Definition translate_mods_def:
 End
 
 Theorem translate_mods_empty[simp]:
-  translate_mods p empty_mod = empty_mod 
+  translate_mods p empty_mod = empty_mod
 Proof
   rw [Once FUN_EQ_THM, translate_mods_def, empty_mod_def, translate_mod_def]
 QED

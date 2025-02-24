@@ -1,6 +1,7 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
-open HolKernel bossLib gol_simLib gol_rulesTheory boolLib boolSyntax
-     computeLib cv_transLib cv_stdTheory gol_sim_cvTheory;
+open HolKernel bossLib boolLib Parse;
+open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
+     cv_stdTheory gol_sim_cvTheory;
 
 val _ = new_theory "gol_in_gol_circuit";
 

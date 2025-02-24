@@ -1,7 +1,8 @@
 (*
   A formalisation of the rules of Conway's Game of Life (GOL).
 *)
-open HolKernel Parse boolLib bossLib integerTheory
+open HolKernel bossLib boolLib Parse;
+open integerTheory;
 
 val _ = new_theory "gol_rules";
 
