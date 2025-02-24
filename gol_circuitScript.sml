@@ -190,7 +190,7 @@ Proof
 QED
 
 Definition join_all_def:
-  join_all (dom, cs) n =
+  join_all (dom, cs) = λn.
     <|area           := U { (cs i n).area           | i ∈ dom } ;
       deletions      := U { (cs i n).deletions      | i ∈ dom } ;
       insertions     := U { (cs i n).insertions     | i ∈ dom } ;
@@ -266,7 +266,7 @@ Proof
 QED
 
 Theorem run_compose_bigunion:
-  ∀cs s.
+  ∀dom cs s.
     (∀x y. x ∈ dom ∧ y ∈ dom ∧ x ≠ y ⇒ disjoint_mods (cs x) (cs y)) ∧
     (∀i. i ∈ dom ⇒ mods_wf (cs i) ∧ run (cs i) (s i))
     ⇒
@@ -275,6 +275,24 @@ Proof
   rw [run_def, run_to_def]
   \\ `∀i. i ∈ dom ⇒ ∃t. mod_steps k (cs i) 0 (s i) t` by metis_tac []
   \\ metis_tac [mod_steps_compose_bigunion]
+QED
+
+Definition empty_mod_def:
+  empty_mod = λn:num.
+    <|area           := ∅ ;
+      deletions      := ∅ ;
+      insertions     := ∅ ;
+      assert_area    := ∅ ;
+      assert_content := ∅ |>
+End
+
+Theorem run_empty_mod:
+  run empty_mod ∅
+Proof
+  `join_all (∅,(λ_. empty_mod)) = empty_mod` by
+    simp [FUN_EQ_THM, empty_mod_def, join_all_def]
+  \\ mp_tac $ Q.SPECL [`∅`,`λ_.empty_mod`,`λ_.∅`] run_compose_bigunion
+  \\ simp []
 QED
 
 (*
@@ -559,6 +577,14 @@ Definition circ_mod_def:
        assert_content := circ_io_lwss (outs ∪ as) n |>
 End
 
+Theorem circ_mod_empty[simp]:
+  circ_mod ∅ ∅ ∅ ∅ = empty_mod
+Proof
+  rw [empty_mod_def, Once FUN_EQ_THM, circ_mod_def]
+  \\ simp [EXTENSION, circ_mod_def, circ_area_def, base_area_def,
+    circ_output_area_def, circ_io_area_def, circ_io_lwss_def]
+QED
+
 Theorem IN_from_row:
   ∀row i j x y.
     (x,y) ∈ from_row (i,j) row ⇔
@@ -808,6 +834,12 @@ Definition translate_set_def:
   translate_set (x,y) s (a,b) ⇔ (a-x,b-y) ∈ s
 End
 
+Theorem translate_set_empty[simp]:
+  translate_set p ∅ = ∅
+Proof
+  Cases_on `p` \\ simp [EXTENSION, pairTheory.FORALL_PROD, translate_set_def, IN_DEF]
+QED
+
 Definition translate_mod_def:
   translate_mod p mod =
     <|area           := translate_set p mod.area;
@@ -820,5 +852,11 @@ End
 Definition translate_mods_def:
   translate_mods p mod n = translate_mod p (mod n)
 End
+
+Theorem translate_mods_empty[simp]:
+  translate_mods p empty_mod = empty_mod 
+Proof
+  rw [Once FUN_EQ_THM, translate_mods_def, empty_mod_def, translate_mod_def]
+QED
 
 val _ = export_theory();

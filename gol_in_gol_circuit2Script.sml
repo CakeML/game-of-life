@@ -1,6 +1,6 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 open HolKernel bossLib gol_simTheory listTheory Parse
-     gol_gatesTheory;
+     gol_gatesTheory gol_circuitTheory pred_setTheory;
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_in_gol_circuit2";
@@ -177,15 +177,6 @@ Definition gate_at_def:
     U {gate_at' (x + i * 2 * &^tile, y + j * 2 * &^tile) init | i, j | T}
 End
 
-Definition join_all'_def:
-  join_all' cs n =
-    <|area           := U { (c n).area           | c ∈ cs };
-      deletions      := U { (c n).deletions      | c ∈ cs };
-      insertions     := U { (c n).insertions     | c ∈ cs };
-      assert_area    := U { (c n).assert_area    | c ∈ cs };
-      assert_content := U { (c n).assert_content | c ∈ cs }|>
-End
-
 Definition floodfill_ins_def:
   floodfill_ins (f, t) p = [
     ((22:int,8:int),E,λn. f ((&n - &t) / &^period : int) p);
@@ -194,56 +185,119 @@ End
 
 Definition floodfill_mod_def:
   floodfill_mod (area: (int # int) list)
-    (outs: ((int # int) # dir # value) list)
-    (crosses: ((int # int) # (int # int) # dir) list)
-    env s =
-  join_all' {
+    (ins: ((int # int) # dir) list)
+    (outs: ((int # int) # dir) list) s =
+  join_all (UNIV, λ(i,j).
     translate_mods (i * 150 * &^tile, j * 150 * &^tile)
       (circ_mod (set area)
-        (set (floodfill_ins env (i, j)) ∪
-         set (MAP (λ(p,_,d). (p,d,FST s p (i, j))) crosses))
-        (set (MAP (λ(p,d,_). (p,d,FST s p (i, j))) outs) ∪
-         set (MAP (λ(_,p,d). (p,d,FST s p (i, j))) crosses)) {})
-    | i, j | T}
+        (set (MAP (λ(p,d). (p,d,FST s p (i, j))) ins))
+        (set (MAP (λ(p,d). (p,d,FST s p (i, j))) outs)) {}))
 End
 
 Definition floodfill_def:
-  floodfill (area: (int # int) list) (* set *)
-    (outs: ((int # int) # dir # value) list) (* multiset *)
+  floodfill (area: (int # int) list)
+    (ins: ((int # int) # dir # value) list)
+    (outs: ((int # int) # dir # value) list)
     (crosses: ((int # int) # (int # int) # dir) list)
     (init: (int # int) set) ⇔
   (∀x y. MEM (x,y) area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < 2 * &^tile) ∧
   (∀x y. MEM (x,y) area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < 2 * &^tile) ∧
   ∀env. env_wf env ⇒
-  ∃s. (∀v. MEM v outs ⇒ assign_sat env s v) ∧
+  ∃s. (∀v. MEM v (ins ++ outs) ⇒ assign_sat env s v) ∧
   ∀s'. assign_ext s s' ∧
   (∀pi po d. MEM (pi,po,d) crosses ⇒ ∃v.
     assign_sat env s' (pi,d,v) ∧
     assign_sat env s' (po,d,v_delay 5 v)) ⇒
-  run (floodfill_mod area outs crosses env s') init
+  run (floodfill_mod area
+    (MAP (λ(p,d,_). (p,d)) ins ++ MAP (λ(p,_,d). (p,d)) crosses)
+    (MAP (λ(p,d,_). (p,d)) outs ++ MAP (λ(_,p,d). (p,d)) crosses)
+    s') init
 End
 
-Theorem floodfill_add_gate:
-  floodfill area outs crosses init ∧
+Theorem floodfill_add_start_gate:
+  floodfill area ins outs crosses init ∧
   gate w h ins1 outs1 init1 ∧
   &(2 * x') = x ∧ &(2 * x') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
   EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area width height) ∧
   PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
-  floodfill area (MAP (λ((a,b),Q). ((x+a,y+b),Q)) outs1 ++ outs') crosses
+  floodfill area ins (MAP (λ((a,b),Q). ((x+a,y+b),Q)) outs1 ++ outs') crosses
+    (gate_at (x,y) init1 ∪ init)
+Proof
+  cheat
+QED
+
+Theorem floodfill_start:
+  floodfill [] [] [] [] ∅
+Proof
+  rw [floodfill_def] \\ qexists_tac `(λ_ _ _. F), ∅`
+  \\ rw [floodfill_mod_def]
+  \\ qpat_abbrev_tac `m = join_all _`
+  \\ `m = empty_mod` suffices_by simp [run_empty_mod]
+  \\ rw [Once FUN_EQ_THM, Abbr`m`, join_all_def, pairTheory.LAMBDA_PROD]
+  \\ simp [empty_mod_def, BIGUNION_GSPEC]
+QED
+
+Theorem floodfill_add_ins:
+  floodfill area ins outs [] init ∧
+  gate 1 1 [((a,b),d,Exact dl v)] [((a',b'),d',Q)] init1 ∧
+  &(2 * x') = x ∧ &(2 * x') = y ∧ x' < ^tile ∧ y' < ^tile ∧
+  ¬MEM (x,y) area ∧
+  ¬MEM (x+a,y+b) (MAP FST (ins ++ outs)) ⇒
+  floodfill area (((x+a,y+b),d,Exact dl v) :: ins)
+    (((x+a',y+b'),d',Q) :: outs) []
+    (gate_at (x,y) init1 ∪ init)
+Proof
+  cheat
+QED
+
+Definition ffins_def:
+  ffins = [((22:int,8:int),E,Exact 0 ThisCell); ((32,0),E,Exact 0 Clock)]
+End
+
+(* Theorem floodfill_start:
+  floodfill [] [
+    ((22:int,8:int),E,Exact 0 ThisCell);
+    ((32,0),E,Exact 0 Clock)] [] ∅
+Proof
+  cheat
+QED *)
+
+Theorem floodfill_stop:
+  floodfill area ffins ffins [] init ∧ env_wf (f, t) ⇒
+  run (join_all' {
+    translate_mods (i * 150 * &^tile, j * 150 * &^tile)
+      (circ_mod (set area) ∅ ∅
+        {((22,8),E,λn. f ((&n - &t) / &^period : int) (i, j))}).
+    | i, j | T}) init
+Proof
+  cheat
+QED
+
+Theorem floodfill_add_gate:
+  floodfill area ins outs crosses init ∧
+  gate w h ins1 outs1 init1 ∧
+  &(2 * x') = x ∧ &(2 * x') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area width height) ∧
+  PERM outs (del ++ outs') ∧
+  LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
+  floodfill
+    (MAP (λ(a,b). (x+a,y+b)) (make_area width height) ++ area) ins
+    (MAP (λ((a,b),dQ). ((x+a,y+b),dQ)) outs1 ++ outs') crosses
     (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
 QED
 
 Theorem floodfill_add_small_gate:
-  floodfill area outs crosses init ∧
+  floodfill area ins outs crosses init ∧
   gate 1 1 ins1 outs1 init1 ∧
-  &(2 * x') = x ∧ &(2 * x') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  &(2 * x') = x ∧ &(2 * x') = y ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM (x,y) area ∧
   PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
-  floodfill area (MAP (λ((a,b),Q). ((x+a,y+b),Q)) outs1 ++ outs') crosses
+  floodfill ((x,y) :: area) ins
+    (MAP (λ((a,b),dQ). ((x+a,y+b),dQ)) outs1 ++ outs') crosses
     (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
@@ -274,24 +328,26 @@ Definition crossover_def:
 End
 
 Theorem floodfill_add_crossover:
-  floodfill area outs crosses init ∧
+  floodfill area ins outs crosses init ∧
   crossover (a,b) (a',b') d1 i2 o2 d2 init1 ∧
   x % 2 = 0 ∧ y % 2 = 0 ∧
   ¬MEM (x,y) area ∧
   PERM outs (((x+a,y+b),d1,P) :: outs') ∧
   v_delay 5 P ⊑ Q ⇒
-  floodfill area (((x+a',y+b'),d1,Q) :: outs') ((i2, o2, d2) :: crosses)
+  floodfill ((x,y) :: area) ins
+    (((x+a',y+b'),d1,Q) :: outs')
+    ((i2, o2, d2) :: crosses)
     (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
 QED
 
 Theorem floodfill_finish_crossover:
-  floodfill area outs crosses init ∧
+  floodfill area ins outs crosses init ∧
   PERM outs ((p,d,P) :: outs') ∧
   PERM crosses ((p,q,d) :: crosses') ∧
   v_delay 5 P ⊑ Q ⇒
-  floodfill area ((q,d,Q) :: outs') crosses' init
+  floodfill area ins ((q,d,Q) :: outs') crosses' init
 Proof
   cheat
 QED
