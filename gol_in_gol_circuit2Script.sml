@@ -1,6 +1,6 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
-open HolKernel bossLib gol_simTheory listTheory Parse
-     gol_gatesTheory gol_circuitTheory pred_setTheory;
+open HolKernel bossLib boolLib Parse;
+open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory;
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_in_gol_circuit2";
@@ -268,7 +268,7 @@ Theorem floodfill_stop:
   run (join_all' {
     translate_mods (i * 150 * &^tile, j * 150 * &^tile)
       (circ_mod (set area) ∅ ∅
-        {((22,8),E,λn. f ((&n - &t) / &^period : int) (i, j))}).
+        {((22,8),E, λn. f ((&n - &t) / &^period : int) (i, j))})
     | i, j | T}) init
 Proof
   cheat
