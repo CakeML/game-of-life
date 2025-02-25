@@ -2,7 +2,7 @@
 open HolKernel bossLib boolLib Parse;
 open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
      cv_stdTheory gol_sim_cvTheory gol_in_gol_circuit2Theory
-     gol_gatesTheory pairSyntax listSyntax gol_simSyntax;
+     gol_gatesTheory pairSyntax listSyntax gol_simSyntax intLib;
 
 val _ = new_theory "gol_in_gol_circuit";
 
@@ -431,6 +431,46 @@ End
 open CircuitDiag
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
+local
+
+val Cell_tm  = prim_mk_const {Name = "Cell",  Thy = "gol_in_gol_circuit2"}
+val RAnd_tm  = prim_mk_const {Name = "RAnd",  Thy = "gol_in_gol_circuit2"}
+val ROr_tm   = prim_mk_const {Name = "ROr",   Thy = "gol_in_gol_circuit2"}
+val RNot_tm  = prim_mk_const {Name = "RNot",  Thy = "gol_in_gol_circuit2"}
+val RXor_tm  = prim_mk_const {Name = "RXor",  Thy = "gol_in_gol_circuit2"}
+
+val Clock_tm    = prim_mk_const {Name = "Clock",    Thy = "gol_in_gol_circuit2"}
+val NotClock_tm = prim_mk_const {Name = "NotClock", Thy = "gol_in_gol_circuit2"}
+val ThisCell_tm = prim_mk_const {Name = "ThisCell", Thy = "gol_in_gol_circuit2"}
+val NextCell_tm = prim_mk_const {Name = "NextCell", Thy = "gol_in_gol_circuit2"}
+val ThisCellUntilClock_tm =
+  prim_mk_const {Name = "ThisCellUntilClock", Thy = "gol_in_gol_circuit2"}
+
+val Reg_tm   = prim_mk_const {Name = "Reg",   Thy = "gol_in_gol_circuit2"}
+val Exact_tm = prim_mk_const {Name = "Exact", Thy = "gol_in_gol_circuit2"}
+
+fun ERR x = mk_HOL_ERR "gol_in_gol_circuitScript" x ""
+
+in
+
+fun tr_rvalue (Cell p)  = mk_binop Cell_tm $ pair_map (intSyntax.term_of_int o Arbint.fromInt) p
+  | tr_rvalue (RNot v)  = mk_monop RNot_tm $ tr_rvalue v
+  | tr_rvalue (RAnd vs) = mk_binop RAnd_tm $ pair_map tr_rvalue vs
+  | tr_rvalue (ROr vs)  = mk_binop ROr_tm $ pair_map tr_rvalue vs
+  | tr_rvalue (RXor vs) = mk_binop ROr_tm $ pair_map tr_rvalue vs
+
+fun tr_evalue Clock = Clock_tm
+  | tr_evalue NotClock = NotClock_tm
+  | tr_evalue ThisCell = ThisCell_tm
+  | tr_evalue NextCell = NextCell_tm
+  | tr_evalue (ThisCellUntilClock n) = mk_monop ThisCellUntilClock_tm (numSyntax.term_of_int n)
+
+fun tr_value (Regular (n, v)) = mk_binop Reg_tm (numSyntax.term_of_int n, tr_rvalue v)
+  | tr_value (Exact (n, v)) = mk_binop Exact_tm (numSyntax.term_of_int n, tr_evalue v)
+
+end
+
+(* val thm = ref floodfill_start *)
 fun go () = let
   val _ = PolyML.print_depth 6
   fun f ((x,y), dir, (a,b)) = let
@@ -451,7 +491,6 @@ fun go () = let
   fun newGate _ = ()
   fun newIn _ = ()
   fun teleport _ = ()
-  fun close () = ()
   datatype gate_kind = Regular of thm | Crossover of thm list
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
     val g = List.nth (#stems gate, i)
@@ -466,24 +505,33 @@ fun go () = let
       val (ins, outs) = apfst rand $ dest_comb $ rator $ concl thm
       val (ins', outs') =
         pair_map (map (apsnd dest_pair o dest_pair) o fst o dest_list) (ins, outs)
-      val env = map2
-        (fn (_,(_,d)) => fn a => mk_pair (snd (dest_var d), a))
-        ins' (List.take ([``a:value``, ``b:value``], length ins'))
+      val vars = List.take ([``a:value``, ``b:value``], length ins')
+      val env = map2 (fn (_,(_,d)) => fn a => mk_pair (snd (dest_var d), a)) ins' vars
       val env = case env of
           [a] => (a, a)
         | [a, b] => (a, b)
         | _ => raise Match
-      val thm2 = SPEC (mk_pair env) (MATCH_MP blist_simulation_ok_imp_gate thm)
-      val thm2 = INST [``init':bool list list`` |-> ``[]:bool list list``] thm2 (* FIXME *)
-      val thm2 = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm2
-      val thm2 = case g0 of
-          "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm2
-        | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm2
-        | _ => thm2
-      in Regular (save_thm (genth, thm2)) end
-    in PolyML.print res end
+      val thm = SPEC (mk_pair env) (MATCH_MP blist_simulation_ok_imp_gate thm)
+      val thm = INST [``init':bool list list`` |-> ``[]:bool list list``] thm (* FIXME *)
+      val thm = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm
+      val thm = case g0 of
+          "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
+        | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
+        | _ => thm
+      in Regular (save_thm (genth, GENL vars thm)) end
+    in PolyML.print (genth, res) end
+  val thm = ref floodfill_start
+  fun newIn ((s, g), (x', y'), ins) = let
+    val _ = PolyML.print (s, g, (x', y'), ins, thm)
+    val gth = case g of Regular g => g | _ => raise Match
+    val gth = SPECL (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
+    val thm' = MATCH_MP floodfill_add_ins (CONJ (!thm) gth)
+    val (x, y) = pair_map (intSyntax.term_of_int o Arbint.fromInt) (2*x', 2*y')
+    val (x', y') = pair_map numSyntax.term_of_int (x', y')
+    val thm' = SPECL [x, y, x', y'] thm'
+    val thm' = SRULE [] $ MATCH_MP thm' $ EQT_ELIM $ EVAL $ lhand $ concl thm'
+    in thm := PolyML.print thm' end
   (* val file = TextIO.openOut "log.txt"
-  fun close () = TextIO.closeOut file
   fun newGate ((false, g), p) =
       TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
     | newGate ((true, g), p) =
@@ -496,10 +544,10 @@ fun go () = let
       "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
   val _ = build diag (recognize diag) period pulse (asrt, teleports)
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
-  in close () end;
+  (* val _ = TextIO.closeOut file *)
+  in !thm end;
 
-val _ = go ();
-
+Theorem floodfill_result = go ();
 (*
 val res = getWire (go ());
 val w_thiscell = res (11,4) E;

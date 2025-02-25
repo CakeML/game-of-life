@@ -382,7 +382,7 @@ End
 Theorem floodfill_add_start_gate:
   floodfill area ins outs crosses init ∧
   gate w h ins1 outs1 init1 ∧
-  &(2 * x') = x ∧ &(2 * x') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  &(2 * x') = x ∧ &(2 * y') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
   EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area width height) ∧
   PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
@@ -405,12 +405,13 @@ QED
 
 Theorem floodfill_add_ins:
   floodfill area ins outs [] init ∧
-  gate 1 1 [((a,b),d,Exact dl v)] [((a',b'),d',Q)] init1 ∧
-  &(2 * x') = x ∧ &(2 * x') = y ∧ x' < ^tile ∧ y' < ^tile ∧
+  gate 1 1 [((a,b),d,Exact dl v)] outs' init1 ⇒
+  ∀x y x' y'.
+  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM (x,y) area ∧
   ¬MEM (x+a,y+b) (MAP FST (ins ++ outs)) ⇒
   floodfill area (((x+a,y+b),d,Exact dl v) :: ins)
-    (((x+a',y+b'),d',Q) :: outs) []
+    (MAP (λ((a',b'),d',Q). ((x+a',y+b'),d',Q)) outs' ++ outs) []
     (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
@@ -442,7 +443,7 @@ QED
 Theorem floodfill_add_gate:
   floodfill area ins outs crosses init ∧
   gate w h ins1 outs1 init1 ∧
-  &(2 * x') = x ∧ &(2 * x') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  &(2 * x') = x ∧ &(2 * y') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
   EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area width height) ∧
   PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
@@ -457,7 +458,7 @@ QED
 Theorem floodfill_add_small_gate:
   floodfill area ins outs crosses init ∧
   gate 1 1 ins1 outs1 init1 ∧
-  &(2 * x') = x ∧ &(2 * x') = y ∧ x' < ^tile ∧ y' < ^tile ∧
+  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM (x,y) area ∧
   PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
