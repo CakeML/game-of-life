@@ -6,6 +6,10 @@ open integerTheory;
 
 val _ = new_theory "gol_rules";
 
+(*---------------------------------------------------------------*
+    Definition of the semantics of Conway's Game of Life (GOL)
+ *---------------------------------------------------------------*)
+
 (* There is an unbounded 2D plane of cells *)
 Type state[pp] = “:(int # int) set”;
 
@@ -26,6 +30,27 @@ Definition step_def:
   step (s:state) (i,j) ⇔
     if (i,j) ∈ s then live_adj s i j ∈ {2;3}
                  else live_adj s i j = 3
+End
+
+(*---------------------------------------------------------------*
+    Define what ist means to simulate GOL in GOL.
+
+        s0 --step---> s1 --step---> ... --step---> sN
+         |             ∧             ∧              ∧
+         | encode      |             |              | extract
+         ∨             |             |              |
+        t0 --steps--> s1 --steps--> ... --steps--> tN
+
+    Here --steps--> is a fixed number of --step---> transitions.
+ *---------------------------------------------------------------*)
+
+Definition gol_in_gol_def:
+  gol_in_gol encode step_count extract ⇔
+    ∀ n s0 sN t0 tN .
+       t0 = encode s0 ∧
+       tN = FUNPOW step (n * step_count) t0 ∧
+       sN = FUNPOW step n s0 ⇒
+       sN = extract tN
 End
 
 val _ = export_theory();
