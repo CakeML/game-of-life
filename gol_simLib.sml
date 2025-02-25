@@ -549,13 +549,16 @@ fun vector_to_svg grid =
   fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
     fn i => fn j => Vector.sub(Vector.sub(grid,i),j));
 
+val gates = []
+
 val terminator_e =
   { filename = "terminator-e.rle",
     stems    = ["terminator_e", "terminator_s", "terminator_w", "terminator_n"],
     inputs   = [((~1, 0), E, Var (0, 1))],
     outputs  = [],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = terminator_e :: gates
 
 val wire_e_e =
   { filename = "empty.rle",
@@ -563,7 +566,8 @@ val wire_e_e =
     inputs   = [((~1, 0), E, Var (0, 5))],
     outputs  = [((1, 0), E, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = wire_e_e :: gates
 
 val cross_es_es =
   { filename = "empty.rle",
@@ -571,7 +575,8 @@ val cross_es_es =
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
     outputs  = [((1, 0), E, Var (0, 0)), ((0, 1), S, Var (1, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = cross_es_es :: gates
 
 val and_en_e =
   { filename = "and-en-e.rle",
@@ -579,7 +584,8 @@ val and_en_e =
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = and_en_e :: gates
 
 val and_es_e =
   { filename = "and-es-e.rle",
@@ -587,7 +593,8 @@ val and_es_e =
     inputs   = [((~1, 0), E, Var (0, 5)), ((0, ~1), S, Var (1, 5))],
     outputs  = [((1, 0), E, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = and_es_e :: gates
 
 val and_ew_n =
   { filename = "and-ew-n.rle",
@@ -595,7 +602,8 @@ val and_ew_n =
     inputs   = [((1, 0), W, Var (0, 6)), ((~1, 0), E, Var (1, 9))],
     outputs  = [((0, ~1), N, And (Var (0, 0), Var (1, 0)))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = and_ew_n :: gates
 
 val or_en_e =
   { filename = "or-en-e.rle",
@@ -603,7 +611,8 @@ val or_en_e =
     inputs   = [((~1, 0), E, Var (0, 7)), ((0, 1), N, Var (1, 5))],
     outputs  = [((1, 0), E, Or (Var (0, 0), Var (1, 0)))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = or_en_e :: gates
 
 val not_e_e =
   { filename = "not-e-e.rle",
@@ -611,7 +620,8 @@ val not_e_e =
     inputs   = [((~1, 0), E, Var (0, 8))],
     outputs  = [((1, 0), E, Not (Var (0, 1)))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = not_e_e :: gates
 
 val turn_e_s =
   { filename = "turn-e-s.rle",
@@ -619,7 +629,8 @@ val turn_e_s =
     inputs   = [((~1, 0), E, Var (0, 7))],
     outputs  = [((0, 1), S, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = turn_e_s :: gates
 
 val fast_turn_e_s =
   { filename = "fast-turn-e-s.rle",
@@ -627,7 +638,8 @@ val fast_turn_e_s =
     inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((0, 1), S, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = fast_turn_e_s :: gates
 
 val slow_turn_e_s =
   { filename = "slow-turn-e-s.rle",
@@ -635,7 +647,8 @@ val slow_turn_e_s =
     inputs   = [((~1, 0), E, Var (0, 8))],
     outputs  = [((0, 1), S, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = slow_turn_e_s :: gates
 
 val turn_e_n =
   { filename = "turn-e-n.rle",
@@ -643,7 +656,8 @@ val turn_e_n =
     inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((0, ~1), N, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = turn_e_n :: gates
 
 val fork_e_es =
   { filename = "fork-e-es.rle",
@@ -651,7 +665,8 @@ val fork_e_es =
     inputs   = [((~1, 0), E, Var (0, 6))],
     outputs  = [((1, 0), E, Var (0, 1)), ((0, 1), S, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = fork_e_es :: gates
 
 val fork_e_en =
   { filename = "fork-e-en.rle",
@@ -659,7 +674,8 @@ val fork_e_en =
     inputs   = [((~1, 0), E, Var (0, 7))],
     outputs  = [((1, 0), E, Var (0, 2)), ((0, ~1), N, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = fork_e_en :: gates
 
 val half_adder_ee_es =
   { filename = "half-adder-ee-es.rle",
@@ -673,7 +689,8 @@ val half_adder_ee_es =
         And (Not (Var (0, 4)), Or (Var (0, 7), Var (1, 3))))),
       ((2, 3), S, And (Var (0, 0), Var (1, 1)))],
     height   = 2,
-    width    = 2 } : gate;
+    width    = 2 } : gate
+val gates = half_adder_ee_es :: gates
 
 val half_adder_ee_ee =
   { filename = "half-adder-ee-ee.rle",
@@ -687,7 +704,8 @@ val half_adder_ee_ee =
         And (Not (Var (0, 2)), Or (Var (0, 5), Var (1, 3))))),
       ((3, 2), E, And (Var (0, 0), Var (1, 3)))],
     height   = 2,
-    width    = 2 } : gate;
+    width    = 2 } : gate
+val gates = half_adder_ee_ee :: gates
 
 val slow_wire_e_e =
   { filename = "slow-wire-e-e.rle",
@@ -695,7 +713,8 @@ val slow_wire_e_e =
     inputs   = [((~1, 0), E, Var (0, 9))],
     outputs  = [((1, 0), E, Var (0, 0))],
     height   = 1,
-    width    = 1 } : gate;
+    width    = 1 } : gate
+val gates = slow_wire_e_e :: gates
 
 val slower_wire_e_e =
   { filename = "slower-wire-e-e.rle",
@@ -703,6 +722,9 @@ val slower_wire_e_e =
     inputs   = [((~1, 0), E, Var (0, 155))],
     outputs  = [((7, 0), E, Var (0, 0))],
     height   = 1,
-    width    = 4 } : gate;
+    width    = 4 } : gate
+val gates = slower_wire_e_e :: gates
+
+val gates = rev gates
 
 end

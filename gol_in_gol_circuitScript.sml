@@ -1,7 +1,8 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 open HolKernel bossLib boolLib Parse;
 open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
-     cv_stdTheory gol_sim_cvTheory;
+     cv_stdTheory gol_sim_cvTheory gol_in_gol_circuit2Theory
+     gol_gatesTheory;
 
 val _ = new_theory "gol_in_gol_circuit";
 
@@ -224,28 +225,36 @@ val nextCell = let
 type io_port = (int*int)*dir*value
 type teleport = (int*int)*(int*int)*dir*rvalue*rvalue
 
-val gateData = ref (Redblackmap.mkDict String.compare)
-fun getGateData (gate, i) = let
-  val key = List.nth (#stems gate, i)
-  in
-    (key, case Redblackmap.peek (!gateData, key) of
-      SOME v => v
-    | NONE => let
-      val {inputs, outputs, ...} = gol_simLib.rotate i (load gate)
-      val value = case (#stems gate, (inputs, outputs)) of
-          ("cross_es_es" :: _,
-            ([(a1,a2,Var(_,a3)),(b1,b2,Var(_,b3))],
-             [(o1,o2,Var(_,o3)),(p1,p2,Var(_,p3))])) =>
-            [([(a1,a2,Var(0,a3))],[(o1,o2,Var(0,o3))]),
-             ([(b1,b2,Var(0,b3))],[(p1,p2,Var(0,p3))])]
-        | (_, v) => [v]
-      in gateData := Redblackmap.insert (!gateData, key, value); value end)
-  end
-
 fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
 fun dirToXY d = case d of E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
 
-fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport list) = let
+type 'a log = {
+  newIn: 'a * (int * int) * (int * value) vector -> unit,
+  newGate: 'a * (int * int) -> unit,
+  gateKey: gate * int * loaded_gate -> 'a,
+  teleport: (int * int) * (int * int) * rvalue * rvalue -> unit
+}
+
+fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport list)
+    (log:'a log) = let
+  val gateData = ref (Redblackmap.mkDict String.compare)
+  fun getGateData (gate, i) = let
+    val key = List.nth (#stems gate, i)
+    in
+      (key, case Redblackmap.peek (!gateData, key) of
+        SOME v => v
+      | NONE => let
+        val res as {inputs, outputs, ...} = gol_simLib.rotate i (load gate)
+        val value = (#gateKey log (gate, i, res),
+          case (#stems gate, (inputs, outputs)) of
+            ("cross_es_es" :: _,
+              ([(a1,a2,Var(_,a3)),(b1,b2,Var(_,b3))],
+              [(o1,o2,Var(_,o3)),(p1,p2,Var(_,p3))])) =>
+              [([(a1,a2,Var(0,a3))],[(o1,o2,Var(0,o3))]),
+              ([(b1,b2,Var(0,b3))],[(p1,p2,Var(0,p3))])]
+          | (_, v) => [v])
+        in gateData := Redblackmap.insert (!gateData, key, value); value end)
+    end
   datatype target = Gate of (int * int) * int | Teleport of (int * int) * rvalue * rvalue
   val wireIn = ref $ foldl
     (fn ((win, wout, d, vin, vout), map) =>
@@ -254,23 +263,24 @@ fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport li
     (Redblackmap.mkDict int2cmp) teleport
   val gates = ref (foldl
     (fn ((p, gate), map) => let
-      val (g, ls) = getGateData gate
+      val (g, (a, ls)) = getGateData gate
       in #2 $ foldl
         (fn (data, (i, map)) => (
           C app (#1 data) (fn (x, _, _) =>
             wireIn := Redblackmap.insert (!wireIn,
               wpos (p, x), Gate (p, i)));
-          (i+1, Redblackmap.insert (map, (p, i), (ref false, g, data)))))
+          (i+1, Redblackmap.insert (map, (p, i), (ref false, a, data)))))
         (0, map) ls end)
     (Redblackmap.mkDict int3cmp) gates)
   val queue = ref []
   val wires = ref (Redblackmap.mkDict int2cmp)
   fun isMissingWire p port = not (Redblackmap.inDomain (!wires, wpos (p, #1 port)))
-  fun runGate (missing, (p,i), g, ins, outs) = let
+  fun runGate (missing, (p,i), g, ins, outs) deep = let
     (* val _ = TextIO.output (file, "run gate " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n") *)
     val ins = Vector.fromList $ C map ins (fn
         (x, _, Var (_, delay)) => (delay, Redblackmap.find (!wires, wpos (p, x)))
       | _ => raise Match)
+    val _ = if deep then #newGate log (g, p) else #newIn log (g, p, ins)
     fun evalExp (Var (i, d')) = let
         val (d, value) = Vector.sub (ins, i)
         in delay (d - d') value end
@@ -301,25 +311,16 @@ fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport li
         | _ => raise Fail "evalExp Not")
       | evalExp bv = (PolyML.print (ins, bv); raise Fail "evalExp other")
     in
-      app (fn (x, d, bv) => let
-        (* val w = wpos (p, x)
-        val _ = TextIO.output (file, "out wire "
-          ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^" -> "
-          ^ Int.toString (#1 w)^"," ^ Int.toString (#2 w)^" @ "
-          ^ Int.toString (#1 w div 2)^"," ^ Int.toString (#2 w div 2)^"\n") *)
-        in processWire (wpos (p, x), evalExp bv) end) outs
+      app (fn (x, d, bv) =>
+        processWire (wpos (p, x), evalExp bv) (if deep then 2 else 0)) outs
     end
-  and processQueue (missing, (p,i), r, g, ins, outs) = if !r then
-        (* (TextIO.output (file, "already done gate " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"); *)
-   true else
+  and processQueue (missing, (p,i), r, g, ins, outs) depth =
+    if !r then true else
+    if depth = 0 then (queue := (missing, (p,i), r, g, ins, outs) :: !queue; false) else
     case filter (isMissingWire p) missing of
-      [] => (
-        (* TextIO.output (file, "set gate " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"); *)
-        r := true; runGate (missing, (p,i), g, ins, outs); true)
-    | missing => (
-      (* TextIO.output (file, "enqueue " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"); *)
-      queue := (missing, (p,i), r, g, ins, outs) :: !queue; false)
-  and processWire (w, value) =
+      [] => (r := true; runGate (missing, (p,i), g, ins, outs) (depth > 1); true)
+    | missing => (queue := (missing, (p,i), r, g, ins, outs) :: !queue; false)
+  and processWire (w, value) depth =
     case Redblackmap.peek (!wires, w) of
       SOME old => (case (value, old) of
         (Exact (n1, Clock), Exact (n2, Clock)) =>
@@ -333,15 +334,12 @@ fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport li
     | NONE => let
       val (wireIn', tgt) = Redblackmap.remove (!wireIn, w)
       val _ = wireIn := wireIn'
-      (* val _ = TextIO.output (file, "insert wire "
-         ^ Int.toString (#1 w)^"," ^ Int.toString (#2 w)^" @ "
-          ^ Int.toString (#1 w div 2)^"," ^ Int.toString (#2 w div 2)^"\n") *)
       val _ = wires := Redblackmap.insert (!wires, w, value)
       in
         case tgt of
           Gate p => let
           val (r, g, (ins, outs)) = Redblackmap.find (!gates, p)
-          in (processQueue (ins, p, r, g, ins, outs); ()) end
+          in (processQueue (ins, p, r, g, ins, outs) depth; ()) end
         | Teleport (wout, vin, vout) => let
           val (d, vin') = case value of
               Regular v => v
@@ -349,13 +347,14 @@ fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport li
             | _ => raise Fail "bad signal on teleport"
           val _ = if vin = vin' then () else
             (PolyML.print ("output mismatch", w, value, vin'); ())
-          in processWire (wout, Regular (d, vout)) end
+          val _ = #teleport log (w, wout, vin, vout)
+          in processWire (wout, Regular (d, vout)) depth end
       end
-  val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v)) ins
+  val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v) 1) ins
   fun loop () = case !queue of
     [] => ()
   | q =>
-    if foldl (fn (x, r) => processQueue x orelse r) (queue := []; false) q then
+    if foldl (fn (x, r) => processQueue x 2 orelse r) (queue := []; false) q then
       loop ()
     else raise Fail "queue stuck"
   val _ = loop ()
@@ -432,6 +431,34 @@ End
 open CircuitDiag
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
+fun mkLog () = let
+  (* val file = TextIO.openOut "log.txt"
+  in (fn () => TextIO.closeOut file, ({
+    gateKey = fn (gate, i, _) => let
+      val g = List.nth (#stems gate, i)
+      val thm = fetch "gol_gates" (g ^ "_thm")
+      val _ = PolyML.print thm
+      in (hd (#stems gate) = "cross_es_es", g) end,
+    newGate = fn
+      ((false, g), p) =>
+        TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
+    | ((true, g), p) =>
+        TextIO.output (file, "cross " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"),
+    newIn = fn ((_, g), p, ins) =>
+      (PolyML.print ("newIn", g, p, ins);
+      TextIO.output (file, "newIn " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")),
+    teleport = fn (win, wout, vin, vout) =>
+      TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
+        "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n")
+  }: (bool * string) log)) *)
+  in (fn () => (), {
+    gateKey = fn _ => (),
+    newGate = fn _ => (),
+    newIn = fn _ => (),
+    teleport = fn _ => ()
+  })
+  end
+
 fun go () = let
   val _ = PolyML.print_depth 6
   fun f ((x,y), dir, (a,b)) = let
@@ -448,10 +475,9 @@ fun go () = let
   val asrt = [
     ((16, 0), E, Exact (phase, Clock)),
     ((11, 4), E, Exact (0, ThisCell))];
-  (* val file = TextIO.openOut "log.txt" *)
-  val res = build diag (recognize diag) period pulse (asrt, teleport)
-  (* val _ = TextIO.closeOut file *)
-  in res end;
+  val (close, log) = mkLog ()
+  val _ = build diag (recognize diag) period pulse (asrt, teleport) log
+  in close () end;
 
 val _ = go ();
 
