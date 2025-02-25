@@ -2,7 +2,8 @@
 open HolKernel bossLib boolLib Parse;
 open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
      cv_stdTheory gol_sim_cvTheory gol_in_gol_circuit2Theory
-     gol_gatesTheory pairSyntax listSyntax gol_simSyntax intLib;
+     gol_gatesTheory pairSyntax listSyntax gol_simSyntax intLib
+     sortingTheory listTheory;
 
 val _ = new_theory "gol_in_gol_circuit";
 
@@ -453,7 +454,9 @@ fun ERR x = mk_HOL_ERR "gol_in_gol_circuitScript" x ""
 
 in
 
-fun tr_rvalue (Cell p)  = mk_binop Cell_tm $ pair_map (intSyntax.term_of_int o Arbint.fromInt) p
+val from_int = intSyntax.term_of_int o Arbint.fromInt
+
+fun tr_rvalue (Cell p)  = mk_binop Cell_tm $ pair_map from_int p
   | tr_rvalue (RNot v)  = mk_monop RNot_tm $ tr_rvalue v
   | tr_rvalue (RAnd vs) = mk_binop RAnd_tm $ pair_map tr_rvalue vs
   | tr_rvalue (ROr vs)  = mk_binop ROr_tm $ pair_map tr_rvalue vs
@@ -469,6 +472,42 @@ fun tr_value (Regular (n, v)) = mk_binop Reg_tm (numSyntax.term_of_int n, tr_rva
   | tr_value (Exact (n, v)) = mk_binop Exact_tm (numSyntax.term_of_int n, tr_evalue v)
 
 end
+
+Theorem pull_perm1_tl:
+  PERM ls (a :: ls') ⇒ ∀b. PERM (b :: ls) (a :: b :: ls')
+Proof
+  metis_tac [PERM_MONO, PERM_SWAP_AT_FRONT, PERM_REFL, PERM_TRANS]
+QED
+
+Theorem pull_perm_nil:
+  ∀ls. PERM ls ([] ++ ls)
+Proof
+  simp []
+QED
+
+Theorem pull_perm_cons:
+  PERM ls (a :: ls') ⇒ PERM ls' (ls1 ++ ls2) ⇒ PERM ls ((a :: ls1) ++ ls2)
+Proof
+  rw [] \\ metis_tac [PERM_MONO, PERM_TRANS]
+QED
+
+fun pull_perm1 f ls = let
+  val (a, ls') = listSyntax.dest_cons ls
+  in
+    if f a then ISPEC ls PERM_REFL
+    else SPEC a (MATCH_MP pull_perm1_tl (pull_perm1 f ls'))
+  end
+
+fun pull_perm [] ls = ISPEC ls pull_perm_nil
+  | pull_perm (f::l) ls = let
+    val _ = PolyML.print ("pull_perm", f::l, ls)
+    val th = pull_perm1 f ls
+    val ls' = rand $ rand $ concl th
+    in MATCH_MP (MATCH_MP pull_perm_cons th) (pull_perm l ls') end
+
+val (append_nil, append_cons) = CONJ_PAIR APPEND_def
+fun append_conv tm =
+  ((REWR_CONV append_cons THENC RAND_CONV append_conv) ORELSEC REWR_CONV append_nil) tm
 
 (* val thm = ref floodfill_start *)
 fun go () = let
@@ -519,18 +558,43 @@ fun go () = let
         | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
         | _ => thm
       in Regular (save_thm (genth, GENL vars thm)) end
-    in PolyML.print (genth, res) end
+    in (lgate, (genth, res)) end
   val thm = ref floodfill_start
-  fun newIn ((s, g), (x', y'), ins) = let
-    val _ = PolyML.print (s, g, (x', y'), ins, thm)
+  fun newIn ((_, (s, g)), (x', y'), ins) = let
     val gth = case g of Regular g => g | _ => raise Match
     val gth = SPECL (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
     val thm' = MATCH_MP floodfill_add_ins (CONJ (!thm) gth)
-    val (x, y) = pair_map (intSyntax.term_of_int o Arbint.fromInt) (2*x', 2*y')
+    val (x, y) = pair_map from_int (2*x', 2*y')
     val (x', y') = pair_map numSyntax.term_of_int (x', y')
     val thm' = SPECL [x, y, x', y'] thm'
     val thm' = SRULE [] $ MATCH_MP thm' $ EQT_ELIM $ EVAL $ lhand $ concl thm'
-    in thm := PolyML.print thm' end
+    in thm := thm' end
+  fun newGate ((lg:loaded_gate, (s, g)), (x', y')) = case g of
+      Regular gth => let
+      val (x, y) = (2*x', 2*y')
+      val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
+      val permth = pull_perm
+        (map (fn a => term_eq a o fst o dest_pair) ins)
+        (lhand $ rator $ concl (!thm))
+      val del = fst $ dest_list $ lhand $ rand $ concl permth
+      val gth = SPECL (map (snd o dest_pair o snd o dest_pair) del) gth
+      val _ = PolyML.print (s, g, lg, (x', y'), thm, ins)
+      val thm' = if (#width lg, #height lg) = (1, 1) then
+        floodfill_add_small_gate
+      else
+        (* floodfill_add_gate *)
+        raise Match
+      (* val gth = SPECL (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth *)
+      val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
+      val (x, y) = pair_map from_int (x, y)
+      val (x', y') = pair_map numSyntax.term_of_int (x', y')
+      val thm' = SPECL [x, y, x', y'] thm'
+      val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
+      val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV (SCONV []) THENC append_conv)) thm'
+      in thm := PolyML.print thm' end
+    | Crossover gths => let
+      val _ = PolyML.print (s, g, lg, (x', y'), thm)
+      in raise Match end
   (* val file = TextIO.openOut "log.txt"
   fun newGate ((false, g), p) =
       TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
@@ -542,8 +606,9 @@ fun go () = let
   fun teleport (win, wout, vin, vout) =
     TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
       "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
-  val _ = build diag (recognize diag) period pulse (asrt, teleports)
-    {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
+  val _ = (build diag (recognize diag) period pulse (asrt, teleports)
+    {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}; ())
+    handle _ => ()
   (* val _ = TextIO.closeOut file *)
   in !thm end;
 

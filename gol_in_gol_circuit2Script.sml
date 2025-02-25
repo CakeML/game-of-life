@@ -100,7 +100,7 @@ Definition nextCell_def:
         (ROr (RAnd e10 (RXor e12 e7)) (RAnd e12 e7)))))
 End
 
-Definition v_and_def':
+Definition v_and_def:
   (v_and (Exact d1 ThisCell) (Exact d2 NotClock) =
     if d1 ≤ d2 ∧ d1 ≤ ^pulse then Exact d1 (ThisCellUntilClock (d2 - d1))
     else Fail) ∧
@@ -110,7 +110,7 @@ Definition v_and_def':
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (RAnd rv1 rv2)
     | _ => Fail)
 End
-Theorem v_and_def[simp] = SRULE [] v_and_def';
+Theorem v_and_def[simp,allow_rebind] = SRULE [] v_and_def;
 
 Theorem v_and_fail[simp]:
   v_and v Fail = Fail
@@ -118,14 +118,14 @@ Proof
   Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp []
 QED
 
-Definition v_or_def':
+Definition v_or_def:
   (v_or (Exact d1 NextCell) (Exact d2 (ThisCellUntilClock d3)) =
     if d1 = d2 + d3 ∧ d1 = ^period then Exact 0 ThisCell else Fail) ∧
   (v_or v1 v2 = case (to_reg v1, to_reg v2) of
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (ROr rv1 rv2)
     | _ => Fail)
 End
-Theorem v_or_def[simp] = SRULE [] v_or_def';
+Theorem v_or_def[simp,allow_rebind] = SRULE [] v_or_def;
 
 Theorem v_or_fail[simp]:
   v_or v Fail = Fail
@@ -443,9 +443,10 @@ QED
 Theorem floodfill_add_gate:
   floodfill area ins outs crosses init ∧
   gate w h ins1 outs1 init1 ∧
+  PERM outs (del ++ outs') ⇒
+  ∀x y x' y'.
   &(2 * x') = x ∧ &(2 * y') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
   EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area width height) ∧
-  PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
   floodfill
     (MAP (λ(a,b). (x+a,y+b)) (make_area width height) ++ area) ins
@@ -458,9 +459,10 @@ QED
 Theorem floodfill_add_small_gate:
   floodfill area ins outs crosses init ∧
   gate 1 1 ins1 outs1 init1 ∧
+  PERM outs (del ++ outs') ⇒
+  ∀x y x' y'.
   &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM (x,y) area ∧
-  PERM outs (del ++ outs') ∧
   LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
   floodfill ((x,y) :: area) ins
     (MAP (λ((a,b),dQ). ((x+a,y+b),dQ)) outs1 ++ outs') crosses
