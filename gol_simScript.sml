@@ -1,9 +1,10 @@
 (*
   A formalisation of the rules of Conway's Game of Life (GOL).
 *)
-open HolKernel Parse boolLib bossLib pred_setTheory pairTheory
-     dep_rewrite arithmeticTheory listTheory alistTheory rich_listTheory
-     combinTheory gol_rulesTheory gol_circuitTheory;
+open HolKernel bossLib boolLib Parse;
+open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
+     alistTheory rich_listTheory combinTheory gol_rulesTheory
+     gol_circuitTheory;
 
 val _ = new_theory "gol_sim";
 

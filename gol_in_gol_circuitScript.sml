@@ -2,7 +2,7 @@
 open HolKernel bossLib boolLib Parse;
 open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
      cv_stdTheory gol_sim_cvTheory gol_in_gol_circuit2Theory
-     gol_gatesTheory;
+     gol_gatesTheory pairSyntax listSyntax gol_simSyntax;
 
 val _ = new_theory "gol_in_gol_circuit";
 
@@ -431,34 +431,6 @@ End
 open CircuitDiag
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
-fun mkLog () = let
-  (* val file = TextIO.openOut "log.txt"
-  in (fn () => TextIO.closeOut file, ({
-    gateKey = fn (gate, i, _) => let
-      val g = List.nth (#stems gate, i)
-      val thm = fetch "gol_gates" (g ^ "_thm")
-      val _ = PolyML.print thm
-      in (hd (#stems gate) = "cross_es_es", g) end,
-    newGate = fn
-      ((false, g), p) =>
-        TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
-    | ((true, g), p) =>
-        TextIO.output (file, "cross " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"),
-    newIn = fn ((_, g), p, ins) =>
-      (PolyML.print ("newIn", g, p, ins);
-      TextIO.output (file, "newIn " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")),
-    teleport = fn (win, wout, vin, vout) =>
-      TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
-        "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n")
-  }: (bool * string) log)) *)
-  in (fn () => (), {
-    gateKey = fn _ => (),
-    newGate = fn _ => (),
-    newIn = fn _ => (),
-    teleport = fn _ => ()
-  })
-  end
-
 fun go () = let
   val _ = PolyML.print_depth 6
   fun f ((x,y), dir, (a,b)) = let
@@ -467,7 +439,7 @@ fun go () = let
   val phase = 0
   val period = 586
   val pulse = 18
-  val teleport = map f [
+  val teleports = map f [
     ((~1, 1), E, (~1, 0)), ((~1, 2), E, (~1, ~1)),
     ((19, ~1), S, (0, ~1)), ((18, ~1), S, (1, ~1)),
     ((21, 19), W, (1, 0)), ((21, 18), W, (1, 1)),
@@ -475,8 +447,55 @@ fun go () = let
   val asrt = [
     ((16, 0), E, Exact (phase, Clock)),
     ((11, 4), E, Exact (0, ThisCell))];
-  val (close, log) = mkLog ()
-  val _ = build diag (recognize diag) period pulse (asrt, teleport) log
+  fun gateKey _ = ()
+  fun newGate _ = ()
+  fun newIn _ = ()
+  fun teleport _ = ()
+  fun close () = ()
+  datatype gate_kind = Regular of thm | Crossover of thm list
+  fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
+    val g = List.nth (#stems gate, i)
+    val g0 = List.nth (#stems gate, 0)
+    val genth = g0 ^ "_gate_gen"
+    val thm = fetch "gol_gates" (g ^ "_thm")
+    val res = if g0 = "cross_es_es" then let
+      val thm1 = MATCH_MP blist_simulation_ok_imp_crossover thm
+      val thm2 = MATCH_MP crossover_symm thm1
+      in Crossover [save_thm (genth, thm1), save_thm (genth^"_rev", thm2)] end
+    else let
+      val (ins, outs) = apfst rand $ dest_comb $ rator $ concl thm
+      val (ins', outs') =
+        pair_map (map (apsnd dest_pair o dest_pair) o fst o dest_list) (ins, outs)
+      val env = map2
+        (fn (_,(_,d)) => fn a => mk_pair (snd (dest_var d), a))
+        ins' (List.take ([``a:value``, ``b:value``], length ins'))
+      val env = case env of
+          [a] => (a, a)
+        | [a, b] => (a, b)
+        | _ => raise Match
+      val thm2 = SPEC (mk_pair env) (MATCH_MP blist_simulation_ok_imp_gate thm)
+      val thm2 = INST [``init':bool list list`` |-> ``[]:bool list list``] thm2 (* FIXME *)
+      val thm2 = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm2
+      val thm2 = case g0 of
+          "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm2
+        | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm2
+        | _ => thm2
+      in Regular (save_thm (genth, thm2)) end
+    in PolyML.print res end
+  (* val file = TextIO.openOut "log.txt"
+  fun close () = TextIO.closeOut file
+  fun newGate ((false, g), p) =
+      TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
+    | newGate ((true, g), p) =
+      TextIO.output (file, "cross " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
+  fun newIn ((_, g), p, ins) =
+    (PolyML.print ("newIn", g, p, ins);
+    TextIO.output (file, "newIn " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"))
+  fun teleport (win, wout, vin, vout) =
+    TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
+      "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
+  val _ = build diag (recognize diag) period pulse (asrt, teleports)
+    {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
   in close () end;
 
 val _ = go ();

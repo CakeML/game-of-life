@@ -1,7 +1,7 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 open HolKernel bossLib boolLib Parse;
 open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
-     pairTheory alistTheory;
+     pairTheory alistTheory arithmeticTheory;
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_in_gol_circuit2";
@@ -55,22 +55,28 @@ Definition v_eval_def:
     ∀x y:int. v_eval' ((λi (a,b). f i (x+a,y+b)), t) v (s (x, y))
 End
 
+Theorem v_eval_fail[simp]:
+  v_eval env Fail s
+Proof
+  Cases_on `env` \\ simp [v_eval_def]
+QED
+
 Definition v_delay_def[simp]:
   v_delay n (Reg i v) = Reg (n + i) v ∧
   v_delay n (Exact i v) = Exact (n + i) v ∧
   v_delay n Fail = Fail
 End
 
+Theorem v_delay_0[simp]:
+  v_delay 0 v = v
+Proof
+  Cases_on `v` \\ rw []
+QED
+
 Definition to_reg_def[simp]:
   to_reg (Reg i v) = SOME (i, v) ∧
   to_reg (Exact i ThisCell) = SOME (i, Cell (0, 0)) ∧
   to_reg _ = NONE
-End
-
-Definition v_rdelay_def:
-  v_rdelay n v = case to_reg v of
-    | SOME (i, rv) => Reg (n + i) rv
-    | NONE => Fail
 End
 
 Definition nextCell_def:
@@ -94,27 +100,49 @@ Definition nextCell_def:
         (ROr (RAnd e10 (RXor e12 e7)) (RAnd e12 e7)))))
 End
 
-Definition v_and_def:
-  (v_and (Reg d1 rv1) (Reg d2 rv2) = Reg (MAX d1 d2) (RAnd rv1 rv2)) ∧
+Definition v_and_def':
   (v_and (Exact d1 ThisCell) (Exact d2 NotClock) =
     if d1 ≤ d2 ∧ d1 ≤ ^pulse then Exact d1 (ThisCellUntilClock (d2 - d1))
     else Fail) ∧
   (v_and (Exact d1 Clock) (Reg d2 v2) =
     if v2 = nextCell ∧ d2 ≤ d1 then Exact d1 NextCell else Fail) ∧
-  (v_and _ _ = Fail)
+  (v_and v1 v2 = case (to_reg v1, to_reg v2) of
+    | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (RAnd rv1 rv2)
+    | _ => Fail)
 End
+Theorem v_and_def[simp] = SRULE [] v_and_def';
 
-Definition v_or_def:
-  (v_or (Reg d1 rv1) (Reg d2 rv2) = Reg (MAX d1 d2) (ROr rv1 rv2)) ∧
-  (v_or (Exact d1 ThisCell) (Reg d2 rv2) =
-    Reg (MAX d1 d2) (ROr (Cell (0, 0)) rv2)) ∧
+Theorem v_and_fail[simp]:
+  v_and v Fail = Fail
+Proof
+  Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp []
+QED
+
+Definition v_or_def':
   (v_or (Exact d1 NextCell) (Exact d2 (ThisCellUntilClock d3)) =
     if d1 = d2 + d3 ∧ d1 = ^period then Exact 0 ThisCell else Fail) ∧
-  (v_or _ _ = Fail)
+  (v_or v1 v2 = case (to_reg v1, to_reg v2) of
+    | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (ROr rv1 rv2)
+    | _ => Fail)
 End
+Theorem v_or_def[simp] = SRULE [] v_or_def';
 
-Definition v_not_def:
+Theorem v_or_fail[simp]:
+  v_or v Fail = Fail
+Proof
+  Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp []
+QED
+
+Theorem v_or_thiscell:
+  v_or (Exact n ThisCell) v = v_or (Reg n (Cell (0,0))) v ∧
+  v_or v (Exact n ThisCell) = v_or v (Reg n (Cell (0,0)))
+Proof
+  Cases_on `v` \\ rw [] \\ Cases_on `e` \\ rw []
+QED
+
+Definition v_not_def[simp]:
   (v_not (Reg d1 v1) = Reg d1 (RNot v1)) ∧
+  (v_not (Exact d1 ThisCell) = Reg d1 (RNot (Cell (0, 0)))) ∧
   (v_not (Exact d1 Clock) = Exact d1 NotClock) ∧
   (v_not _ = Fail)
 End
@@ -126,12 +154,22 @@ Definition v_xor_def:
 End
 
 Definition v_subset_def:
-  v_subset v1 v2 ⇔ v1 = v2 ∨ case (v1, v2) of
-    | (Exact d1 Clock, Exact d2 Clock) => d1 = d2 + ^period
-    | _ => F
+  v_subset v1 v2 ⇔ ∀env s. v_eval env v1 s ⇒ v_eval env v2 s
 End
 val _ = set_fixity "⊑" (Infix(NONASSOC, 450))
 Overload "⊑" = “v_subset”;
+
+Theorem v_subset_refl[simp]:
+  v ⊑ v
+Proof
+  simp [v_subset_def]
+QED
+
+Theorem v_subset_fail[simp]:
+  v ⊑ Fail
+Proof
+  simp [v_subset_def]
+QED
 
 Definition is_exact_def[simp]:
   is_exact (Exact _ _) = T ∧ is_exact _ = F
@@ -149,13 +187,19 @@ Definition assign_sat_def:
   assign_sat env (s, dom) (p, d:dir, v) ⇔ p ∈ dom ∧ v_eval env v (s p)
 End
 
-Definition vb_eval_def[simp]:
-  (vb_eval ((a, da), _) (Var A d) = if d ≤ da then v_delay (da - d) a else Fail) ∧
-  (vb_eval (_, (b, db)) (Var B d) = if d ≤ db then v_delay (db - d) b else Fail) ∧
-  vb_eval env (Not x)   = v_not (vb_eval env x) ∧
-  vb_eval env (And x y) = v_and (vb_eval env x) (vb_eval env y) ∧
-  vb_eval env (Or x y) = v_or (vb_eval env x) (vb_eval env y) ∧
-  vb_eval _ _ = Fail
+Definition vb_eval'_def[simp]:
+  (vb_eval' ((da, a), _) (Var A d) = if d ≤ da then (da - d, a) else (0, Fail)) ∧
+  (vb_eval' (_, (db, b)) (Var B d) = if d ≤ db then (db - d, b) else (0, Fail)) ∧
+  (vb_eval' env (Not x)   = let (d, v) = vb_eval' env x in (d, v_not v)) ∧
+  (vb_eval' env (And x y) =
+    let (dx, vx) = vb_eval' env x; (dy, vy) = vb_eval' env y in (MAX dx dy, v_and vx vy)) ∧
+  (vb_eval' env (Or x y) =
+    let (dx, vx) = vb_eval' env x; (dy, vy) = vb_eval' env y in (MAX dx dy, v_or vx vy)) ∧
+  (vb_eval' _ _ = (0, Fail))
+End
+
+Definition vb_eval_def[compute]:
+  vb_eval env v = let (dx, vx) = vb_eval' env v in v_delay dx vx
 End
 
 Theorem is_exact_unique:
@@ -218,15 +262,6 @@ Definition gate_def:
     [] (from_rows (-85,-85) init)
 End
 
-(* Definition has_var_def[simp]:
-  (has_var ((a, da), _) (Var A d) = if d ≤ da then v_delay (da - d) a else Fail) ∧
-  (has_var (_, (b, db)) (Var B d) = if d ≤ db then v_delay (db - d) b else Fail) ∧
-  has_var env (Not x)   = v_not (has_var env x) ∧
-  has_var env (And x y) = v_and (has_var env x) (has_var env y) ∧
-  has_var env (Or x y) = v_or (has_var env x) (has_var env y) ∧
-  has_var _ _ = Fail
-End *)
-
 Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init
   (* ∧
@@ -243,11 +278,11 @@ Proof
   \\ `FST ∘ f = FST` by simp [Abbr`f`, FORALL_PROD, FUN_EQ_THM]
   \\ pop_assum (simp o single) \\ conj_asm1_tac
   >- fs [blist_simulation_ok_def, blist_simple_checks_def]
-  \\ rpt strip_tac \\ PairCases_on `env` \\ rename1 `((a,da),(b,db))`
+  \\ rpt strip_tac \\ PairCases_on `env` \\ rename1 `((da,a),(db,b))`
   \\ Cases_on `s` \\ simp [EXISTS_PROD, assign_ext_def]
   \\ qabbrev_tac `env2 = (ARB:int#int->var#num->bool)`
   \\ qabbrev_tac `s1 = λ v p n. eval (age n (env2 p)) v`
-  \\ sg `∀v. v_eval env' (vb_eval ((a,da),b,db) v) (s1 v)` >- cheat
+  \\ sg `∀v. v_eval env' (vb_eval ((da,a),(db,b)) v) (s1 v)` >- cheat
   \\ qexists_tac `λx. case ALOOKUP outs x of | NONE => q x | SOME (_,v) => s1 v` \\ rw []
   >- (rpt CASE_TAC \\ rw []
     \\ drule_then assume_tac ALOOKUP_MEM
@@ -258,6 +293,34 @@ Proof
     \\ simp [MEM_MAP, Once EXISTS_PROD] >- metis_tac []
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM \\ fs [ALL_DISTINCT_APPEND])
   \\ cheat
+QED
+
+Theorem gate_weaken:
+  LIST_REL (λ(p,d,v) (p',d',v'). p = p' ∧ d = d' ∧ v ⊑ v') outs outs' ∧
+  gate w h ins outs init ⇒ gate w h ins outs' init
+Proof
+  cheat
+QED
+
+Theorem half_adder_weaken:
+  gate w h ins [(p,d,v_delay n (v_or
+    (v_and a (v_or (v_and a (v_not b)) (v_and (v_not a) (v_and b (v_not b)))))
+    (v_and (v_not a) (v_or a b)))); out] init ⇒
+  gate w h ins [(p,d,v_delay n (v_xor a b));out] init
+Proof
+  strip_tac \\ dxrule_at_then Any irule gate_weaken
+  \\ PairCases_on `out` \\ simp []
+  \\ Q.HO_MATCH_ABBREV_TAC `v_delay _ (f a b) ⊑ _`
+  \\ `∀ na nb ra rb. v_delay n (f (Reg na ra) (Reg nb rb)) ⊑
+        Reg (n + MAX na nb) (RXor ra rb)` by (
+    rw [v_delay_def, Abbr`f`] \\ rw [MAX_ASSOC, v_subset_def]
+    \\ Cases_on `env` \\ fs [v_eval_def] \\ pop_assum $ K $ metis_tac [])
+  \\ `∀n a. f (Exact n ThisCell) a = f (Reg n (Cell (0, 0))) a ∧
+            f a (Exact n ThisCell) = f a (Reg n (Cell (0, 0)))` by (
+    rw [Abbr`f`] \\ Cases_on `a` \\ simp [] \\ Cases_on `e` \\ simp [])
+  \\ simp [v_xor_def]
+  \\ (Cases_on `a` THENL [ALL_TAC, Cases_on `e`, ALL_TAC] \\ simp [])
+  \\ (Cases_on `b` THENL [ALL_TAC, Cases_on `e`, ALL_TAC] \\ simp [])
 QED
 
 Theorem gate_and_en_e:
@@ -365,7 +428,7 @@ Proof
   cheat
 QED *)
 
-Theorem floodfill_stop:
+Theorem floodfill_finish:
   floodfill area ffins ffins [] init ∧ env_wf (f, t) ⇒
   run (join_all' {
     translate_mods (i * 150 * &^tile, j * 150 * &^tile)
@@ -428,6 +491,31 @@ Definition crossover_def:
     [(o1,d1,delay 5 a); (o2,d2,delay 5 b)]
     [] (from_rows (-85,-85) init)
 End
+
+Theorem blist_simulation_ok_imp_crossover:
+  blist_simulation_ok 1 1
+    [(i1,d1,Var A 5); (i2,d2,Var B 5)]
+    [(o1,d1,Var A 0); (o2,d2,Var B 0)] init ⇒
+  crossover i1 o1 d1 i2 o2 d2 ARB
+Proof
+  rw [crossover_def]
+  \\ dxrule_then assume_tac blist_simulation_ok_thm
+  \\ dxrule_then assume_tac simulation_ok_IMP_circuit
+  \\ pop_assum $ qspec_then `λ(x,n). delay 5 (var_CASE x a b) n` assume_tac
+  \\ Cases_on `i1` \\ Cases_on `i2` \\ Cases_on `o1` \\ Cases_on `o2`
+  \\ `∀a. (λn. delay 5 a (n + 5)) = a ∧ (λn. delay 5 a n) = delay 5 a`
+    by simp [FUN_EQ_THM, delay_def]
+  \\ `MAP (MAP (eval (λ(x,n). delay 5 (var_CASE x a b) n)))
+      (MAP from_blist init) = ARB` by cheat
+  \\ fs [eval_io_def, make_area_def]
+QED
+
+Theorem crossover_symm:
+  crossover i1 o1 d1 i2 o2 d2 init ⇒
+  crossover i2 o2 d2 i1 o1 d1 init
+Proof
+  simp [crossover_def, circuit_def, INSERT_COMM]
+QED
 
 Theorem floodfill_add_crossover:
   floodfill area ins outs crosses init ∧
