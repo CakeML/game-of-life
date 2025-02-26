@@ -650,9 +650,11 @@ fun go () = let
       "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
   val _ = (build diag (recognize diag) period pulse (asrt, teleports)
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}; ())
-    handle _ => ()
   (* val _ = TextIO.closeOut file *)
-  in !thm end;
+  val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)
+  val x = ``area:(int # int) list``
+  val (f, args) = strip_comb (concl thm)
+  in EXISTS (boolSyntax.mk_exists (x, list_mk_comb (f, x :: tl args)), hd args) thm end;
 
 Theorem floodfill_result = go ();
 

@@ -443,7 +443,10 @@ Proof
 QED *)
 
 Theorem floodfill_finish:
-  floodfill area ffins ffins [] init ∧ env_wf (f, t) ⇒
+  floodfill area
+    [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact 0 Clock)]
+    [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact 586 Clock)] [] init ∧
+  env_wf (f, t) ⇒
   run (join_all' {
     translate_mods (i * 150 * &^tile, j * 150 * &^tile)
       (circ_mod (set area) ∅ ∅

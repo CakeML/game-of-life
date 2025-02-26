@@ -144,12 +144,6 @@ Proof
   \\ gvs [eval_io_def,set_env_def,delay_simp]
 QED
 
-fun make_abbrev name tm =
-  let
-    val v = mk_var(name,type_of tm)
-    val th = new_definition(name,mk_eq(v,tm))
-  in SYM th end
-
 Theorem and_en_e_circuit =
   MATCH_MP blist_simulation_ok_thm (theorem "and_en_e_thm")
   |> MATCH_MP simulation_ok_2

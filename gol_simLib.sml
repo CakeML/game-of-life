@@ -549,6 +549,12 @@ fun vector_to_svg grid =
   fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
     fn i => fn j => Vector.sub(Vector.sub(grid,i),j));
 
+fun make_abbrev name tm =
+  let
+    val v = mk_var(name,type_of tm)
+    val th = new_definition(name,mk_eq(v,tm))
+  in SYM th end
+
 val gates = []
 
 val terminator_e =

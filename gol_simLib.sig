@@ -46,6 +46,8 @@ val inc: bexp -> bexp
 val is_ew: io_port -> bool
 val is_ns: io_port -> bool
 
+val make_abbrev: string -> term -> thm
+
 val and_en_e: gate;
 val and_es_e: gate;
 val and_ew_n: gate;
