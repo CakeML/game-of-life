@@ -128,6 +128,7 @@ fun match_with f pat nei = let
   end
 
 type gates = ((int * int) * (gate * int)) list
+type teleport = (int * int) * dir
 
 fun recognize d = let
   val gates = ref []
@@ -167,6 +168,18 @@ fun recognize d = let
         | _ => (PolyML.print ((x, y), r); raise Fail "unknown node type"))
         handle Match => (PolyML.print ((x, y), r); raise Fail "unknown connection pattern")
       end))
-  in !gates end
+  val teleports = ref []
+  val _ = for_loop 0 CSIZE (fn n => (
+    case (coord d (0, 2*n+1), coord d (2*CSIZE, 2*n+1)) of
+      (Wire E, Wire E) => teleports := ((2*CSIZE-1, 2*n), E) :: !teleports
+    | (Wire W, Wire W) => teleports := ((~1, 2*n), W) :: !teleports
+    | (Empty, Empty) => ()
+    | r => (PolyML.print r; raise Fail "unmatched teleport");
+    case (coord d (2*n+1, 0), coord d (2*n+1, 2*CSIZE)) of
+      (Wire S, Wire S) => teleports := ((2*n, 2*CSIZE-1), S) :: !teleports
+    | (Wire N, Wire N) => teleports := ((2*n, ~1), N) :: !teleports
+    | (Empty, Empty) => ()
+    | r => (PolyML.print r; raise Fail "unmatched teleport")))
+  in (!gates, !teleports) end
 
 end

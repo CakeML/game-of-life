@@ -54,7 +54,6 @@ val nextCell = let
   end
 
 type io_port = (int * int) * dir * value
-type teleport = (int * int) * dir
 
 fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
 
@@ -66,8 +65,7 @@ type 'a log = {
 }
 
 type wires = (int * int, value) Redblackmap.dict
-fun build (gates:gates) period pulse (ins: io_port list, teleport: teleport list)
-    (log:'a log) = let
+fun build (gates, teleport) period pulse ins (log:'a log) = let
   val gateData = ref (Redblackmap.mkDict String.compare)
   fun getGateData (gate, i) = let
     val key = List.nth (#stems gate, i)
@@ -88,8 +86,7 @@ fun build (gates:gates) period pulse (ins: io_port list, teleport: teleport list
     end
   datatype target = Gate of (int * int) * int | Teleport of dir
   val wireIn = ref $ foldl
-    (fn ((win, d), map) =>
-      Redblackmap.insert (map, wpos (win, dirToXY d), Teleport d))
+    (fn ((win, d), map) => Redblackmap.insert (map, win, Teleport d))
     (Redblackmap.mkDict int2cmp) teleport
   val gates = ref (foldl
     (fn ((p, gate), map) => let
@@ -266,7 +263,7 @@ val (append_nil, append_cons) = CONJ_PAIR APPEND_def
 fun append_conv tm =
   ((REWR_CONV append_cons THENC RAND_CONV append_conv) ORELSEC REWR_CONV append_nil) tm
 
-fun floodfill diag period pulse teleports asrt = let
+fun floodfill diag period pulse asrt = let
   datatype gate_kind = Regular of thm | Crossover of thm list
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
     val g = List.nth (#stems gate, i)
@@ -385,7 +382,7 @@ fun floodfill diag period pulse teleports asrt = let
   fun teleport (win, wout, vin, vout) =
     TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
       "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
-  val _ = build (recognize diag) period pulse (asrt, teleports)
+  val _ = build (recognize diag) period pulse asrt
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
   (* val _ = TextIO.closeOut file *)
   val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)

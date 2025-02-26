@@ -61,12 +61,9 @@ Theorem floodfill_result = (let
   val phase = 0
   val period = 586
   val pulse = 18
-  val teleports = [
-    ((20, 1), E), ((20, 2), E), ((19, 20), S), ((18, 20), S),
-    ((0, 19), W), ((0, 18), W), ((1, 0), N), ((2, 0), N)]
   val asrt = [
     ((16, 0), E, Exact (phase, Clock)),
     ((11, 4), E, Exact (0, ThisCell))];
-  in floodfill diag period pulse teleports asrt end);
+  in floodfill diag period pulse asrt end);
 
 val _ = export_theory();

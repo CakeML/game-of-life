@@ -18,6 +18,7 @@ sig
 
   type diag = string * string vector
   type gates = ((int * int) * (gate * int)) list
+  type teleport = (int * int) * dir
 
   val coord: diag -> int * int -> sigil
   val lineHeader: string -> string * string
@@ -28,7 +29,7 @@ sig
       diag -> int * int -> sigil * (sigil * sigil * sigil * sigil)
   val parse: 'a frag list -> diag
   val print_diag: diag -> unit
-  val recognize: diag -> ((int * int) * (gate * int)) list
+  val recognize: diag -> gates * teleport list
   val rotate_diag: diag -> string * string vector
   val rotate_sigil: sigil -> sigil
   type sigils = sigil * sigil * sigil * sigil
