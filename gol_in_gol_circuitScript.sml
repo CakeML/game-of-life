@@ -4,6 +4,7 @@ open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
      cv_stdTheory gol_sim_cvTheory gol_in_gol_circuit2Theory
      gol_gatesTheory pairSyntax listSyntax gol_simSyntax intLib
      sortingTheory listTheory gol_diagramLib gol_in_gol_circuitLib;
+(* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_in_gol_circuit";
 
@@ -61,10 +62,8 @@ Theorem floodfill_result = (let
   val period = 586
   val pulse = 18
   val teleports = [
-    ((~1, 1), E, (~1, 0)), ((~1, 2), E, (~1, ~1)),
-    ((19, ~1), S, (0, ~1)), ((18, ~1), S, (1, ~1)),
-    ((21, 19), W, (1, 0)), ((21, 18), W, (1, 1)),
-    ((1, 21), N, (0, 1)), ((2, 21), N, (~1, 1))];
+    ((20, 1), E), ((20, 2), E), ((19, 20), S), ((18, 20), S),
+    ((0, 19), W), ((0, 18), W), ((1, 0), N), ((2, 0), N)]
   val asrt = [
     ((16, 0), E, Exact (phase, Clock)),
     ((11, 4), E, Exact (0, ThisCell))];

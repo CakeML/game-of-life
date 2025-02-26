@@ -28,13 +28,13 @@ sig
 
   type dir = gol_simLib.dir
   type io_port = (int * int) * dir * value
-  type teleport = (int * int) * (int * int) * dir * rvalue * rvalue
+  type teleport = (int * int) * dir
 
   type 'a log = {
     newIn: 'a * (int * int) * int * (int * value) vector -> unit,
     newGate: 'a * (int * int) * int -> unit,
     gateKey: gol_simLib.gate * int * gol_simLib.loaded_gate -> 'a,
-    teleport: (int * int) * (int * int) * rvalue * rvalue -> unit
+    teleport: teleport -> unit
   }
 
   type wires
@@ -43,5 +43,5 @@ sig
   val getWire: wires -> int * int -> dir -> value
 
   val floodfill: gol_diagramLib.diag -> int -> int ->
-    ((int * int) * dir * (int * int)) list -> io_port list -> thm
+    teleport list -> io_port list -> thm
 end

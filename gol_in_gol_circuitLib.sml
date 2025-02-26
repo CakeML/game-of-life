@@ -54,16 +54,15 @@ val nextCell = let
   end
 
 type io_port = (int * int) * dir * value
-type teleport = (int*int)*(int*int)*dir*rvalue*rvalue
+type teleport = (int * int) * dir
 
 fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
-fun dirToXY d = case d of E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
 
 type 'a log = {
   newIn: 'a * (int * int) * int * (int * value) vector -> unit,
   newGate: 'a * (int * int) * int -> unit,
   gateKey: gate * int * loaded_gate -> 'a,
-  teleport: (int * int) * (int * int) * rvalue * rvalue -> unit
+  teleport: teleport -> unit
 }
 
 type wires = (int * int, value) Redblackmap.dict
@@ -87,11 +86,10 @@ fun build (gates:gates) period pulse (ins: io_port list, teleport: teleport list
           | (_, v) => [v])
         in gateData := Redblackmap.insert (!gateData, key, value); value end)
     end
-  datatype target = Gate of (int * int) * int | Teleport of (int * int) * rvalue * rvalue
+  datatype target = Gate of (int * int) * int | Teleport of dir
   val wireIn = ref $ foldl
-    (fn ((win, wout, d, vin, vout), map) =>
-      Redblackmap.insert (map, wpos (win, dirToXY d),
-        Teleport (wpos (wout, dirToXY d), vin, vout)))
+    (fn ((win, d), map) =>
+      Redblackmap.insert (map, wpos (win, dirToXY d), Teleport d))
     (Redblackmap.mkDict int2cmp) teleport
   val gates = ref (foldl
     (fn ((p, gate), map) => let
@@ -172,15 +170,15 @@ fun build (gates:gates) period pulse (ins: io_port list, teleport: teleport list
           Gate p => let
           val (r, g, (ins, outs)) = Redblackmap.find (!gates, p)
           in (processQueue (ins, p, r, g, ins, outs) depth; ()) end
-        | Teleport (wout, vin, vout) => let
-          val (d, vin') = case value of
-              Regular v => v
-            | Exact (d, ThisCell) => (d, Cell (0, 0))
+        | Teleport dir => let
+          val (a,b) = dirToXY dir
+          val wout = (fst w - 2*CSIZE*a, snd w - 2*CSIZE*b)
+          val (d, (x, y)) = case value of
+              Regular (d, Cell p) => (d, p)
+            | Exact (d, ThisCell) => (d, (0, 0))
             | _ => raise Fail "bad signal on teleport"
-          val _ = if vin = vin' then () else
-            (PolyML.print ("output mismatch", w, value, vin'); ())
-          val _ = #teleport log (w, wout, vin, vout)
-          in processWire (wout, Regular (d, vout)) depth end
+          val _ = #teleport log (w, dir)
+          in processWire (wout, Regular (d, Cell (x - a, y - b))) depth end
       end
   val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v) 1) ins
   fun loop () = case !queue of
@@ -366,13 +364,14 @@ fun floodfill diag period pulse teleports asrt = let
         in (LAND_CONV, thm') end
       in CONV_RULE (RATOR_CONV $ conv $ LAND_CONV (SCONV [])) thm' end
     in thm := thm' end
-  fun teleport ((ix, iy), (ox, oy), _, _) = let
+  fun teleport ((ix, iy), d) = let
     val inp = mk_pair $ pair_map from_int (ix, iy)
     val f = term_eq inp o fst o dest_pair
     val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
     val permth = pull_perm1 f outs
     val thm' = MATCH_MP floodfill_teleport $ CONJ (!thm) permth
-    val thm' = SPECL (map (fn n => from_int $ n div (2*CSIZE)) [ox - ix, oy - iy]) thm'
+    val (dx, dy) = dirToXY d
+    val thm' = SPECL [from_int (~dx), from_int (~dy)] thm'
     val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV (SCONV [v_teleport_def])) thm'
     in thm := thm' end
   (* val file = TextIO.openOut "log.txt"
@@ -386,10 +385,7 @@ fun floodfill diag period pulse teleports asrt = let
   fun teleport (win, wout, vin, vout) =
     TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
       "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
-  fun f ((x,y), dir, (a,b)) = let
-    val (c,d) = dirToXY dir
-    in ((x+CSIZE*c,y+CSIZE*d), (x,y), dir, Cell (a+c,b+d), Cell (a,b)) end
-  val _ = build (recognize diag) period pulse (asrt, map f teleports)
+  val _ = build (recognize diag) period pulse (asrt, teleports)
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
   (* val _ = TextIO.closeOut file *)
   val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)

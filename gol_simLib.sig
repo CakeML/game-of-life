@@ -8,11 +8,13 @@ datatype bexp = False
               | Var of int * int
               | Not of bexp
               | And of bexp * bexp
-              | Or of bexp * bexp;
+              | Or of bexp * bexp
 
-datatype dir = N | S | W | E;
+datatype dir = N | S | W | E
 
-type io_port = (int * int) * dir * bexp;
+val dirToXY: dir -> int * int
+
+type io_port = (int * int) * dir * bexp
 
 type gate = {
   filename : string,
@@ -50,24 +52,24 @@ val is_ns: io_port -> bool
 
 val make_abbrev: string -> term -> thm
 
-val and_en_e: gate;
-val and_es_e: gate;
-val and_ew_n: gate;
-val or_en_e: gate;
-val not_e_e: gate;
-val half_adder_ee_es: gate;
-val half_adder_ee_ee: gate;
-val turn_e_s: gate;
-val turn_e_n: gate;
-val fast_turn_e_s: gate;
-val slow_turn_e_s: gate;
-val fork_e_es: gate;
-val fork_e_en: gate;
-val wire_e_e: gate;
-val cross_es_es: gate;
-val slow_wire_e_e: gate;
-val slower_wire_e_e: gate;
-val terminator_e: gate;
-val gates: gate list;
+val and_en_e: gate
+val and_es_e: gate
+val and_ew_n: gate
+val or_en_e: gate
+val not_e_e: gate
+val half_adder_ee_es: gate
+val half_adder_ee_ee: gate
+val turn_e_s: gate
+val turn_e_n: gate
+val fast_turn_e_s: gate
+val slow_turn_e_s: gate
+val fork_e_es: gate
+val fork_e_en: gate
+val wire_e_e: gate
+val cross_es_es: gate
+val slow_wire_e_e: gate
+val slower_wire_e_e: gate
+val terminator_e: gate
+val gates: gate list
 
 end;

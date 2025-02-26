@@ -7,17 +7,17 @@ datatype bexp = False
               | Var of int * int
               | Not of bexp
               | And of bexp * bexp
-              | Or of bexp * bexp;
+              | Or of bexp * bexp
 
 type bexp_env =
-  { name : int, generation : int, value: bool };
+  { name : int, generation : int, value: bool }
 
 type bvar =
-  { name : int, generation : int };
+  { name : int, generation : int }
 
 type bexp8 =
   { y1: bexp, y2: bexp, y3: bexp, y4: bexp,
-    y5: bexp, y6: bexp, y7: bexp, y8: bexp };
+    y5: bexp, y6: bexp, y7: bexp, y8: bexp }
 
 fun eval_bexp False (env: bexp_env list) = false
   | eval_bexp True env = true
@@ -26,16 +26,16 @@ fun eval_bexp False (env: bexp_env list) = false
   | eval_bexp (Or (x,y)) env = eval_bexp x env orelse eval_bexp y env
   | eval_bexp (Var (s,g)) env =
       #value (first (fn {name=s1,generation=g1,...} =>
-                        s = s1 andalso g = g1) env);
+                        s = s1 andalso g = g1) env)
 
 fun bvar_lt ({name=n1,generation=g1}:bvar)
             ({name=n2,generation=g2}:bvar) =
-  n1 < n2 orelse (n1 = n2 andalso g1 < g2);
+  n1 < n2 orelse (n1 = n2 andalso g1 < g2)
 
 fun add_to_sorted [] (v:bvar) = [v]
   | add_to_sorted (x::xs) v =
       if bvar_lt x v then x :: add_to_sorted xs v else
-      if x = v then x::xs else v :: x :: xs;
+      if x = v then x::xs else v :: x :: xs
 
 fun get_bvars x acc =
   case x of
@@ -44,14 +44,14 @@ fun get_bvars x acc =
   | Not(x) => get_bvars x acc
   | Or(x,y) => get_bvars x (get_bvars y acc)
   | And(x,y) => get_bvars x (get_bvars y acc)
-  | Var(s,g) => add_to_sorted acc {name=s,generation=g};
+  | Var(s,g) => add_to_sorted acc {name=s,generation=g}
 
 fun build_Not x =
   case x of
     True => False
   | False => True
   | Not(y) => y
-  | _ => Not(x);
+  | _ => Not(x)
 
 fun build_If x y z =
   if y = z then y else
@@ -61,13 +61,13 @@ fun build_If x y z =
   if y = True then Or(x,z) else
   if z = True then Or(y,build_Not x) else
   if y = False then And(z,build_Not x) else
-    Or(And(x,y),And(build_Not(x),z));
+    Or(And(x,y),And(build_Not(x),z))
 
 fun get_bvars8 ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) =
   (get_bvars y1 o get_bvars y2 o get_bvars y3 o get_bvars y4 o
-   get_bvars y5 o get_bvars y6 o get_bvars y7 o get_bvars y8) [];
+   get_bvars y5 o get_bvars y6 o get_bvars y7 o get_bvars y8) []
 
-fun int_of_bool true = 1 | int_of_bool _ = 0;
+fun int_of_bool true = 1 | int_of_bool _ = 0
 
 fun eval_bexp8 ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) env =
   int_of_bool (eval_bexp y1 env) +
@@ -77,7 +77,7 @@ fun eval_bexp8 ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) env =
   int_of_bool (eval_bexp y5 env) +
   int_of_bool (eval_bexp y6 env) +
   int_of_bool (eval_bexp y7 env) +
-  int_of_bool (eval_bexp y8 env) ;
+  int_of_bool (eval_bexp y8 env)
 
 fun count_falses x ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) =
   int_of_bool (x  = False) +
@@ -88,7 +88,7 @@ fun count_falses x ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) =
   int_of_bool (y5 = False) +
   int_of_bool (y6 = False) +
   int_of_bool (y7 = False) +
-  int_of_bool (y8 = False) ;
+  int_of_bool (y8 = False)
 
 fun gol_eval (vars : bvar list) env x ys =
   case vars of
@@ -103,7 +103,7 @@ fun gol_eval (vars : bvar list) env x ys =
               | to_bexp false = False
           in
             to_bexp (if mid then (k = 2 orelse k = 3) else (k = 3))
-          end;
+          end
 
 fun gol_cell x ys =
   if count_falses x ys >= 7 then False else
@@ -111,7 +111,7 @@ fun gol_cell x ys =
       val vars = get_bvars x (get_bvars8 ys)
     in
       gol_eval vars [] x ys
-    end;
+    end
 
 fun init_from_rle rle startRow startCol fill grid =
   let
@@ -147,10 +147,10 @@ fun init_from_rle rle startRow startCol fill grid =
           else failwith ("Unknown rle input: " ^ implode [c])
   in
     loop (explode rle)
-  end;
+  end
 
-fun toX x = x+75+10;
-fun toY y = y+75+10;
+fun toX x = x+75+10
+fun toY y = y+75+10
 
 fun delete_box x y w h grid =
   let
@@ -213,22 +213,25 @@ fun grid_to_svg grid filename =
     val _ = fold_grid output_cell
     val _ = TextIO.output(f,"</svg>\n")
     val _ = TextIO.closeOut(f)
-  in () end;
+  in () end
 
-fun for_loop i m f = if i < m then (f i; for_loop (i+1) m f) else ();
+fun for_loop i m f = if i < m then (f i; for_loop (i+1) m f) else ()
 
 fun get_cell row col grid =
-  Array.sub(Array.sub(grid,row),col) handle Subscript => False;
+  Array.sub(Array.sub(grid,row),col) handle Subscript => False
 
 fun update_cell row col grid new_v =
-  Array.update(Array.sub(grid,row),col,new_v);
+  Array.update(Array.sub(grid,row),col,new_v)
 
 fun new_grid cols rows =
   Array.tabulate (rows, fn row => Array.tabulate (cols, fn col => False))
 
-datatype dir = N | S | W | E;
+datatype dir = N | S | W | E
 
-type io_port = (int * int) * dir * bexp;
+val dirToXY = fn E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
+val rotate_dir = fn E => S | S => W | W => N | N => E
+
+type io_port = (int * int) * dir * bexp
 
 fun mk_min init = let
   val mins = Array.array (2, init)
@@ -338,7 +341,7 @@ fun compute_next_state
     val _ = step_count := ((!step_count) + 1) mod 60
   in
     the_grid := next_grid; the_next_grid := grid
-  end;
+  end
 
 fun run_to_fixpoint (st as STATE {gen_count, the_grid, inputs, outputs, ...}) =
   let
@@ -401,11 +404,6 @@ fun load ({filename, inputs, outputs, height, width, ...}: gate): loaded_gate = 
     val _ = init_from_rle (read_file ("gates/" ^ filename)) 10 10 True grid
     in grid end
 }
-
-fun rotate_dir E = S
-  | rotate_dir S = W
-  | rotate_dir W = N
-  | rotate_dir N = E;
 
 fun inc (Var (n, g)) = Var (n, g+1)
   | inc (And (x, y)) = And (inc x, inc y)
@@ -539,15 +537,15 @@ fun fun_to_svg (rows, cols, g) filename =
     val _ = fold_grid output_cell
     val _ = TextIO.output(f,"</svg>\n")
     val _ = TextIO.closeOut(f)
-  in () end;
+  in () end
 
 fun array_to_svg grid =
   fun_to_svg (Array.length grid, Array.length (Array.sub(grid,0)),
-    fn i => fn j => Array.sub(Array.sub(grid,i),j));
+    fn i => fn j => Array.sub(Array.sub(grid,i),j))
 
 fun vector_to_svg grid =
   fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
-    fn i => fn j => Vector.sub(Vector.sub(grid,i),j));
+    fn i => fn j => Vector.sub(Vector.sub(grid,i),j))
 
 fun make_abbrev name tm =
   let
