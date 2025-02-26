@@ -410,7 +410,7 @@ Theorem floodfill_add_ins:
   &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM (x,y) area ∧
   ¬MEM (x+a,y+b) (MAP FST (ins ++ outs)) ⇒
-  floodfill area (((x+a,y+b),d,Exact dl v) :: ins)
+  floodfill ((x,y) :: area) (((x+a,y+b),d,Exact dl v) :: ins)
     (MAP (λ((a',b'),d',Q). ((x+a',y+b'),d',Q)) outs' ++ outs) []
     (gate_at (x,y) init1 ∪ init)
 Proof

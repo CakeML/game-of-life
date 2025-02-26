@@ -230,8 +230,8 @@ fun wpos ((x,y),(a,b)) = (2*x+a, 2*y+b)
 fun dirToXY d = case d of E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
 
 type 'a log = {
-  newIn: 'a * (int * int) * (int * value) vector -> unit,
-  newGate: 'a * (int * int) -> unit,
+  newIn: 'a * (int * int) * int * (int * value) vector -> unit,
+  newGate: 'a * (int * int) * int -> unit,
   gateKey: gate * int * loaded_gate -> 'a,
   teleport: (int * int) * (int * int) * rvalue * rvalue -> unit
 }
@@ -281,7 +281,7 @@ fun build d (gates:gates) period pulse (ins: io_port list, teleport: teleport li
     val ins = Vector.fromList $ C map ins (fn
         (x, _, Var (_, delay)) => (delay, Redblackmap.find (!wires, wpos (p, x)))
       | _ => raise Match)
-    val _ = if deep then #newGate log (g, p) else #newIn log (g, p, ins)
+    val _ = if deep then #newGate log (g, p, i) else #newIn log (g, p, i, ins)
     fun evalExp (Var (i, d')) = let
         val (d, value) = Vector.sub (ins, i)
         in delay (d - d') value end
@@ -500,7 +500,6 @@ fun pull_perm1 f ls = let
 
 fun pull_perm [] ls = ISPEC ls pull_perm_nil
   | pull_perm (f::l) ls = let
-    val _ = PolyML.print ("pull_perm", f::l, ls)
     val th = pull_perm1 f ls
     val ls' = rand $ rand $ concl th
     in MATCH_MP (MATCH_MP pull_perm_cons th) (pull_perm l ls') end
@@ -551,16 +550,16 @@ fun go () = let
         | [a, b] => (a, b)
         | _ => raise Match
       val thm = SPEC (mk_pair env) (MATCH_MP blist_simulation_ok_imp_gate thm)
-      val thm = INST [``init':bool list list`` |-> ``[]:bool list list``] thm (* FIXME *)
+      val thm = INST [``init':bool list list`` |-> ``ARB:bool list list``] thm (* FIXME *)
       val thm = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm
       val thm = case g0 of
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
         | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
         | _ => thm
       in Regular (save_thm (genth, GENL vars thm)) end
-    in (lgate, (genth, res)) end
+    in (lgate, genth, res) end
   val thm = ref floodfill_start
-  fun newIn ((_, (s, g)), (x', y'), ins) = let
+  fun newIn ((_, s, g), (x', y'), _, ins) = let
     val gth = case g of Regular g => g | _ => raise Match
     val gth = SPECL (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
     val thm' = MATCH_MP floodfill_add_ins (CONJ (!thm) gth)
@@ -569,16 +568,17 @@ fun go () = let
     val thm' = SPECL [x, y, x', y'] thm'
     val thm' = SRULE [] $ MATCH_MP thm' $ EQT_ELIM $ EVAL $ lhand $ concl thm'
     in thm := thm' end
-  fun newGate ((lg:loaded_gate, (s, g)), (x', y')) = case g of
+  fun newGate ((lg:loaded_gate, s, g), (x', y'), i) = let
+    val (x, y) = (2*x', 2*y')
+    val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
+    val thm' = case g of
       Regular gth => let
-      val (x, y) = (2*x', 2*y')
-      val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
       val permth = pull_perm
         (map (fn a => term_eq a o fst o dest_pair) ins)
         (lhand $ rator $ concl (!thm))
       val del = fst $ dest_list $ lhand $ rand $ concl permth
       val gth = SPECL (map (snd o dest_pair o snd o dest_pair) del) gth
-      val _ = PolyML.print (s, g, lg, (x', y'), thm, ins)
+      (* val _ = PolyML.print (s, g, lg, (x', y'), thm, ins) *)
       val thm' = if (#width lg, #height lg) = (1, 1) then
         floodfill_add_small_gate
       else
@@ -591,10 +591,33 @@ fun go () = let
       val thm' = SPECL [x, y, x', y'] thm'
       val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
       val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV (SCONV []) THENC append_conv)) thm'
-      in thm := PolyML.print thm' end
+      in thm' end
     | Crossover gths => let
-      val _ = PolyML.print (s, g, lg, (x', y'), thm)
-      in raise Match end
+      val _ = PolyML.print (s, g, lg, i, (x', y'), thm)
+      val (x, y) = (2*x', 2*y')
+      val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
+      val inp = List.nth (ins, i)
+      val f = term_eq inp o fst o dest_pair
+      val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
+      val _ = PolyML.print (inp, outs, crosses)
+      val (first, permth) = (false, pull_perm1 f crosses) handle _ => (true, pull_perm1 f outs) handle _ => raise Match
+      val _ = PolyML.print ("first", first)
+      val thm' = if first then let
+        val gth = List.nth (gths, i)
+        val thm' = MATCH_MP floodfill_add_crossover $ CONJ (!thm) $ CONJ gth permth
+        val (x, y) = pair_map from_int (x, y)
+        val (x', y') = pair_map numSyntax.term_of_int (x', y')
+        val thm' = SPECL [x, y, x', y'] thm'
+        val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
+        val thm' = CONV_RULE (RATOR_CONV $ BINOP_CONV $ LAND_CONV (SCONV [])) thm'
+        in thm' end
+      else let
+        in raise Match end
+      in thm' end
+    in thm := thm' end
+  fun teleport (win, wout, vin, vout) = let
+    val _ = PolyML.print (win, wout, vin, vout)
+    in raise Match end
   (* val file = TextIO.openOut "log.txt"
   fun newGate ((false, g), p) =
       TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
@@ -613,15 +636,5 @@ fun go () = let
   in !thm end;
 
 Theorem floodfill_result = go ();
-(*
-val res = getWire (go ());
-val w_thiscell = res (11,4) E;
-val w_top_and = (res (9,4) E, res (10,3) S, res (10,4) E);
-val w_not = (res (9,5) E, res (10,5) E);
-val w_bot_and = (res (10,5) E, res (12,5) W, res (11,5) N);
-val w_or = (res (11,5) N, res (10,4) E, res (11,4) E);
-val w_clock = (res (7,0) E, res (8,0) S, res (8,0) E);
-val w_train = (res (14,0) E, res (15,0) E, res (16,0) E);
-*)
 
 val _ = export_theory();
