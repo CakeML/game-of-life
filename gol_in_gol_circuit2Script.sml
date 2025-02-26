@@ -283,7 +283,7 @@ Theorem blist_simulation_ok_imp_gate:
   ⇒
   ∀env. gate w h
     (MAP (λ(p,d,v). (p,d,vb_eval env v)) ins)
-    (MAP (λ(p,d,v). (p,d,vb_eval env v)) outs) init'
+    (MAP (λ(p,d,v). (p,d,vb_eval env v)) outs) ARB
 Proof
   simp [gate_def] \\ ntac 2 strip_tac
   \\ qpat_abbrev_tac `f = λ(p,d,v). (p,d,vb_eval env v)`

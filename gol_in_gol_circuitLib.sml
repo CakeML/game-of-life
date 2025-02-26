@@ -65,7 +65,8 @@ type 'a log = {
 }
 
 type wires = (int * int, value) Redblackmap.dict
-fun build (gates, teleport) period pulse ins (log:'a log) = let
+type params = {period: int, pulse: int, asserts: io_port list}
+fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
   val gateData = ref (Redblackmap.mkDict String.compare)
   fun getGateData (gate, i) = let
     val key = List.nth (#stems gate, i)
@@ -103,7 +104,6 @@ fun build (gates, teleport) period pulse ins (log:'a log) = let
   val wires = ref (Redblackmap.mkDict int2cmp)
   fun isMissingWire p port = not (Redblackmap.inDomain (!wires, wpos (p, #1 port)))
   fun runGate (missing, (p,i), g, ins, outs) deep = let
-    (* val _ = TextIO.output (file, "run gate " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n") *)
     val ins = Vector.fromList $ C map ins (fn
         (x, _, Var (_, delay)) => (delay, Redblackmap.find (!wires, wpos (p, x)))
       | _ => raise Match)
@@ -177,7 +177,7 @@ fun build (gates, teleport) period pulse ins (log:'a log) = let
           val _ = #teleport log (w, dir)
           in processWire (wout, Regular (d, Cell (x - a, y - b))) depth end
       end
-  val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v) 1) ins
+  val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v) 1) asserts
   fun loop () = case !queue of
     [] => ()
   | q =>
@@ -263,7 +263,7 @@ val (append_nil, append_cons) = CONJ_PAIR APPEND_def
 fun append_conv tm =
   ((REWR_CONV append_cons THENC RAND_CONV append_conv) ORELSEC REWR_CONV append_nil) tm
 
-fun floodfill diag period pulse asrt = let
+fun floodfill diag params = let
   datatype gate_kind = Regular of thm | Crossover of thm list
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
     val g = List.nth (#stems gate, i)
@@ -285,7 +285,6 @@ fun floodfill diag period pulse asrt = let
         | [a, b] => (a, b)
         | _ => raise Match
       val thm = SPEC (mk_pair env) (MATCH_MP blist_simulation_ok_imp_gate thm)
-      val thm = INST [``init':bool list list`` |-> ``ARB:bool list list``] thm (* FIXME *)
       val thm = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm
       val thm = case g0 of
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
@@ -324,16 +323,13 @@ fun floodfill diag period pulse asrt = let
         val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV EVAL THENC append_conv)) thm'
         in thm' end
       | (2, 2) => let
-        (* val _ = PolyML.print (s, g, lg, (x', y'), rator $ concl (!thm), ins) *)
         val thm' = floodfill_add_gate
         val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
         val (x, y) = pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [x, y, x', y'] thm'
         val conv = RAND_CONV (REWR_CONV make_area_2_2) THENC SCONV []
-        (* val _ = PolyML.print $ lhand $ concl thm' *)
         val thm' = MATCH_MP thm' $ EQT_ELIM $ conv $ lhand $ concl thm'
-        (* val _ = PolyML.print $ rator $ concl thm' *)
         fun conv c = LAND_CONV c THENC append_conv
         val thm' = CONV_RULE (RATOR_CONV $ RATOR_CONV $
           COMB2_CONV (LAND_CONV (conv EVAL), conv (SCONV [v_xor_def]))) thm'
@@ -371,20 +367,8 @@ fun floodfill diag period pulse asrt = let
     val thm' = SPECL [from_int (~dx), from_int (~dy)] thm'
     val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV (SCONV [v_teleport_def])) thm'
     in thm := thm' end
-  (* val file = TextIO.openOut "log.txt"
-  fun newGate ((false, g), p) =
-      TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
-    | newGate ((true, g), p) =
-      TextIO.output (file, "cross " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
-  fun newIn ((_, g), p, ins) =
-    (PolyML.print ("newIn", g, p, ins);
-    TextIO.output (file, "newIn " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n"))
-  fun teleport (win, wout, vin, vout) =
-    TextIO.output (file, "teleport " ^ Int.toString (#1 win)^"," ^ Int.toString (#2 win)^
-      "->" ^ Int.toString (#1 wout)^"," ^ Int.toString (#2 wout)^"\n") *)
-  val _ = build (recognize diag) period pulse asrt
+  val _ = build (recognize diag) params
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
-  (* val _ = TextIO.closeOut file *)
   val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)
   val x = ``area:(int # int) list``
   val (f, args) = strip_comb (concl thm)

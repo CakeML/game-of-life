@@ -38,9 +38,9 @@ sig
   }
 
   type wires
-  val build: gol_diagramLib.gates * teleport list -> int -> int ->
-    io_port list -> 'b log -> wires
+  type params = {period: int, pulse: int, asserts: io_port list}
+  val build: gol_diagramLib.gates * teleport list -> params -> 'b log -> wires
   val getWire: wires -> int * int -> dir -> value
 
-  val floodfill: gol_diagramLib.diag -> int -> int -> io_port list -> thm
+  val floodfill: gol_diagramLib.diag -> params -> thm
 end

@@ -56,14 +56,10 @@ Quote diag = gol_diagramLib.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
 End
 
-Theorem floodfill_result = (let
-  val _ = PolyML.print_depth 6
-  val phase = 0
-  val period = 586
-  val pulse = 18
-  val asrt = [
-    ((16, 0), E, Exact (phase, Clock)),
-    ((11, 4), E, Exact (0, ThisCell))];
-  in floodfill diag period pulse asrt end);
+Theorem floodfill_result = floodfill diag {
+  period = 586,
+  pulse = 18,
+  asserts = [((16, 0), E, Exact (0, Clock)), ((11, 4), E, Exact (0, ThisCell))]
+};
 
 val _ = export_theory();
