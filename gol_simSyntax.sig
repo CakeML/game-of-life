@@ -9,18 +9,18 @@ sig
   val S_tm: term
   val W_tm: term
   val bexp_ty: hol_type
-  val true_tm: term
-  val false_tm: term
-  val var_tm: term
-  val not_tm: term
-  val and_tm: term
-  val or_tm: term
+  val True_tm: term
+  val False_tm: term
+  val Var_tm: term
+  val Not_tm: term
+  val And_tm: term
+  val Or_tm: term
   val Nil_tm: term
   val Cell_tm: term
   val Falses_tm: term
 
-  val dest_var: term -> term * term
-  val dest_not: term -> term
-  val dest_and: term -> term * term
-  val dest_or: term -> term * term
+  val dest_Var: term -> term * term
+  val dest_Not: term -> term
+  val dest_And: term -> term * term
+  val dest_Or: term -> term * term
 end

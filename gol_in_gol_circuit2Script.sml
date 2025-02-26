@@ -1,7 +1,7 @@
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 open HolKernel bossLib boolLib Parse;
 open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
-     pairTheory alistTheory arithmeticTheory;
+     pairTheory alistTheory arithmeticTheory sortingTheory;
 (* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_in_gol_circuit2";
@@ -570,6 +570,26 @@ Theorem floodfill_teleport:
     crosses init
 Proof
   cheat
+QED
+
+Theorem make_area_2_2 = EVAL ``EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area 2 2)``
+
+Theorem pull_perm1_tl:
+  PERM ls (a :: ls') ⇒ ∀b. PERM (b :: ls) (a :: b :: ls')
+Proof
+  metis_tac [PERM_MONO, PERM_SWAP_AT_FRONT, PERM_REFL, PERM_TRANS]
+QED
+
+Theorem pull_perm_nil:
+  ∀ls. PERM ls ([] ++ ls)
+Proof
+  simp []
+QED
+
+Theorem pull_perm_cons:
+  PERM ls (a :: ls') ∧ PERM ls' (ls1 ++ ls2) ⇒ PERM ls ((a :: ls1) ++ ls2)
+Proof
+  rw [] \\ metis_tac [PERM_MONO, PERM_TRANS]
 QED
 
 val _ = export_theory();

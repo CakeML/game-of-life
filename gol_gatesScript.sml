@@ -10,12 +10,12 @@ fun tr_var 0 = A_tm
   | tr_var 1 = B_tm
   | tr_var _ = raise Fail "unknown variable"
 
-fun tr_bexp True         = true_tm
-  | tr_bexp False        = false_tm
-  | tr_bexp (Var (v, n)) = mk_binop var_tm (tr_var v, numSyntax.term_of_int n)
-  | tr_bexp (Not x)      = mk_monop not_tm (tr_bexp x)
-  | tr_bexp (And (x, y)) = mk_binop and_tm (tr_bexp x, tr_bexp y)
-  | tr_bexp (Or (x, y))  = mk_binop or_tm (tr_bexp x, tr_bexp y)
+fun tr_bexp True         = True_tm
+  | tr_bexp False        = False_tm
+  | tr_bexp (Var (v, n)) = mk_binop Var_tm (tr_var v, numSyntax.term_of_int n)
+  | tr_bexp (Not x)      = mk_monop Not_tm (tr_bexp x)
+  | tr_bexp (And (x, y)) = mk_binop And_tm (tr_bexp x, tr_bexp y)
+  | tr_bexp (Or (x, y))  = mk_binop Or_tm (tr_bexp x, tr_bexp y)
 
 fun tr_vector ty f =
   Vector.foldr (fn (a, r) => listSyntax.mk_cons (f a, r)) (listSyntax.mk_nil ty)
@@ -55,13 +55,13 @@ fun dest_var' t =
   else raise ERR "dest_var'"
 
 fun dest_bexp (t:term): bexp =
-  if term_eq false_tm t then False
-  else if term_eq true_tm t then True
-  else if can dest_var t then
-    Var ((dest_var' ## numSyntax.int_of_term) (dest_var t))
-  else if can dest_and t then And ((dest_bexp ## dest_bexp) (dest_and t))
-  else if can dest_or t then Or ((dest_bexp ## dest_bexp) (dest_or t))
-  else if can dest_not t then Not (dest_bexp (dest_not t))
+  if term_eq False_tm t then False
+  else if term_eq True_tm t then True
+  else if can dest_Var t then
+    Var ((dest_var' ## numSyntax.int_of_term) (dest_Var t))
+  else if can dest_And t then And ((dest_bexp ## dest_bexp) (dest_And t))
+  else if can dest_Or t then Or ((dest_bexp ## dest_bexp) (dest_Or t))
+  else if can dest_Not t then Not (dest_bexp (dest_Not t))
   else raise ERR "dest_bexp"
 
 fun translate_gate dirs gate = let
