@@ -79,6 +79,12 @@ Definition to_reg_def[simp]:
   to_reg _ = NONE
 End
 
+Definition v_teleport_def:
+  v_teleport (x, y) v = case to_reg v of
+    | SOME (i, Cell (a, b)) => Reg i (Cell (a + x, b + y))
+    | _ => Fail
+End
+
 Definition nextCell_def:
   nextCell = let
     e1 = RXor (Cell (0, 1)) (Cell (~1, 1));
@@ -522,14 +528,15 @@ QED
 
 Theorem floodfill_add_crossover:
   floodfill area ins outs crosses init ∧
-  crossover (a,b) (a',b') d1 i2 o2 d2 init1 ∧
-  x % 2 = 0 ∧ y % 2 = 0 ∧
+  crossover (a,b) (a',b') d1 (c,d) (c',d') d2 init1 ∧
+  PERM outs ((p',d1,P) :: outs') ⇒
+  ∀x y x' y'.
+  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM (x,y) area ∧
-  PERM outs (((x+a,y+b),d1,P) :: outs') ∧
-  v_delay 5 P ⊑ Q ⇒
+  p' = (x+a,y+b) ⇒
   floodfill ((x,y) :: area) ins
-    (((x+a',y+b'),d1,Q) :: outs')
-    ((i2, o2, d2) :: crosses)
+    (((x+a',y+b'),d1,v_delay 5 P) :: outs')
+    (((x+c,y+d), (x+c',y+d'), d2) :: crosses)
     (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
@@ -541,6 +548,17 @@ Theorem floodfill_finish_crossover:
   PERM crosses ((p,q,d) :: crosses') ∧
   v_delay 5 P ⊑ Q ⇒
   floodfill area ins ((q,d,Q) :: outs') crosses' init
+Proof
+  cheat
+QED
+
+Theorem floodfill_teleport:
+  floodfill area ins outs crosses init ∧
+  PERM outs (((a,b),d,P) :: outs') ⇒
+  ∀x y.
+  floodfill area ins
+    (((a + 2 * &^tile * x, b + 2 * &^tile * y),d,v_teleport (x, y) P) :: outs')
+    crosses init
 Proof
   cheat
 QED

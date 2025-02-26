@@ -601,7 +601,6 @@ fun go () = let
       val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
       val _ = PolyML.print (inp, outs, crosses)
       val (first, permth) = (false, pull_perm1 f crosses) handle _ => (true, pull_perm1 f outs) handle _ => raise Match
-      val _ = PolyML.print ("first", first)
       val thm' = if first then let
         val gth = List.nth (gths, i)
         val thm' = MATCH_MP floodfill_add_crossover $ CONJ (!thm) $ CONJ gth permth
@@ -615,9 +614,15 @@ fun go () = let
         in raise Match end
       in thm' end
     in thm := thm' end
-  fun teleport (win, wout, vin, vout) = let
-    val _ = PolyML.print (win, wout, vin, vout)
-    in raise Match end
+  fun teleport ((ix, iy), (ox, oy), _, _) = let
+    val inp = mk_pair $ pair_map from_int (ix, iy)
+    val f = term_eq inp o fst o dest_pair
+    val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
+    val permth = pull_perm1 f outs
+    val thm' = MATCH_MP floodfill_teleport $ CONJ (!thm) permth
+    val thm' = SPECL (map (fn n => from_int $ n div (2*CSIZE)) [ox - ix, oy - iy]) thm'
+    val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV (SCONV [v_teleport_def])) thm'
+    in thm := thm' end
   (* val file = TextIO.openOut "log.txt"
   fun newGate ((false, g), p) =
       TextIO.output (file, "newGate " ^ g ^ " " ^ Int.toString (#1 p)^"," ^ Int.toString (#2 p)^"\n")
