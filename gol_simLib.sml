@@ -1,6 +1,6 @@
 structure gol_simLib :> gol_simLib =
 struct
-open HolKernel
+open HolKernel bossLib boolLib Parse
 
 datatype bexp = False
               | True

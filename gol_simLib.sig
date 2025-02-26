@@ -1,6 +1,8 @@
 signature gol_simLib =
 sig
 
+include Abbrev
+
 datatype bexp = False
               | True
               | Var of int * int

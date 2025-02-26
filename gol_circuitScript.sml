@@ -228,7 +228,7 @@ Theorem DISJOINT_infl:
   ∀x1 y1 x2 y2.
     (x1,y1) ∈ s ∧
     (x2,y2) ∈ t ⇒
-    2 ≤ ABS (x1 - x2) ∨ 2 ≤ ABS (y1 - y2)
+    2 < ABS (x1 - x2) ∨ 2 < ABS (y1 - y2)
 Proof
   CCONTR_TAC \\ gvs []
   \\ last_x_assum mp_tac
@@ -264,6 +264,46 @@ Proof
   \\ intLib.COOPER_TAC
 QED
 
+Definition adj_def:
+  adj x y = { (x1,y1) | ABS (x - x1) ≤ 1 ∧ ABS (y - y1) ≤ 1 } DIFF {(x,y)}
+End
+
+Theorem adj_set:
+  adj x y = set [(x-1,y-1);(x,y-1);(x+1,y-1);(x-1,y);(x+1,y);(x-1,y+1);(x,y+1);(x+1,y+1)]
+Proof
+  gvs [EXTENSION]
+  \\ gvs [adj_def,FORALL_PROD] \\ rw []
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem finite_adj:
+  FINITE (adj x y)
+Proof
+  rewrite_tac [adj_set] \\ simp []
+QED
+
+Theorem live_adj_eq:
+  live_adj s x y = CARD (s ∩ adj x y)
+Proof
+  rewrite_tac [adj_set]
+  \\ ‘∀xs. s ∩ set xs = set (FILTER s xs)’
+        by gvs [EXTENSION,MEM_FILTER,IN_DEF]
+  \\ asm_rewrite_tac []
+  \\ DEP_REWRITE_TAC [ALL_DISTINCT_CARD_LIST_TO_SET]
+  \\ conj_tac
+  >-
+   (irule FILTER_ALL_DISTINCT
+    \\ gvs [] \\ intLib.COOPER_TAC)
+  \\ gvs [live_adj_def]
+  \\ rw [] \\ gvs []
+QED
+
+Triviality int_lemma:
+  ABS (x − a) ≤ 1 ∧ ABS (x − b) ≤ 1 ⇒  ~(2 < ABS (a − b))
+Proof
+  intLib.COOPER_TAC
+QED
+
 Theorem live_adj_U:
   ∀k x0 x1.
     (∀x y. x ∈ ss ∧ y ∈ ss ∧ x ≠ y ⇒ DISJOINT (infl x) (infl y)) ∧
@@ -271,7 +311,31 @@ Theorem live_adj_U:
     (live_adj (U ss) x0 x1 = k ⇔
      ∃x. x ∈ ss ∧ live_adj x x0 x1 = k)
 Proof
-  cheat
+  gvs [live_adj_eq]
+  \\ rw [] \\ eq_tac \\ rw []
+  \\ gvs [finite_adj,FINITE_INTER,pred_setTheory.CARD_EQ_0]
+  \\ gvs [EXTENSION]
+  \\ rpt $ first_assum $ irule_at $ Pos hd
+  \\ AP_TERM_TAC
+  \\ gvs [EXTENSION] \\ rw [] \\ eq_tac \\ rw []
+  \\ rpt $ first_assum $ irule_at $ Pos last
+  \\ qpat_x_assum ‘_ ∈ ss’ mp_tac
+  \\ qpat_x_assum ‘_ ∈ ss’ mp_tac
+  \\ rename [‘s1 ∈ ss ⇒ s2 ∈ ss ⇒ _’]
+  \\ Cases_on ‘s1 = s2’ \\ gvs []
+  \\ rpt strip_tac
+  \\ last_x_assum $ qspecl_then [‘s1’,‘s2’] mp_tac
+  \\ (impl_tac >- (gvs [EXTENSION] \\ metis_tac []))
+  \\ strip_tac
+  \\ qpat_x_assum ‘_ ∈ adj _ _’ mp_tac
+  \\ qpat_x_assum ‘_ ∈ adj _ _’ mp_tac
+  \\ rename [‘x ∈ _ ⇒ y ∈ _ ⇒ _’]
+  \\ rpt strip_tac
+  \\ PairCases_on ‘x’
+  \\ PairCases_on ‘y’
+  \\ imp_res_tac DISJOINT_infl
+  \\ gvs [adj_def]
+  \\ imp_res_tac int_lemma
 QED
 
 Theorem infl_compose_bigunion:
@@ -901,6 +965,7 @@ Definition no_overlap_def:
       io_compatible area outs ins
 End
 
+(*
 Theorem circuit_compose:
   circuit area1 ins1 outs1 as1 init1 ∧
   circuit area2 ins2 outs2 as2 init2
@@ -924,6 +989,7 @@ Theorem circuit_internalise:
 Proof
   cheat
 QED
+*)
 
 Definition dir_to_xy_def:
   dir_to_xy N = (0,-1) ∧
