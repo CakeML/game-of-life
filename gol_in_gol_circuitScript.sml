@@ -473,6 +473,8 @@ fun tr_value (Regular (n, v)) = mk_binop Reg_tm (numSyntax.term_of_int n, tr_rva
 
 end
 
+Theorem make_area_2_2 = EVAL ``EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area 2 2)``
+
 Theorem pull_perm1_tl:
   PERM ls (a :: ls') ⇒ ∀b. PERM (b :: ls) (a :: b :: ls')
 Proof
@@ -578,19 +580,32 @@ fun go () = let
         (lhand $ rator $ concl (!thm))
       val del = fst $ dest_list $ lhand $ rand $ concl permth
       val gth = SPECL (map (snd o dest_pair o snd o dest_pair) del) gth
-      (* val _ = PolyML.print (s, g, lg, (x', y'), thm, ins) *)
-      val thm' = if (#width lg, #height lg) = (1, 1) then
-        floodfill_add_small_gate
-      else
-        (* floodfill_add_gate *)
-        raise Match
-      (* val gth = SPECL (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth *)
-      val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
-      val (x, y) = pair_map from_int (x, y)
-      val (x', y') = pair_map numSyntax.term_of_int (x', y')
-      val thm' = SPECL [x, y, x', y'] thm'
-      val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
-      val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV (SCONV []) THENC append_conv)) thm'
+      val thm' = case (#width lg, #height lg) of
+        (1, 1) => let
+        val thm' = floodfill_add_small_gate
+        val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
+        val (x, y) = pair_map from_int (x, y)
+        val (x', y') = pair_map numSyntax.term_of_int (x', y')
+        val thm' = SPECL [x, y, x', y'] thm'
+        val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
+        val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV (SCONV []) THENC append_conv)) thm'
+        in thm' end
+      | (2, 2) => let
+        (* val _ = PolyML.print (s, g, lg, (x', y'), rator $ concl (!thm), ins) *)
+        val thm' = floodfill_add_gate
+        val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
+        val (x, y) = pair_map from_int (x, y)
+        val (x', y') = pair_map numSyntax.term_of_int (x', y')
+        val thm' = SPECL [x, y, x', y'] thm'
+        val conv = RAND_CONV (REWR_CONV make_area_2_2) THENC SCONV []
+        (* val _ = PolyML.print $ lhand $ concl thm' *)
+        val thm' = MATCH_MP thm' $ EQT_ELIM $ conv $ lhand $ concl thm'
+        (* val _ = PolyML.print $ rator $ concl thm' *)
+        fun conv c = LAND_CONV c THENC append_conv
+        val thm' = CONV_RULE (RATOR_CONV $ RATOR_CONV $
+          COMB2_CONV (LAND_CONV (conv EVAL), conv (SCONV [v_xor_def]))) thm'
+        in thm' end
+      | _ => raise Match
       in thm' end
     | Crossover gths => let
       val (x, y) = (2*x', 2*y')
