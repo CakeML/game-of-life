@@ -545,9 +545,8 @@ QED
 Theorem floodfill_finish_crossover:
   floodfill area ins outs crosses init ∧
   PERM outs ((p,d,P) :: outs') ∧
-  PERM crosses ((p,q,d) :: crosses') ∧
-  v_delay 5 P ⊑ Q ⇒
-  floodfill area ins ((q,d,Q) :: outs') crosses' init
+  PERM crosses ((p,q,d) :: crosses') ⇒
+  floodfill area ins ((q,d,v_delay 5 P) :: outs') crosses' init
 Proof
   cheat
 QED

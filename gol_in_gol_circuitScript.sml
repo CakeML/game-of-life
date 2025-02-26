@@ -593,26 +593,25 @@ fun go () = let
       val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV (SCONV []) THENC append_conv)) thm'
       in thm' end
     | Crossover gths => let
-      val _ = PolyML.print (s, g, lg, i, (x', y'), thm)
       val (x, y) = (2*x', 2*y')
       val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
       val inp = List.nth (ins, i)
       val f = term_eq inp o fst o dest_pair
       val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
-      val _ = PolyML.print (inp, outs, crosses)
-      val (first, permth) = (false, pull_perm1 f crosses) handle _ => (true, pull_perm1 f outs) handle _ => raise Match
-      val thm' = if first then let
+      val (first, permth) = (false, pull_perm1 f crosses) handle _ => (true, pull_perm1 f outs)
+      val (conv, thm') = if first then let
         val gth = List.nth (gths, i)
         val thm' = MATCH_MP floodfill_add_crossover $ CONJ (!thm) $ CONJ gth permth
         val (x, y) = pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [x, y, x', y'] thm'
         val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
-        val thm' = CONV_RULE (RATOR_CONV $ BINOP_CONV $ LAND_CONV (SCONV [])) thm'
-        in thm' end
+        in (BINOP_CONV, thm') end
       else let
-        in raise Match end
-      in thm' end
+        val permth2 = pull_perm1 f outs
+        val thm' = MATCH_MP floodfill_finish_crossover $ CONJ (!thm) $ CONJ permth2 permth
+        in (LAND_CONV, thm') end
+      in CONV_RULE (RATOR_CONV $ conv $ LAND_CONV (SCONV [])) thm' end
     in thm := thm' end
   fun teleport ((ix, iy), (ox, oy), _, _) = let
     val inp = mk_pair $ pair_map from_int (ix, iy)
