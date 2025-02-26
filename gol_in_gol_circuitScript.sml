@@ -7,8 +7,6 @@ open gol_simLib gol_rulesTheory boolSyntax computeLib cv_transLib
 
 val _ = new_theory "gol_in_gol_circuit";
 
-fun allowing_rebind f = Feedback.trace ("Theory.allow_rebinds", 1) f
-
 structure CircuitDiag = struct
 
 type diag = string * string vector
@@ -537,13 +535,12 @@ fun go () = let
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
     val g = List.nth (#stems gate, i)
     val g0 = List.nth (#stems gate, 0)
-    val genth = g0 ^ "_gate_gen"
+    val genth = g ^ "_gate_gen"
     val thm = fetch "gol_gates" (g ^ "_thm")
     val res = if g0 = "cross_es_es" then let
       val thm1 = MATCH_MP blist_simulation_ok_imp_crossover thm
       val thm2 = MATCH_MP crossover_symm thm1
-      in Crossover [allowing_rebind save_thm (genth, thm1),
-                    allowing_rebind save_thm (genth^"_rev", thm2)] end
+      in Crossover [save_thm (genth, thm1), save_thm (genth^"_rev", thm2)] end
     else let
       val (ins, outs) = apfst rand $ dest_comb $ rator $ concl thm
       val (ins', outs') =
@@ -561,7 +558,7 @@ fun go () = let
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
         | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
         | _ => thm
-      in Regular (allowing_rebind save_thm (genth, GENL vars thm)) end
+      in Regular (save_thm (genth, GENL vars thm)) end
     in (lgate, genth, res) end
   val thm = ref floodfill_start
   fun newIn ((_, s, g), (x', y'), _, ins) = let
