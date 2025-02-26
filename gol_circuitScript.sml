@@ -211,12 +211,112 @@ Proof
   \\ metis_tac [SUBSET_BIGUNION_I, infl_mono]
 QED
 
+Theorem IN_infl_bounds:
+  (x,y) ∈ infl s ⇔ ∃x1 y1. (x1,y1) ∈ s ∧ ABS (x - x1) ≤ 1 ∧ ABS (y - y1) ≤ 1
+Proof
+  gvs [infl_thm] \\ rw [] \\ reverse eq_tac \\ rw []
+  >-
+   (CCONTR_TAC \\ gvs []
+    \\ imp_res_tac (METIS_PROVE [] “(x,y) ∈ s ∧ (a,b) ∉ s ⇒  a = x ⇒ y ≠ b”)
+    \\ intLib.COOPER_TAC)
+  \\ rpt $ pop_assum $ irule_at Any
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem DISJOINT_infl:
+  DISJOINT (infl s) (infl t) ⇒
+  ∀x1 y1 x2 y2.
+    (x1,y1) ∈ s ∧
+    (x2,y2) ∈ t ⇒
+    2 ≤ ABS (x1 - x2) ∨ 2 ≤ ABS (y1 - y2)
+Proof
+  CCONTR_TAC \\ gvs []
+  \\ last_x_assum mp_tac
+  \\ gvs [DISJOINT_DEF]
+  \\ gvs [DISJOINT_DEF,EXTENSION,FORALL_PROD]
+  \\ gvs [IN_infl_bounds,PULL_EXISTS]
+  \\ last_x_assum $ irule_at Any
+  \\ last_x_assum $ irule_at Any
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem live_adj_eq_0:
+  live_adj s x y = 0 ⇔
+  (x-1,y-1) ∉ s ∧
+  (x,y-1) ∉ s ∧
+  (x+1,y-1) ∉ s ∧
+  (x-1,y) ∉ s ∧
+  (x+1,y) ∉ s ∧
+  (x-1,y+1) ∉ s ∧
+  (x,y+1) ∉ s ∧
+  (x+1,y+1) ∉ s
+Proof
+  gvs [live_adj_def,IN_DEF, AC CONJ_COMM CONJ_ASSOC]
+QED
+
+Theorem disjoint_live_adj:
+  DISJOINT (infl y) (infl s) ∧ (x0,x1) ∈ s ⇒
+  live_adj y x0 x1 = 0
+Proof
+  simp [live_adj_eq_0]
+  \\ CCONTR_TAC \\ gvs []
+  \\ drule_all DISJOINT_infl
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem live_adj_U:
+  ∀k x0 x1.
+    (∀x y. x ∈ ss ∧ y ∈ ss ∧ x ≠ y ⇒ DISJOINT (infl x) (infl y)) ∧
+    k ≠ 0 ⇒
+    (live_adj (U ss) x0 x1 = k ⇔
+     ∃x. x ∈ ss ∧ live_adj x x0 x1 = k)
+Proof
+  cheat
+QED
+
 Theorem infl_compose_bigunion:
   (∀x y. x ∈ ss ∧ y ∈ ss ∧ x ≠ y ⇒ DISJOINT (infl x) (infl y))
   ⇒
   step (U ss) = U { step s | s ∈ ss }
 Proof
-  cheat
+  strip_tac
+  \\ simp [Once EXTENSION]
+  \\ PairCases
+  \\ gvs [PULL_EXISTS]
+  \\ reverse $ rw [IN_DEF,infl_def,step_def]
+  >-
+   (gvs [METIS_PROVE [] “b ∨ ~c ⇔ (c ⇒ b)”, SF CONJ_ss]
+    \\ drule live_adj_U
+    \\ disch_then $ qspec_then ‘3’ mp_tac
+    \\ simp_tac std_ss []
+    \\ disch_then $ rewrite_tac o single
+    \\ rewrite_tac [IN_DEF] \\ simp_tac std_ss []
+    \\ eq_tac \\ rpt strip_tac
+    \\ rpt $ first_assum $ irule_at Any)
+  \\ eq_tac \\ rpt strip_tac
+  \\ rpt $ first_assum $ irule_at $ Pos last \\ simp []
+  >-
+   (drule live_adj_U
+    \\ disch_then $ qspec_then ‘2’ mp_tac \\ simp_tac std_ss []
+    \\ strip_tac \\ gvs []
+    \\ rename [‘y ∈ ss’]
+    \\ Cases_on ‘y = s’ \\ gvs []
+    \\ gvs [IN_DEF]
+    \\ ‘DISJOINT (infl y) (infl s)’ by res_tac
+    \\ drule disjoint_live_adj \\ simp [IN_DEF]
+    \\ disch_then imp_res_tac \\ gvs [])
+  >-
+   (drule live_adj_U
+    \\ disch_then $ qspec_then ‘3’ mp_tac \\ simp_tac std_ss []
+    \\ strip_tac \\ gvs []
+    \\ rename [‘y ∈ ss’]
+    \\ Cases_on ‘y = s’ \\ gvs []
+    \\ gvs [IN_DEF]
+    \\ ‘DISJOINT (infl y) (infl s)’ by res_tac
+    \\ drule disjoint_live_adj \\ simp [IN_DEF]
+    \\ disch_then imp_res_tac \\ gvs [])
+  \\ drule live_adj_U \\ gvs [] \\ gvs [IN_DEF]
+  \\ metis_tac []
 QED
 
 Theorem mod_step_compose_bigunion:
