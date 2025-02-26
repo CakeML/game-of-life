@@ -275,6 +275,28 @@ Definition gate_def:
     [] (from_rows (-85,-85) init)
 End
 
+Theorem circuit_conj_imp_gate:
+  (∀a1 a2.
+    circuit (make_area w h)
+      [(xy1,d1,a1);(xy2,d2,a2)] [(xy3,d3,conj (delay 5 a1) (delay 5 a2))] []
+         (from_rows (-85, -85) init))
+  ⇒
+  ALL_DISTINCT [xy1;xy2;xy3]
+  ⇒
+  gate w h
+    [(xy1,d1,v1); (xy2,d2,v2)]
+    [(xy3,d3, v_and (v_delay 5 v1) (v_delay 5 v2))] init
+Proof
+  gvs [gate_def] \\ rpt strip_tac
+  \\ gvs [SF DNF_ss]
+  \\ PairCases_on ‘s’ \\ gvs [EXISTS_PROD]
+  \\ gvs [assign_sat_def,assign_ext_def]
+  \\ qexists_tac ‘λxy. if xy = xy1 ∨ xy = xy2 then s0 xy else
+                         λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p))’
+  \\ gvs []
+  \\ cheat
+QED
+
 Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init
   (* ∧
