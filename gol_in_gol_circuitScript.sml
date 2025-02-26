@@ -588,7 +588,7 @@ fun go () = let
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [x, y, x', y'] thm'
         val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
-        val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV (SCONV []) THENC append_conv)) thm'
+        val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV EVAL THENC append_conv)) thm'
         in thm' end
       | (2, 2) => let
         (* val _ = PolyML.print (s, g, lg, (x', y'), rator $ concl (!thm), ins) *)

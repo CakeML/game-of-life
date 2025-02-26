@@ -85,7 +85,7 @@ Definition v_teleport_def:
     | _ => Fail
 End
 
-Definition nextCell_def:
+Definition nextCell_def[compute]:
   nextCell = let
     e1 = RXor (Cell (0, 1)) (Cell (~1, 1));
     e2 = RXor (Cell (1, 0)) (Cell (1, 1));
@@ -116,7 +116,7 @@ Definition v_and_def:
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (RAnd rv1 rv2)
     | _ => Fail)
 End
-Theorem v_and_def[simp,allow_rebind] = SRULE [] v_and_def;
+Theorem v_and_def[simp,compute,allow_rebind] = SRULE [] v_and_def;
 
 Theorem v_and_fail[simp]:
   v_and v Fail = Fail
@@ -193,19 +193,26 @@ Definition assign_sat_def:
   assign_sat env (s, dom) (p, d:dir, v) ⇔ p ∈ dom ∧ v_eval env v (s p)
 End
 
-Definition vb_eval'_def[simp]:
-  (vb_eval' ((da, a), _) (Var A d) = if d ≤ da then (da - d, a) else (0, Fail)) ∧
-  (vb_eval' (_, (db, b)) (Var B d) = if d ≤ db then (db - d, b) else (0, Fail)) ∧
-  (vb_eval' env (Not x)   = let (d, v) = vb_eval' env x in (d, v_not v)) ∧
-  (vb_eval' env (And x y) =
-    let (dx, vx) = vb_eval' env x; (dy, vy) = vb_eval' env y in (MAX dx dy, v_and vx vy)) ∧
-  (vb_eval' env (Or x y) =
-    let (dx, vx) = vb_eval' env x; (dy, vy) = vb_eval' env y in (MAX dx dy, v_or vx vy)) ∧
-  (vb_eval' _ _ = (0, Fail))
+Definition max_delay_def[simp,compute]:
+  (max_delay (da, a) (Var a' d) = if a = a' then da - d else 0) ∧
+  (max_delay a (Not x)   = max_delay a x) ∧
+  (max_delay a (And x y) = MAX (max_delay a x) (max_delay a y)) ∧
+  (max_delay a (Or x y)  = MAX (max_delay a x) (max_delay a y)) ∧
+  (max_delay _ _         = 0)
+End
+
+Definition vb_eval'_def[simp,compute]:
+  (vb_eval' ((da, a), _) (Var A d) = v_delay da a) ∧
+  (vb_eval' (_, (db, b)) (Var B d) = v_delay db b) ∧
+  (vb_eval' env (Not x)   = v_not (vb_eval' env x)) ∧
+  (vb_eval' env (And x y) = v_and (vb_eval' env x) (vb_eval' env y)) ∧
+  (vb_eval' env (Or x y)  = v_or  (vb_eval' env x) (vb_eval' env y)) ∧
+  (vb_eval' _ _ = Fail)
 End
 
 Definition vb_eval_def[compute]:
-  vb_eval env v = let (dx, vx) = vb_eval' env v in v_delay dx vx
+  vb_eval ((da, a), (db, b)) v =
+    vb_eval' ((max_delay (da, A) v, a), (max_delay (db, B) v, b)) v
 End
 
 Theorem is_exact_unique:
@@ -309,17 +316,17 @@ Proof
 QED
 
 Theorem half_adder_weaken:
-  gate w h ins [(p,d,v_delay n (v_or
+  gate w h ins [(p,d,v_or
     (v_and a (v_or (v_and a (v_not b)) (v_and (v_not a) (v_and b (v_not b)))))
-    (v_and (v_not a) (v_or a b)))); out] init ⇒
-  gate w h ins [(p,d,v_delay n (v_xor a b));out] init
+    (v_and (v_not a) (v_or a b))); out] init ⇒
+  gate w h ins [(p,d,v_xor a b);out] init
 Proof
   strip_tac \\ dxrule_at_then Any irule gate_weaken
   \\ PairCases_on `out` \\ simp []
-  \\ Q.HO_MATCH_ABBREV_TAC `v_delay _ (f a b) ⊑ _`
-  \\ `∀ na nb ra rb. v_delay n (f (Reg na ra) (Reg nb rb)) ⊑
-        Reg (n + MAX na nb) (RXor ra rb)` by (
-    rw [v_delay_def, Abbr`f`] \\ rw [MAX_ASSOC, v_subset_def]
+  \\ Q.HO_MATCH_ABBREV_TAC `f a b ⊑ _`
+  \\ `∀ na nb ra rb. f (Reg na ra) (Reg nb rb) ⊑
+        Reg (MAX na nb) (RXor ra rb)` by (
+    rw [Abbr`f`] \\ rw [MAX_ASSOC, v_subset_def]
     \\ Cases_on `env` \\ fs [v_eval_def] \\ pop_assum $ K $ metis_tac [])
   \\ `∀n a. f (Exact n ThisCell) a = f (Reg n (Cell (0, 0))) a ∧
             f a (Exact n ThisCell) = f a (Reg n (Cell (0, 0)))` by (
@@ -451,11 +458,11 @@ Theorem floodfill_add_gate:
   gate w h ins1 outs1 init1 ∧
   PERM outs (del ++ outs') ⇒
   ∀x y x' y'.
-  &(2 * x') = x ∧ &(2 * y') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
-  EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area width height) ∧
-  LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del ⇒
+  (&(2 * x') = x ∧ &(2 * y') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  LIST_REL (λ((a,b),d,P) (p,d',Q). p = (x+a,y+b) ∧ d = d' ∧ P ⊑ Q) ins1 del) ∧
+  EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area w h) ⇒
   floodfill
-    (MAP (λ(a,b). (x+a,y+b)) (make_area width height) ++ area) ins
+    (MAP (λ(a,b). (x+a,y+b)) (make_area w h) ++ area) ins
     (MAP (λ((a,b),dQ). ((x+a,y+b),dQ)) outs1 ++ outs') crosses
     (gate_at (x,y) init1 ∪ init)
 Proof
