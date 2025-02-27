@@ -291,9 +291,25 @@ Proof
   \\ gvs [SF DNF_ss]
   \\ PairCases_on ‘s’ \\ gvs [EXISTS_PROD]
   \\ gvs [assign_sat_def,assign_ext_def]
-  \\ qexists_tac ‘λxy. if xy = xy1 ∨ xy = xy2 then s0 xy else
+  \\ qexists_tac ‘λxy. if xy ≠ xy3 then s0 xy else
                          λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p))’
-  \\ gvs []
+  \\ gvs [] \\ reverse $ rw [] \\ gvs []
+  >-
+   (PairCases_on ‘env’
+    \\ Cases_on ‘v_and (v_delay 5 v1) (v_delay 5 v2)’ \\ gvs []
+    \\ gvs [oneline v_and_def,AllCaseEqs(),oneline v_delay_def,oneline to_reg_def]
+    \\ gvs [v_eval_def,conj_def,delay_def]
+    \\ rw []
+    \\ imp_res_tac (DECIDE “i + 5 ≤ i' ⇒  l + (i' + k) − 5 = l + ((i' − 5) + k):num”)
+    \\ pop_assum $ rewrite_tac o single
+    \\ simp []
+    \\ cheat)
+  \\ Cases_on ‘v_and (v_delay 5 v1) (v_delay 5 v2)’ \\ gvs [is_exact_def]
+  \\ gvs [oneline v_and_def,AllCaseEqs(),oneline v_delay_def]
+  \\ gvs [FUN_EQ_THM,conj_def,delay_def]
+  \\ PairCases_on ‘env’
+  \\ gvs [v_eval_def,FORALL_PROD]
+  \\ rw []
   \\ cheat
 QED
 
