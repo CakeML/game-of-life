@@ -1,8 +1,9 @@
-(* val _ = HOL_Interactive.toggle_quietdec(); *)
+val _ = HOL_Interactive.toggle_quietdec();
 open HolKernel bossLib boolLib Parse;
 open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
-     pairTheory alistTheory arithmeticTheory sortingTheory;
-(* val _ = HOL_Interactive.toggle_quietdec(); *)
+     pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
+     dep_rewrite intLib;
+val _ = HOL_Interactive.toggle_quietdec();
 
 val _ = new_theory "gol_in_gol_circuit2";
 
@@ -275,6 +276,44 @@ Definition gate_def:
     [] (from_rows (-85,-85) init)
 End
 
+Theorem v_eval_v_delay:
+  env_wf env ∧ v_eval env v1 a1 ∧ n ≤ m ⇒
+  v_eval env (v_delay m v1) (λp. delay n (a1 p))
+Proof
+  cheat
+QED
+
+Theorem v_eval'_v_and:
+  env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
+  v_eval' env (v_and v1 v2) (conj a1 a2)
+Proof
+  PairCases_on ‘env’ \\ gvs [oneline v_and_def,AllCaseEqs(),oneline to_reg_def]
+  \\ rpt (CASE_TAC \\ rw [conj_def]) \\ gvs [v_eval'_def]
+  >- cheat
+  >- (
+    DEP_REWRITE_TAC [ARITH_PROVE ``b ≤ i ⇒
+      (&(t + (i + a)):int) − &(t + b) = &(i − b + a)``]
+    \\ `(i - n') DIV 586 = 0` by rw [DIV_EQ_X] \\ pop_assum (rw o single))
+  >- cheat
+  >- cheat
+  >- cheat
+  >- cheat
+QED
+
+Theorem env_wf_translate:
+  env_wf (f, t) ⇒ env_wf ((λi (a,b). f i (x + a,y + b)),t)
+Proof
+  cheat
+QED
+
+Theorem v_eval_v_and:
+  env_wf env ∧ v_eval env v1 a1 ∧ v_eval env v2 a2 ⇒
+  v_eval env (v_and v1 v2) (λp. conj (a1 p) (a2 p))
+Proof
+  PairCases_on ‘env’ \\ rw [v_eval_def]
+  \\ metis_tac [v_eval'_v_and, env_wf_translate]
+QED
+
 Theorem circuit_conj_imp_gate:
   (∀a1 a2.
     circuit (make_area w h)
@@ -291,26 +330,14 @@ Proof
   \\ gvs [SF DNF_ss]
   \\ PairCases_on ‘s’ \\ gvs [EXISTS_PROD]
   \\ gvs [assign_sat_def,assign_ext_def]
-  \\ qexists_tac ‘λxy. if xy ≠ xy3 then s0 xy else
-                         λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p))’
-  \\ gvs [] \\ reverse $ rw [] \\ gvs []
-  >-
-   (PairCases_on ‘env’
-    \\ Cases_on ‘v_and (v_delay 5 v1) (v_delay 5 v2)’ \\ gvs []
-    \\ gvs [oneline v_and_def,AllCaseEqs(),oneline v_delay_def,oneline to_reg_def]
-    \\ gvs [v_eval_def,conj_def,delay_def]
-    \\ rw []
-    \\ imp_res_tac (DECIDE “i + 5 ≤ i' ⇒  l + (i' + k) − 5 = l + ((i' − 5) + k):num”)
-    \\ pop_assum $ rewrite_tac o single
-    \\ simp []
-    \\ cheat)
-  \\ Cases_on ‘v_and (v_delay 5 v1) (v_delay 5 v2)’ \\ gvs [is_exact_def]
-  \\ gvs [oneline v_and_def,AllCaseEqs(),oneline v_delay_def]
-  \\ gvs [FUN_EQ_THM,conj_def,delay_def]
-  \\ PairCases_on ‘env’
-  \\ gvs [v_eval_def,FORALL_PROD]
-  \\ rw []
-  \\ cheat
+  \\ qexists_tac ‘λxy. if xy = xy3 ∧ xy3 ∉ s1 then
+    λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p)) else s0 xy’
+  \\ `v_eval env (v_and (v_delay 5 v1) (v_delay 5 v2))
+      (λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p)))` by (
+    HO_BACKCHAIN_TAC v_eval_v_and \\ rw []
+    \\ irule v_eval_v_delay \\ rw [])
+  \\ gvs [] \\ rw [] \\ gvs []
+  \\ imp_res_tac is_exact_unique \\ metis_tac []
 QED
 
 Theorem blist_simulation_ok_imp_gate:
