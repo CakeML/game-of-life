@@ -579,7 +579,23 @@ Theorem floodfill_finish:
         {((22,8),E, λn. env ((&n - &base) / &^period : int) (i, j))})
     | i, j | T}) init
 Proof
-  cheat
+  rw [] \\ gvs [floodfill_def, SF DNF_ss]
+  \\ first_x_assum drule \\ strip_tac
+  \\ PairCases_on ‘s’ \\ gvs [assign_sat_def]
+  \\ gvs [v_eval_def]
+  \\ pop_assum mp_tac
+  \\ gvs [floodfill_mod_def]
+  \\ disch_then $ qspec_then ‘(s0,s1)’ mp_tac
+  \\ impl_tac >- simp [assign_ext_def]
+  \\ strip_tac
+  \\ drule run_clear_mods
+  \\ impl_tac
+  >-
+   (simp [can_clear_def,join_all_def]
+    \\ gvs [translate_mods_def,EXTENSION,EXISTS_PROD,translate_mod_def,
+            circ_mod_def])
+  \\ gvs []
+  \\ cheat
 QED
 
 Theorem floodfill_add_gate:

@@ -566,6 +566,53 @@ Proof
   \\ disch_then $ irule_at Any
 QED
 
+(* turn all ins and outs to asserts *)
+
+Definition clear_mod_def:
+  clear_mod m =
+    m with <| area := UNIV ; insertions := {} ; deletions := {} |>
+End
+
+Definition clear_mods_def:
+  clear_mods m n = clear_mod (m n)
+End
+
+Definition can_clear_def:
+  can_clear c =
+    ∀n. (c n).deletions = (c n).assert_area ∧
+        (c n).assert_content = (c n).insertions
+End
+
+Theorem mod_steps_clear_mods:
+  ∀k c n s t.
+    mod_steps k c n s t ∧
+    can_clear c
+    ⇒
+    mod_steps k (clear_mods c) n s t
+Proof
+  Induct
+  \\ gvs [mod_steps_def,PULL_EXISTS]
+  \\ rpt strip_tac \\ gvs []
+  \\ last_x_assum $ drule_then $ irule_at Any
+  \\ gvs [can_assert_def]
+  \\ gvs [mod_step_def,can_clear_def,clear_mods_def,clear_mod_def]
+  \\ gvs [EXTENSION,SUBSET_DEF]
+  \\ metis_tac []
+QED
+
+Theorem run_clear_mods:
+  ∀c s.
+    run c s ∧
+    can_clear c
+    ⇒
+    run (clear_mods c) s
+Proof
+  rw [run_def,run_to_def]
+  \\ last_x_assum $ qspec_then ‘k’ strip_assume_tac
+  \\ drule_all mod_steps_clear_mods
+  \\ disch_then $ irule_at Any
+QED
+
 (*
   TODO: translate by dx dy
 *)
