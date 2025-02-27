@@ -279,12 +279,12 @@ fun floodfill diag params = let
       val (ins', outs') =
         pair_map (map (apsnd dest_pair o dest_pair) o fst o dest_list) (ins, outs)
       val vars = List.take ([``a:value``, ``b:value``], length ins')
-      val env = map2 (fn (_,(_,d)) => fn a => mk_pair (snd (dest_Var d), a)) ins' vars
+      val env = map2 (fn (_,(_,d)) => fn a => (snd (dest_Var d), a)) ins' vars
       val env = case env of
-          [a] => (a, a)
-        | [a, b] => (a, b)
+          [(da, a)] => [da, da, a, a]
+        | [(da, a), (db, b)] => [da, db, a, b]
         | _ => raise Match
-      val thm = SPEC (mk_pair env) (MATCH_MP blist_simulation_ok_imp_gate thm)
+      val thm = SPECL env (MATCH_MP blist_simulation_ok_imp_gate thm)
       val thm = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm
       val thm = case g0 of
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
