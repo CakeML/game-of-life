@@ -694,7 +694,18 @@ Theorem run_to_clear_mods:
     FUNPOW step k s = t ∧
     (k ≠ 0 ⇒  t ∩ (m (k-1)).assert_area = (m (k-1)).assert_content)
 Proof
-  cheat
+  gvs [run_to_def] \\ gen_tac
+  \\ qsuff_tac ‘∀k n m s t.
+       mod_steps k (clear_mods m) n s t ⇒
+       FUNPOW step k s = t ∧
+       (k ≠ 0 ⇒ t ∩ (m (n + k − 1)).assert_area = (m (n + k − 1)).assert_content)’
+  >- (rw [] \\ res_tac \\ gvs [])
+  \\ Induct \\ gvs [mod_steps_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ gvs [mod_step_def,clear_mods_def,clear_mod_def]
+  \\ last_x_assum drule
+  \\ gvs [FUNPOW] \\ strip_tac
+  \\ gvs [ADD1] \\ Cases_on ‘k’ \\ gvs []
 QED
 
 Definition build_mega_cells_def:
@@ -733,17 +744,21 @@ QED
 Theorem floodfill_finish:
   floodfill area
     [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact 0 Clock)]
-    [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact ^period Clock)] [] init ∧
-  env_wf env ⇒
+    [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact ^period Clock)] [] init
+  ⇒
   gol_in_gol build_mega_cells (^period * 60) read_mega_cells
 Proof
-  rw [] \\ gvs [floodfill_def, SF DNF_ss]
+  rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
+  \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
+  \\ rename [‘FUNPOW step n s_init (x,y) = _’]
+  \\ qabbrev_tac ‘env = λn. FUNPOW step (Num n) s_init’
+  \\ ‘env_wf env’ by cheat
   \\ first_x_assum drule \\ strip_tac
   \\ PairCases_on ‘s’ \\ gvs [assign_sat_def]
   \\ gvs [v_eval_def]
   \\ pop_assum mp_tac
   \\ gvs [floodfill_mod_def]
-  \\ disch_then $ qspec_then ‘(s0,s1)’ mp_tac
+  \\ disch_then $ qspecl_then [‘s0’,‘s1’] mp_tac
   \\ impl_tac >- simp [assign_ext_def]
   \\ strip_tac
   \\ dxrule run_clear_mods
@@ -753,8 +768,6 @@ Proof
     \\ gvs [translate_mods_def,EXTENSION,EXISTS_PROD,translate_mod_def,
             circ_mod_def])
   \\ gvs [gol_rulesTheory.gol_in_gol_def] \\ rw []
-  \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
-  \\ rename [‘FUNPOW step n s_init (x,y) = _’]
   \\ gvs [run_def]
   \\ pop_assum $ qspec_then ‘^period * 60 * n’ mp_tac
   \\ strip_tac
@@ -778,7 +791,11 @@ Proof
   \\ simp [GSYM PULL_EXISTS]
   \\ strip_tac
   \\ dxrule (METIS_PROVE [] “(x1 ∧ x2 ⇔ y) ⇒ x2 ⇒ (x1 = y)”)
-  \\ ‘(35160 * n − 1) MOD 60 = 59’ by cheat (* arithmetic *)
+  \\ Cases_on ‘n = 0’ \\ gvs []
+  \\ ‘(60 * ^period * n − 1) MOD 60 = 59’ by
+   (rewrite_tac [GSYM MULT_ASSOC]
+    \\ Cases_on ‘^period * n’ \\ gvs []
+    \\ gvs [MULT_CLAUSES])
   \\ impl_tac
   >-
    (gvs [translate_mods_def,translate_mod_def,circ_mod_def,circ_output_area_def]
@@ -819,7 +836,8 @@ Proof
   \\ gvs [IN_DEF,is_ew_def]
   \\ ‘(^period * 60 * n − 1) DIV 60 = ^period * n - 1’ by gvs [DIV_EQ_X]
   \\ gvs []
-  \\ cheat (* env assumption *)
+  \\ ‘(&(^period * n − 1) − &base) / & ^period = (& n) : int’ by cheat
+  \\ gvs [] \\ gvs [Abbr‘env’]
 QED
 
 Theorem floodfill_add_gate:
