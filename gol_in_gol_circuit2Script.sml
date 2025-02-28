@@ -856,6 +856,17 @@ Proof
   cheat
 QED
 
+Theorem assign_ext_sat:
+  assign_ext s3 s2 ∧
+  assign_sat env s3 (pi,d,v) ⇒
+  assign_sat env s2 (pi,d,v)
+Proof
+  PairCases_on ‘s2’
+  \\ PairCases_on ‘s3’
+  \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF]
+  \\ cheat
+QED
+
 Theorem floodfill_add_small_gate:
   floodfill area ins outs crosses init ∧
   gate 1 1 ins1 outs1 init1 ∧
@@ -868,7 +879,30 @@ Theorem floodfill_add_small_gate:
     (MAP (λ((a,b),dQ). ((x+a,y+b),dQ)) outs1 ++ outs') crosses
     (gate_at ARB (x,y) init1 ∪ init)
 Proof
-  cheat
+  rw [] \\ gvs [floodfill_def]
+  \\ gvs [SF DNF_ss, SF SFY_ss,gate_def] \\ rw []
+  \\ first_x_assum drule
+  \\ first_x_assum drule \\ strip_tac
+  \\ strip_tac
+  \\ first_x_assum $ qspec_then ‘s’ mp_tac
+  \\ impl_tac >- cheat (* ?? *)
+  \\ strip_tac
+  \\ first_x_assum drule
+  \\ strip_tac
+  \\ rename [‘assign_ext s1 s2’]
+  \\ qexists_tac ‘s2’
+  \\ conj_tac >- cheat
+  \\ rpt strip_tac
+  \\ rename [‘assign_ext s2 s3’]
+  \\ qpat_x_assum ‘_ ⇒ _’ mp_tac
+  \\ impl_tac
+  >-
+   (rw [] \\ first_x_assum drule \\ strip_tac
+    \\ qexists_tac ‘v’
+    \\ cheat (* needs assign_ext s3 s2 but we
+                 have assign_ext s2 s3 *))
+  \\ strip_tac
+  \\ cheat
 QED
 
 Definition half_adder_ee_ee_concrete_def:
