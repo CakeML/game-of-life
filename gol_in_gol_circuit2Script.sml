@@ -688,16 +688,54 @@ Definition ffins_def:
   ffins = [((22:int,8:int),E,Exact 0 ThisCell); ((32,0),E,Exact 0 Clock)]
 End
 
+Theorem run_to_clear_mods:
+  ∀k m s t.
+    run_to k (clear_mods m) s t ⇒
+    FUNPOW step k s = t ∧
+    (k ≠ 0 ⇒  t ∩ (m (k-1)).assert_area = (m (k-1)).assert_content)
+Proof
+  cheat
+QED
+
+Definition build_mega_cells_def:
+  build_mega_cells init = ARB
+End
+
+Definition read_mega_cells_def:
+  read_mega_cells s =
+    { (x:int,y:int) | (150 * 21 * x + 23 * 75 + 1, 150 * 21 * y + 8 * 75 - 1) ∈  s }
+End
+
+Theorem read_mega_cells_build_mega_cells_thm:
+  read_mega_cells (build_mega_cells s) = s
+Proof
+  cheat
+QED
+
+Triviality in_if_set_empty:
+  x ∈ (if b then t else {}) ⇔ b ∧ x ∈ t
+Proof
+  rw []
+QED
+
+Triviality in_lwss_as_set_E:
+  (3150 * i + 1726,3150 * j + 599) ∈ lwss_as_set (1720,595) E ⇔ i = 0 ∧ j = 0
+Proof
+  reverse eq_tac >- (rw [] \\ EVAL_TAC)
+  \\ strip_tac
+  \\ gvs [oEL_THM,gol_circuitTheory.io_gate_lenth,lwss_as_set_def,IN_from_rows]
+  \\ qspec_then ‘E’ mp_tac (gol_circuitTheory.io_gate_lenth |> GEN_ALL)
+  \\ gvs [MEM_EL,PULL_EXISTS] \\ strip_tac \\ gvs []
+  \\ ntac 3 $ pop_assum kall_tac
+  \\ intLib.COOPER_TAC
+QED
+
 Theorem floodfill_finish:
   floodfill area
     [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact 0 Clock)]
     [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact ^period Clock)] [] init ∧
   env_wf env ⇒
-  run (join_all' {
-    translate_mods (i * 150 * &^tile, j * 150 * &^tile)
-      (circ_mod (set area) ∅ ∅
-        {((22,8),E, λn. env ((&n - &base) / &^period : int) (i, j))})
-    | i, j | T}) init
+  gol_in_gol build_mega_cells (^period * 60) read_mega_cells
 Proof
   rw [] \\ gvs [floodfill_def, SF DNF_ss]
   \\ first_x_assum drule \\ strip_tac
@@ -708,14 +746,80 @@ Proof
   \\ disch_then $ qspec_then ‘(s0,s1)’ mp_tac
   \\ impl_tac >- simp [assign_ext_def]
   \\ strip_tac
-  \\ drule run_clear_mods
+  \\ dxrule run_clear_mods
   \\ impl_tac
   >-
    (simp [can_clear_def,join_all_def]
     \\ gvs [translate_mods_def,EXTENSION,EXISTS_PROD,translate_mod_def,
             circ_mod_def])
+  \\ gvs [gol_rulesTheory.gol_in_gol_def] \\ rw []
+  \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
+  \\ rename [‘FUNPOW step n s_init (x,y) = _’]
+  \\ gvs [run_def]
+  \\ pop_assum $ qspec_then ‘^period * 60 * n’ mp_tac
+  \\ strip_tac
+  \\ ‘build_mega_cells s_init = init’ by cheat
   \\ gvs []
-  \\ cheat
+  \\ dxrule run_to_clear_mods
+  \\ strip_tac
+  \\ Cases_on ‘n = 0’
+  >- gvs [read_mega_cells_build_mega_cells_thm]
+  \\ pop_assum mp_tac
+  \\ pop_assum mp_tac
+  \\ asm_rewrite_tac [] \\ pop_assum kall_tac
+  \\ gvs [] \\ rpt strip_tac \\ gvs []
+  \\ pop_assum mp_tac
+  \\ pop_assum mp_tac
+  \\ simp [join_all_def]
+  \\ once_rewrite_tac [EXTENSION]
+  \\ simp [PULL_EXISTS,EXISTS_PROD,FORALL_PROD]
+  \\ disch_then $ qspecl_then [‘21 * 150 * x + 23 * 75 + 1’,
+                               ‘21 * 150 * y + 8 * 75 - 1’] mp_tac
+  \\ simp [GSYM PULL_EXISTS]
+  \\ strip_tac
+  \\ dxrule (METIS_PROVE [] “(x1 ∧ x2 ⇔ y) ⇒ x2 ⇒ (x1 = y)”)
+  \\ ‘(35160 * n − 1) MOD 60 = 59’ by cheat (* arithmetic *)
+  \\ impl_tac
+  >-
+   (gvs [translate_mods_def,translate_mod_def,circ_mod_def,circ_output_area_def]
+    \\ gvs [circ_io_area_def]
+    \\ simp [IN_DEF]
+    \\ gvs [translate_set_def,PULL_EXISTS]
+    \\ simp [SF DNF_ss,is_ew_def,io_box_def,box_def]
+    \\ disj1_tac \\ intLib.COOPER_TAC)
+  \\ gvs [read_mega_cells_def,EXISTS_PROD]
+  \\ disch_then kall_tac \\ rw []
+  \\ gvs [translate_mods_def,translate_mod_def]
+  \\ simp [IN_DEF]
+  \\ gvs [translate_set_def,PULL_EXISTS]
+  \\ simp [SF DNF_ss,circ_mod_def,circ_io_lwss_def,lwss_at_def]
+  \\ simp [in_if_set_empty]
+  \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
+  \\ conj_tac
+  >- (CCONTR_TAC \\ gvs []
+      \\ pop_assum kall_tac
+      \\ pop_assum mp_tac
+      \\ gvs [lwss_as_set_def,IN_from_rows]
+      \\ CCONTR_TAC \\ gvs []
+      \\ gvs [oEL_THM]
+      \\ gvs [oEL_THM,gol_circuitTheory.io_gate_lenth,lwss_as_set_def,IN_from_rows]
+      \\ qspec_then ‘E’ mp_tac (gol_circuitTheory.io_gate_lenth |> GEN_ALL)
+      \\ strip_tac
+      \\ gvs [MEM_EL,PULL_EXISTS]
+      \\ ntac 3 $ pop_assum kall_tac
+      \\ ntac 4 $ pop_assum mp_tac
+      \\ rpt $ pop_assum kall_tac
+      \\ intLib.COOPER_TAC)
+  \\ rewrite_tac [GSYM INT_MUL_ASSOC]
+  \\ once_rewrite_tac [GSYM INT_MUL_COMM]
+  \\ simp []
+  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 1725 + 1 - 3150 * y = 3150 * (x - y) + 1726:int”]
+  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 600 - 1 - 3150 * y = 3150 * (x - y) + 599:int”]
+  \\ rewrite_tac [in_lwss_as_set_E,integerTheory.INT_SUB_0] \\ gvs []
+  \\ gvs [IN_DEF,is_ew_def]
+  \\ ‘(^period * 60 * n − 1) DIV 60 = ^period * n - 1’ by gvs [DIV_EQ_X]
+  \\ gvs []
+  \\ cheat (* env assumption *)
 QED
 
 Theorem floodfill_add_gate:
