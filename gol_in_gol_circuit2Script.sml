@@ -45,7 +45,7 @@ Definition e_eval_def[simp]:
   (e_eval env n NotClock ⇔ ¬(n % &^period < &^pulse)) ∧
   (e_eval env n ThisCell ⇔ env (n / &^period)) ∧
   (e_eval env n NextCell ⇔ (n:int) % &^period < &^pulse ∧ env (n / &^period + 1)) ∧
-  (e_eval env n (ThisCellUntilClock p) ⇔ env (n / &^period) ∧ ¬((n + &p) % &^period < &^pulse))
+  (e_eval env n (ThisCellUntilClock p) ⇔ env (n / &^period) ∧ ¬((n - &p) % &^period < &^pulse))
 End
 
 Definition v_eval'_def[simp]:
@@ -206,6 +206,32 @@ Definition max_delay_def[simp,compute]:
   (max_delay _ _         = 0)
 End
 
+Theorem max_delay_le:
+  max_delay (d,a) v ≤ d
+Proof
+  Induct_on `v` \\ rw [max_delay_def]
+QED
+
+Definition rv_eval_def[simp,compute]:
+  (rv_eval env (Var v d) = env (v, d)) ∧
+  (rv_eval env (Not x)   = v_not (rv_eval env x)) ∧
+  (rv_eval env (And x y) = v_and (rv_eval env x) (rv_eval env y)) ∧
+  (rv_eval env (Or x y)  = v_or  (rv_eval env x) (rv_eval env y)) ∧
+  (rv_eval _ _ = Fail)
+End
+
+Definition vb_eval_def:
+  vb_eval ((da, a), (db, b)) v =
+    case (a, b) of
+      | (Reg _ _, Reg _ _) =>
+        let va = v_delay (max_delay (da, A) v) a in
+        let vb = v_delay (max_delay (db, B) v) b in
+        rv_eval (λ(v', _). var_CASE v' va vb) v
+      | _ =>
+        rv_eval (λ(x, d). var_CASE x (v_delay (da - d) a) (v_delay (db - d) b)) v
+End
+
+(* delete me *)
 Definition vb_eval'_def[simp,compute]:
   (vb_eval' ((da, a), _) (Var A d) = v_delay da a) ∧
   (vb_eval' (_, (db, b)) (Var B d) = v_delay db b) ∧
@@ -215,10 +241,12 @@ Definition vb_eval'_def[simp,compute]:
   (vb_eval' _ _ = Fail)
 End
 
-Definition vb_eval_def[compute]:
+Theorem vb_eval_def_old[compute]:
   vb_eval ((da, a), (db, b)) v =
     vb_eval' ((max_delay (da, A) v, a), (max_delay (db, B) v, b)) v
-End
+Proof
+  cheat
+QED
 
 Theorem is_exact_unique:
   is_exact v ∧ v_eval env v s ∧ v_eval env v t ⇒ s = t
@@ -279,41 +307,96 @@ Definition gate_def:
     [] (from_rows (-85,-85) init)
 End
 
-Theorem v_eval_v_delay:
-  env_wf env ∧ v_eval env v1 a1 ∧ n ≤ m ⇒
-  v_eval env (v_delay m v1) (λp. delay n (a1 p))
-Proof
-  cheat
-QED
-
-Theorem v_eval'_v_and:
-  env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
-  v_eval' env (v_and v1 v2) (conj a1 a2)
-Proof
-  gvs [oneline v_and_def,AllCaseEqs(),oneline to_reg_def]
-  \\ rpt (CASE_TAC \\ rw [conj_def]) \\ gvs [v_eval'_def]
-  >- cheat
-  >- (
-    DEP_REWRITE_TAC [ARITH_PROVE ``b ≤ i ⇒
-      (&(i + (a + t)):int) − &(b + t) = &(i − b + a)``]
-    \\ `(i - n') DIV 586 = 0` by rw [DIV_EQ_X] \\ pop_assum (rw o single))
-  >- cheat
-  >- cheat
-  >- cheat
-  >- cheat
-QED
-
 Theorem env_wf_translate:
   env_wf f ⇒ env_wf (λi (a,b). f i (x + a,y + b))
 Proof
   cheat
 QED
 
+Theorem v_eval'_v_delay:
+  env_wf env ∧ v_eval' env v1 a1 ∧ n ≤ m ⇒
+  v_eval' env (v_delay m v1) (delay n a1)
+Proof
+  cheat
+  (* `∃P. P v1` by (qexists_tac `λ_.T` \\ rw [])
+  gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [] \\ gvs [v_eval_def, delay_def]
+  >- (qpat_x_assum `$! _` (qspecl_then [`n''`, `i - n`] mp_tac) \\ rw[])
+  \\ Cases_on `n'' < n` \\ rw [] *)
+
+
+QED
+
+Theorem v_eval_v_delay:
+  env_wf env ∧ v_eval env v1 a1 ∧ n ≤ m ⇒
+  v_eval env (v_delay m v1) (λz. delay n (a1 z))
+Proof
+  rw [v_eval_def] \\ metis_tac [v_eval'_v_delay, env_wf_translate]
+QED
+
+Theorem add_mul_sub_div:
+  n ≤ i ∧ i < ^period ⇒ (&(i + (^period * n' + base)) − &(n + base):int) / &^period = &n'
+Proof
+  rw []
+  \\ DEP_REWRITE_TAC [ARITH_PROVE ``b ≤ i ⇒ (&(i + (a + t)):int) − &(b + t) = &(i − b + a)``]
+  \\ `(i - n) DIV ^period = 0` by rw [DIV_EQ_X] \\ pop_assum (rw o single)
+QED
+
+Theorem v_eval'_v_not:
+  env_wf env ∧ v_eval' env v1 a1 ⇒
+  v_eval' env (v_not v1) (λn. ¬a1 n)
+Proof
+  gvs [oneline v_not_def] \\ rpt (CASE_TAC \\ gvs [add_mul_sub_div])
+QED
+
+Theorem v_eval_v_not:
+  env_wf env ∧ v_eval env v1 a1 ⇒
+  v_eval env (v_not v1) (λz n. ¬a1 z n)
+Proof
+  rw [v_eval_def] \\ metis_tac [v_eval'_v_not, env_wf_translate]
+QED
+
+Theorem v_eval'_v_and:
+  env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
+  v_eval' env (v_and v1 v2) (λn. a1 n ∧ a2 n)
+Proof
+  gvs [oneline v_and_def, AllCaseEqs(), oneline to_reg_def]
+  \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def, add_mul_sub_div]
+  >- (
+    pop_assum kall_tac
+    \\ Cases_on `(&n'' − &(n' + base)) % &^period < &^pulse` \\ rw []
+    (* \\ qpat_x_assum `$! _` (qspecl_then [`(n'' − (n' + base)) DIV 586`, `n'' - base`] mp_tac) *)
+    \\ cheat)
+  >- rw [GSYM INT_SUB, GSYM INT_ADD,
+    ARITH_PROVE ``(a:int) − (b + c) - (d − b) = a − (d + c)``]
+QED
+
 Theorem v_eval_v_and:
   env_wf env ∧ v_eval env v1 a1 ∧ v_eval env v2 a2 ⇒
-  v_eval env (v_and v1 v2) (λp. conj (a1 p) (a2 p))
+  v_eval env (v_and v1 v2) (λz n. a1 z n ∧ a2 z n)
 Proof
   rw [v_eval_def] \\ metis_tac [v_eval'_v_and, env_wf_translate]
+QED
+
+Theorem v_eval'_v_or:
+  env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
+  v_eval' env (v_or v1 v2) (λn. a1 n ∨ a2 n)
+Proof
+  (* `∃P. P v1 v2` by (qexists_tac `λ_ _.T` \\ rw []) \\ *)
+  gvs [oneline v_or_def, AllCaseEqs(), oneline to_reg_def]
+  \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def, add_mul_sub_div]
+  \\ `(&n'' − &(n + base) − &n':int) = &n'' − &(base + 586)` by ARITH_TAC
+  \\ pop_assum (rw o single)
+  \\ Cases_on `(&n'' − &(base + &^period)) % &^period < &^pulse` \\ rw []
+  >- rw [ARITH_PROVE ``(&n'' − &(base + 586):int) / 586 + 1 = (&n'' − &base) / 586``]
+  \\ `((&n'' − &(n + base)) / 586:int) = (&n'' − &base) / 586` suffices_by rw []
+  \\ cheat
+QED
+
+Theorem v_eval_v_or:
+  env_wf env ∧ v_eval env v1 a1 ∧ v_eval env v2 a2 ⇒
+  v_eval env (v_or v1 v2) (λz n. a1 z n ∨ a2 z n)
+Proof
+  rw [v_eval_def] \\ metis_tac [v_eval'_v_or, env_wf_translate]
 QED
 
 Theorem circuit_conj_imp_gate:
@@ -336,10 +419,9 @@ Proof
     λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p)) else s0 xy’
   \\ `v_eval env (v_and (v_delay 5 v1) (v_delay 5 v2))
       (λp. conj (delay 5 (s0 xy1 p)) (delay 5 (s0 xy2 p)))` by (
-    HO_BACKCHAIN_TAC v_eval_v_and \\ rw []
-    \\ irule v_eval_v_delay \\ rw [])
-  \\ gvs [] \\ rw [] \\ gvs []
-  \\ imp_res_tac is_exact_unique \\ metis_tac []
+    rw [conj_def] \\ HO_BACKCHAIN_TAC v_eval_v_and \\ rw []
+    \\ CONV_TAC (DEPTH_CONV ETA_CONV) \\ irule v_eval_v_delay \\ rw [])
+  \\ gvs [] \\ rw [] \\ gvs [] \\ imp_res_tac is_exact_unique
 QED
 
 Definition find_in_def:
@@ -392,7 +474,7 @@ Proof
 QED *)
 
 Definition is_admissible_def:
-  is_admissible ins da db =
+  is_admissible ins outs da db =
     ∃p1 d1. ins = [(p1,d1,Var A da)] ∨
     ∃p2 d2. ins = [(p1,d1,Var A da); (p2,d2,Var B db)]
 End
@@ -410,7 +492,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_new:
   blist_simulation_ok w h ins outs init ∧
-  is_admissible ins da db
+  is_admissible ins outs da db
   ⇒
   ∀a b. gate w h
     (MAP (λ(p,d,v). (p,d,vb_eval ((da,a),(db,b)) v)) ins)
@@ -426,7 +508,40 @@ Proof
   \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
   \\ qabbrev_tac `env2 = λz (a,n). delay (var_CASE a da db) (q (find_in ins a) z) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
-  \\ sg `∀v. v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` >- cheat
+  \\ sg `∀v. v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
+  >- (
+    sg `∀v. v_eval env (rv_eval (λ(x, d).
+      var_CASE x (v_delay (da - d) a) (v_delay (db - d) b)) v) (s1 v)`
+    >- (
+      simp [Abbr`s1`] \\ Induct \\ rw []
+      >- (Cases_on `v` \\ rw [Abbr`env2`]
+        >- (
+          sg `n ≤ da` >- cheat
+          \\ sg `v_eval env a (q (find_in ins A))` >- cheat
+          \\ drule_then (drule_then (qspecl_then [`da - n`, `da - n`] mp_tac)) v_eval_v_delay
+          \\ sg `∀a. delay (da - n) a = (λn'. delay da a (n + n'))`
+          >- rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < da − n) ⇔ (n + n' < da)``]
+          \\ pop_assum (rw o single))
+        >- (
+          sg `n ≤ db` >- cheat
+          \\ sg `v_eval env b (q (find_in ins B))` >- cheat
+          \\ drule_then (drule_then (qspecl_then [`db - n`, `db - n`] mp_tac)) v_eval_v_delay
+          \\ sg `∀a. delay (db - n) a = (λn'. delay db a (n + n'))`
+          >- rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < db − n) ⇔ (n + n' < db)``]
+          \\ pop_assum (rw o single)))
+      >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
+      >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
+      >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw [])
+    )
+    \\ simp [vb_eval_def] \\ ntac 2 CASE_TAC \\ rw []
+    \\ cheat
+    (* \\ `∀v. rv_eval (λ(x, d). var_CASE x (v_delay (da - d) a) (v_delay (db - d) b)) v`
+    \\ `∀na nb. na ≤ da ∧ nb ≤ db ⇒
+          ∀v. v_eval env (vb_eval' ((na,a),nb,b) v) (λz n. eval (age n (env2 z)) v)`
+      suffices_by metis_tac [max_delay_le]
+    \\ rw [] \\ Induct_on `v` \\ rw []
+    >- (Cases_on `v` \\ rw [Abbr`env2`, delay_def]) *)
+  )
   \\ qexists_tac `λx. case ALOOKUP outs x of | NONE => q x | SOME (_,v) => s1 v` \\ rw []
   >- (rpt CASE_TAC \\ rw []
     \\ drule_then assume_tac ALOOKUP_MEM
@@ -439,8 +554,7 @@ Proof
   \\ dxrule_then (qspec_then `env2 z` assume_tac o
       MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
   \\ qmatch_goalsub_abbrev_tac `MAP g`
-  \\ sg `MAP g ins = eval_io (env2 z) ins`
-  >- (
+  \\ `MAP g ins = eval_io (env2 z) ins` by (
     fs [eval_io_def, Abbr`g`, Abbr`f`] \\ Cases_on `z`
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [] \\ reverse CASE_TAC
     >- (
@@ -448,10 +562,16 @@ Proof
       \\ fs [ALL_DISTINCT_APPEND, MEM_MAP, EXISTS_PROD, PULL_EXISTS, FORALL_PROD]
       \\ metis_tac [])
     \\ rw [FUN_EQ_THM, Abbr`s1`, Abbr`env2`]
-    \\ gvs [is_admissible_def, find_in_def, FIND_thm, delay_def]
-    \\ cheat
-    )
-  \\ cheat
+    \\ gvs [is_admissible_def, find_in_def, FIND_thm, delay_def])
+  \\ `MAP g outs = eval_io (env2 z) outs` by (
+    fs [eval_io_def, Abbr`g`, Abbr`f`]
+    \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw []
+    \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM
+    \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM])
+  \\ `instantiate ((da,a),db,b) init = MAP (MAP (eval (env2 z))) (MAP from_blist init)` by (
+    simp [instantiate_def, Abbr`env2`]
+    \\ cheat)
+  \\ rw []
 QED
 
 Theorem gate_weaken:
