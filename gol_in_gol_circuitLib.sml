@@ -313,10 +313,10 @@ fun floodfill diag params = let
     val thm' = case g of
       Regular gth => let
       val permth = pull_perm
-        (map (fn a => term_eq a o fst o dest_pair) ins)
+        (map (fn a => term_eq a o fst o dest_pair o fst o dest_pair) ins)
         (lhand $ rator $ concl (!thm))
       val del = fst $ dest_list $ lhand $ rand $ concl permth
-      val gth = SPECL (map (snd o dest_pair o snd o dest_pair) del) gth
+      val gth = SPECL (map (snd o dest_pair) del) gth
       val thm' = case (#width lg, #height lg) of
         (1, 1) => let
         val thm' = floodfill_add_small_gate
@@ -345,9 +345,10 @@ fun floodfill diag params = let
       val (x, y) = (2*x', 2*y')
       val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
       val inp = List.nth (ins, i)
-      val f = term_eq inp o fst o dest_pair
+      val f1 = term_eq inp o fst o dest_pair
+      val f2 = f1 o fst o dest_pair
       val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
-      val (first, permth) = (false, pull_perm1 f crosses) handle _ => (true, pull_perm1 f outs)
+      val (first, permth) = (false, pull_perm1 f1 crosses) handle _ => (true, pull_perm1 f2 outs)
       val (conv, thm') = if first then let
         val gth = List.nth (gths, i)
         val thm' = MATCH_MP floodfill_add_crossover $ CONJ (!thm) $ CONJ gth permth
@@ -357,14 +358,14 @@ fun floodfill diag params = let
         val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
         in (BINOP_CONV, thm') end
       else let
-        val permth2 = pull_perm1 f outs
+        val permth2 = pull_perm1 f2 outs
         val thm' = MATCH_MP floodfill_finish_crossover $ CONJ (!thm) $ CONJ permth2 permth
         in (LAND_CONV, thm') end
       in CONV_RULE (RATOR_CONV $ conv $ LAND_CONV (SCONV [])) thm' end
     in thm := thm' end
   fun teleport ((ix, iy), d) = let
     val inp = mk_pair $ pair_map from_int (ix, iy)
-    val f = term_eq inp o fst o dest_pair
+    val f = term_eq inp o fst o dest_pair o fst o dest_pair
     val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
     val permth = pull_perm1 f outs
     val thm' = MATCH_MP floodfill_teleport $ CONJ (!thm) permth
@@ -375,8 +376,8 @@ fun floodfill diag params = let
   val _ = build (recognize diag) params
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
   val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)
-  val x = ``area:(int # int) list``
   val (f, args) = strip_comb (concl thm)
+  val x = mk_var ("area", type_of (hd args))
   in EXISTS (boolSyntax.mk_exists (x, list_mk_comb (f, x :: tl args)), hd args) thm end
 
 end
