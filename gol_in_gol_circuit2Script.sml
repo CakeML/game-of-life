@@ -132,13 +132,13 @@ Definition v_and_def:
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (RAnd rv1 rv2)
     | _ => Fail)
 End
-Theorem v_and_def[simp,compute,allow_rebind] = SRULE [] v_and_def;
+Theorem v_and_def[simp,compute,allow_rebind] =
+  SRULE [ISPEC ``option_CASE`` COND_RAND, COND_RATOR] v_and_def;
 
 Theorem v_and_fail[simp]:
   v_and v Fail = Fail
 Proof
-  cheat
-  (* Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp [] *)
+  Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp [] \\ rpt CASE_TAC \\ simp []
 QED
 
 Definition v_or_def:
@@ -148,13 +148,13 @@ Definition v_or_def:
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (ROr rv1 rv2)
     | _ => Fail)
 End
-Theorem v_or_def[simp,allow_rebind] = SRULE [] v_or_def;
+Theorem v_or_def[simp,allow_rebind] =
+  SRULE [ISPEC ``option_CASE`` COND_RAND, COND_RATOR] v_or_def;
 
 Theorem v_or_fail[simp]:
   v_or v Fail = Fail
 Proof
-  cheat
-  (* Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp [] *)
+  Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp [] \\ rpt CASE_TAC \\ simp []
 QED
 
 Theorem v_or_thiscell:
@@ -170,6 +170,8 @@ Definition v_not_def:
     | SOME (d1, v1) => Reg d1 (RNot v1)
     | _ => Fail)
 End
+Theorem v_not_def[simp,allow_rebind] =
+  SRULE [ISPEC ``option_CASE`` COND_RAND, COND_RATOR] v_not_def;
 
 Definition v_xor_def:
   v_xor v1 v2 = case (to_reg v1, to_reg v2) of
@@ -200,7 +202,8 @@ Definition is_exact_def[simp]:
 End
 
 Definition env_wf_def:
-  env_wf (env:num->state) ⇔ (ARB:bool)
+  env_wf (env:num->state) ⇔
+    ∀t x y. env (t + 1) (x,y) = r_eval (λ(a,b). env t (x+a,y+b)) nextCell
 End
 
 Definition assign_ext_def:
@@ -356,15 +359,18 @@ Proof
 QED
 
 Theorem v_eval'_v_not:
-  env_wf env ∧ v_eval' env v1 a1 ⇒
+  v_eval' env v1 a1 ⇒
   v_eval' env (v_not v1) (λn. ¬a1 n)
 Proof
-  cheat
-  (* gvs [oneline v_not_def] \\ rpt (CASE_TAC \\ gvs [add_mul_sub_div]) *)
+  gvs [oneline v_not_def] \\ rpt (CASE_TAC \\ gvs [])
+  \\ rw [e_cell_def]
+  \\ `∃k. i = &k` by rw [NUM_POSINT_EXISTS] \\ gvs []
+  \\ `k ≤ n + base ∧ (n + base − k) DIV 586 = (n + base) DIV 586` by ARITH_TAC
+  \\ simp [INT_SUB]
 QED
 
 Theorem v_eval_v_not:
-  env_wf env ∧ v_eval env v1 a1 ⇒
+  v_eval env v1 a1 ⇒
   v_eval env (v_not v1) (λz n. ¬a1 z n)
 Proof
   rw [v_eval_def] \\ metis_tac [v_eval'_v_not, env_wf_translate]
@@ -374,16 +380,51 @@ Theorem v_eval'_v_and:
   env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
   v_eval' env (v_and v1 v2) (λn. a1 n ∧ a2 n)
 Proof
-  cheat
-  (* gvs [oneline v_and_def, AllCaseEqs(), oneline to_reg_def]
-  \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def, add_mul_sub_div]
+  gvs [oneline v_and_def, AllCaseEqs(), oneline to_reg_def]
+  \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def]
+  >- `F` by ARITH_TAC
+  >- `F` by ARITH_TAC
   >- (
-    pop_assum kall_tac
-    \\ Cases_on `(&n'' − &(n' + base)) % &^period < &^pulse` \\ rw []
-    (* \\ qpat_x_assum `$! _` (qspecl_then [`(n'' − (n' + base)) DIV 586`, `n'' - base`] mp_tac) *)
-    \\ cheat)
-  >- rw [GSYM INT_SUB, GSYM INT_ADD,
-    ARITH_PROVE ``(a:int) − (b + c) - (d − b) = a − (d + c)``] *)
+    rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n' + base) − i)` \\ rw []
+    \\ DEP_ASM_REWRITE_TAC [] \\ gvs [e_clock_def, e_cell_def] \\ rw []
+    >- ARITH_TAC
+    \\ `∃k. i = -&k` by ARITH_TAC \\ gvs [INT_ADD]
+    \\ `(k + (n' + base)) DIV 586 = (n' + base) DIV 586 + 1` by ARITH_TAC
+    \\ fs [env_wf_def]
+    \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [FUN_EQ_THM, FORALL_PROD])
+  >- (
+    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
+    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ simp [])
+  >- (
+    rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw []
+    \\ gvs [e_clock_def, e_cell_def] \\ rw []
+    \\ `(∃k. i = &k) ∧ ∃k'. i' = &k'` by ARITH_TAC \\ gvs [INT_SUB, INT_SUB_LE]
+    \\ `∀m:int. 586 * m ≤ &(n + base) − &k ⇔ 586 * m ≤ &(n + base) − &k'` by ARITH_TAC
+    \\ pop_assum (qspec_then `&(m:num)` (assume_tac o GEN ``m:num`` o SRULE []))
+    \\ first_assum (qspec_then `0` mp_tac) \\ simp [NoAsms] \\ rw []
+    \\ gvs [INT_SUB, INT_SUB_LE] \\ Cases_on `k' ≤ n + base` \\ gvs [INT_SUB, INT_SUB_LE]
+    \\ assume_tac (GSYM $ MATCH_MP X_LE_DIV (DECIDE ``0 < 586n``)) \\ gvs []
+    \\ AP_THM_TAC \\ AP_TERM_TAC \\ irule LESS_EQUAL_ANTISYM \\ simp []
+    \\ pop_assum $ K $ qpat_x_assum `$! _` (rw o single o GSYM))
+  >- (
+    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
+    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ simp [])
+  >- (
+    `(∃k. i = &k ∧ k ≤ n + base) ∧ ∃k'. i' = &k' ∧ k' ≤ n + base` by ARITH_TAC
+    \\ gvs [e_cell_def, INT_SUB, INT_SUB_LE]
+    \\ `(n + base - k) DIV 586 = (n + base) DIV 586 ∧
+        (n + base - k') DIV 586 = (n + base) DIV 586` by ARITH_TAC
+    \\ simp [])
+  >- (
+    rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw []
+    \\ gvs [e_cell_def, e_clock_def]
+    \\ `22 ≤ &(n + base) - i` by ARITH_TAC
+    \\ `∃k. i = -&k ∧ ∃j. &(n + base) − i' = &j` by ARITH_TAC \\ gvs [INT_ADD]
+    \\ AP_THM_TAC \\ AP_TERM_TAC \\ ARITH_TAC)
 QED
 
 Theorem v_eval_v_and:
