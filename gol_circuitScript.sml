@@ -1074,4 +1074,149 @@ Proof
   rw [Once FUN_EQ_THM, translate_mods_def, empty_mod_def, translate_mod_def]
 QED
 
+Definition circuit_spec_def:
+  circuit_spec area ins outs init ⇔
+    ∀s1.
+      (∀xy d p. (xy,d,p) ∈ ins ⇒ p (s1 xy)) ⇒
+      ∃s2.
+        (∀xy d p. (xy,d,p) ∈ ins ⇒ s1 xy = s2 xy) ∧
+        (∀xy. xy ∉ IMAGE FST outs ⇒ s1 xy = s2 xy) ∧
+        (∀xy d p. (xy,d,p) ∈ outs ⇒ p (s2 xy)) ∧
+        circuit_run area
+          { (xy,d,s2 xy) | ∃p. (xy,d,p) ∈ ins }
+          { (xy,d,s2 xy) | ∃p. (xy,d,p) ∈ outs } {}
+          init
+End
+
+Theorem circuit_spec_compose:
+  circuit_spec area1 ins1 (outs1 ∪ m) init1 ∧
+  circuit_spec area2 (ins2 ∪ m) outs2 init2 ∧
+  DISJOINT area1 area2 ∧
+  DISJOINT (IMAGE FST ins1) (IMAGE FST m) ∧
+  DISJOINT (IMAGE FST ins2) (IMAGE FST m) ∧
+  DISJOINT (IMAGE FST ins1) (IMAGE FST ins2) ∧
+  DISJOINT (IMAGE FST outs1) (IMAGE FST outs2) ∧
+  (∀xy r1 r2. (xy,r1) ∈ ins2 ∧ (xy,r2) ∈ outs1 ⇒ r1 = r2)
+  ⇒
+  circuit_spec (area1 ∪ area2) (ins1 ∪ ins2) (outs1 ∪ outs2) (init1 ∪ init2)
+Proof
+  gvs [circuit_spec_def]
+  \\ rpt strip_tac
+  \\ gvs [SF DNF_ss, GSYM CONJ_ASSOC]
+  \\ last_x_assum drule
+  \\ strip_tac
+  \\ qabbrev_tac ‘s12 = λxy. if xy ∈ IMAGE FST ins2 then s1 xy else s2 xy’
+  \\ last_x_assum $ qspec_then ‘s12’ mp_tac
+  \\ impl_tac >-
+   (gvs [Abbr‘s12’,EXISTS_PROD,FORALL_PROD, SF SFY_ss]
+    \\ rw [] \\ gvs [] \\ res_tac \\ gvs []
+    \\ gvs [IN_DISJOINT,FORALL_PROD] \\ metis_tac [])
+  \\ strip_tac
+  \\ rename [‘∀xy d p. (xy,d,p) ∈ outs2 ⇒ p (sN xy)’]
+  \\ qexists_tac ‘sN’
+  \\ gvs [SF SFY_ss]
+  \\ conj_tac
+  >- (rpt strip_tac \\ cheat)
+  \\ conj_tac
+  >- (rpt strip_tac
+      \\ first_x_assum drule \\ gvs [Abbr‘s12’]
+      \\ rw [] \\ gvs [EXISTS_PROD] \\ gvs [])
+  \\ conj_tac
+  >- (rpt strip_tac \\ cheat)
+  \\ conj_tac
+  >- (rpt strip_tac
+      \\ first_x_assum drule \\ strip_tac
+      \\ ‘s12 xy = sN xy’ by cheat
+      \\ pop_assum $ rewrite_tac o single o GSYM
+      \\ rw [Abbr‘s12’]
+      \\ Cases_on ‘x’ \\ gvs []
+      \\ ‘r = (d,p)’ by metis_tac [] \\ gvs [SF SFY_ss])
+  \\ cheat
+QED
+
+(* --- compose all experiment --- *)
+
+(*
+   The idea here is that we go about building and verifying a circuit
+   in a different way:
+
+    1. We create a set consisting of all of the gates. For each gate,
+       we need to have a blist_simulation_ok theorem.
+
+    2. We then prove that the set of gates is well connected (every
+       out port has a corresponding in with the same direction) and
+       has no overlapping gates (all gate areas are disjoint). Let's
+       call this property ‘conected’.
+
+    3. The connected property from point 2 implies that there is bool
+       sequence that describes the signal passing through each in/out
+       port in the set of gets. In other words, we know:
+
+         ∀gates.
+           conected gates ⇒
+           ∃s. circuit_run UNIV {} {}
+                 { (xy, d, s xy) | (xy,d) ∈ ports_of gates }
+                 (make_init_of gates)
+
+       Note that ins and outs are empty and all the information is
+       only asserts, i.e., it is a complete circuit that runs directly
+       in the GOL semantics without insertions/deletions.
+
+    4. The remaining task is to prove theorems that derive facts
+       about what is passing through these io/out ports. For example,
+       for an and-gate we might like to prove
+
+         circuit_run UNIV {} {}
+           { (xy, d, s xy) | (xy,d) ∈ ports_of gates }
+           (make_init_of gates)
+         ⇒
+         ∀n. s (12,11) (n+5) = s (12,13) n ∧ s (11,12) n
+
+       which can be read as saying that the output at (12,11) at clock
+       n+5 is the bool-and of s (12,11) and s (11,12) at clock n. It's
+       important that these descriptions (on the left-hand side of ⇒):
+
+        - are really simple direct statements in the logic
+
+        - don't need to distinguish in from out
+
+        - can easily be about certain ranges of ‘n’ rather than
+          entire sequences.
+
+       For each individual gate, we get an automatic theorem that
+       gives the information is present in current circuit theorems
+       coming out of the simulation.
+
+       Note that all properties we prove about the gate from here
+       onwards have exactly the same shape on the left-hand side of
+       the implication, i.e.,
+
+         circuit_run UNIV {} {}
+           { (xy, d, s xy) | (xy,d) ∈ ports_of gates }
+           (make_init_of gates)
+         ⇒
+         ...
+
+       which means that we can compose them easily. In practice, we
+       can define a constant such that our theorems are of the form:
+
+         gol_in_gol_ports gates s
+         ⇒
+         ...
+
+    5. A major objective is now to prove a theorem of the form:
+
+         gol_in_gol_ports (all_gol_in_gol_gates init) s
+         ⇒
+         ∀x y n.
+           (x,y) ∈ steps n init
+           ⇔
+           s (x * 21 * 150 + 123, y * 21 * 150 + 45) (n * 60 * period)
+
+       (I made up some of the magic numbers 123 and 45 above.)
+
+*)
+
+
+
 val _ = export_theory();
