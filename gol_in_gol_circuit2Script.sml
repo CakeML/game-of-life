@@ -214,6 +214,11 @@ Definition assign_sat_def:
   assign_sat env (s, dom) (p, v) ⇔ p ∈ dom ∧ v_eval env v (s p)
 End
 
+Definition assign_tr_def:
+  assign_tr (x:int, y:int) (s, dom) =
+    ((λ((a,b),d). s ((a+x,b+y),d)), λ((a,b),d). dom ((a+x,b+y),d))
+End
+
 Definition max_delay_def[simp,compute]:
   (max_delay (da, a) (Var a' d) = if a = a' then da - d else 0) ∧
   (max_delay a (Not x)   = max_delay a x) ∧
@@ -695,12 +700,6 @@ Definition gate_at_def:
     U {gate_at' inst (x + i * 2 * &^tile, y + j * 2 * &^tile) init | i, j | T}
 End
 
-Definition floodfill_ins_def:
-  floodfill_ins (f, t) p = [
-    (((22:int,8:int),E),λn. f ((&n - &t) / &^period : int) p);
-    (((32,0),E),λn. (&n - &t) % &^period < &^pulse)]
-End
-
 Definition floodfill_mod_def:
   floodfill_mod (area: (int # int) list)
     (ins: ((int # int) # dir) list)
@@ -721,7 +720,9 @@ Definition floodfill_def:
   (∀x y. MEM (x,y) area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < 2 * &^tile) ∧
   (∀x y. MEM (x,y) area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < 2 * &^tile) ∧
   ∀env. env_wf env ⇒
-  ∃s. (∀v. MEM v (ins ++ outs) ⇒ assign_sat env s v) ∧
+  ∃s.
+  (∀v. MEM v (ins ++ outs) ⇒ assign_sat env s v) ∧
+  (∀pd v. MEM (pd, v) ins ⇒ is_exact v) ∧
   ∀s'. assign_ext s s' ∧
   (∀pi po d. MEM (pi,po,d) crosses ⇒ ∃v.
     assign_sat env s' ((pi,d),v) ∧
@@ -951,26 +952,22 @@ Theorem floodfill_add_small_gate:
 Proof
   rw [] \\ gvs [floodfill_def]
   \\ gvs [SF DNF_ss, SF SFY_ss,gate_def] \\ rw []
-  \\ first_x_assum drule
-  \\ first_x_assum drule \\ strip_tac
+  \\ qabbrev_tac `x = (&(2*x'):int)` \\ qabbrev_tac `y = (&(2*y'):int)`
+  \\ last_x_assum drule \\ strip_tac
+  \\ qabbrev_tac `s1' = assign_tr (x,y) s`
+  \\ first_x_assum $ drule_then $ qspec_then `s1'` mp_tac
+  \\ impl_tac >- cheat
   \\ strip_tac
-  \\ first_x_assum $ qspec_then ‘s’ mp_tac
-  \\ impl_tac >- cheat (* ?? *)
-  \\ strip_tac
-  \\ first_x_assum drule
-  \\ strip_tac
-  \\ rename [‘assign_ext s1 s2’]
+  \\ rename [‘assign_ext s1' s2'’]
+  \\ qabbrev_tac `s2 = assign_tr (-x,-y) s2'`
   \\ qexists_tac ‘s2’
+  \\ `assign_ext s s2` by cheat
+  \\ conj_tac >- cheat
   \\ conj_tac >- cheat
   \\ rpt strip_tac
   \\ rename [‘assign_ext s2 s3’]
-  \\ qpat_x_assum ‘_ ⇒ _’ mp_tac
-  \\ impl_tac
-  >-
-   (rw [] \\ first_x_assum drule \\ strip_tac
-    \\ qexists_tac ‘v’
-    \\ cheat (* needs assign_ext s3 s2 but we
-                 have assign_ext s2 s3 *))
+  \\ first_x_assum (drule_at (Pos (el 2)))
+  \\ impl_tac >- cheat
   \\ strip_tac
   \\ cheat
 QED
