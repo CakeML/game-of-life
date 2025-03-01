@@ -381,19 +381,19 @@ Proof
     \\ DEP_ASM_REWRITE_TAC [] \\ gvs [e_clock_def, e_cell_def] \\ rw []
     >- ARITH_TAC
     \\ `∃k. i = -&k` by ARITH_TAC \\ gvs [INT_ADD]
-    \\ `(k + (n' + base)) DIV 586 = (n' + base) DIV 586 + 1` by ARITH_TAC
+    \\ `(k + (n' + base)) DIV &^period = (n' + base) DIV &^period + 1` by ARITH_TAC
     \\ fs [env_wf_def]
     \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [FUN_EQ_THM, FORALL_PROD])
   >- (
-    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    Cases_on `r_eval (env ((n' + base) DIV &^period)) r` \\ rw [] \\ simp [e_cell_def]
     \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
-    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ `(n' + base - k) DIV &^period = (n' + base) DIV &^period` by ARITH_TAC
     \\ simp [])
   >- (
     rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw []
     \\ gvs [e_clock_def, e_cell_def] \\ rw []
     \\ `(∃k. i = &k) ∧ ∃k'. i' = &k'` by ARITH_TAC \\ gvs [INT_SUB, INT_SUB_LE]
-    \\ `∀m:int. 586 * m ≤ &(n + base) − &k ⇔ 586 * m ≤ &(n + base) − &k'` by ARITH_TAC
+    \\ `∀m:int. &^period * m ≤ &(n + base) − &k ⇔ &^period * m ≤ &(n + base) − &k'` by ARITH_TAC
     \\ pop_assum (qspec_then `&(m:num)` (assume_tac o GEN ``m:num`` o SRULE []))
     \\ first_assum (qspec_then `0` mp_tac) \\ simp [NoAsms] \\ rw []
     \\ gvs [INT_SUB, INT_SUB_LE] \\ Cases_on `k' ≤ n + base` \\ gvs [INT_SUB, INT_SUB_LE]
@@ -401,15 +401,15 @@ Proof
     \\ AP_THM_TAC \\ AP_TERM_TAC \\ irule LESS_EQUAL_ANTISYM \\ simp []
     \\ pop_assum $ K $ qpat_x_assum `$! _` (rw o single o GSYM))
   >- (
-    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    Cases_on `r_eval (env ((n' + base) DIV &^period)) r` \\ rw [] \\ simp [e_cell_def]
     \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
-    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ `(n' + base - k) DIV &^period = (n' + base) DIV &^period` by ARITH_TAC
     \\ simp [])
   >- (
     `(∃k. i = &k ∧ k ≤ n + base) ∧ ∃k'. i' = &k' ∧ k' ≤ n + base` by ARITH_TAC
     \\ gvs [e_cell_def, INT_SUB, INT_SUB_LE]
-    \\ `(n + base - k) DIV 586 = (n + base) DIV 586 ∧
-        (n + base - k') DIV 586 = (n + base) DIV 586` by ARITH_TAC
+    \\ `(n + base - k) DIV &^period = (n + base) DIV &^period ∧
+        (n + base - k') DIV &^period = (n + base) DIV &^period` by ARITH_TAC
     \\ simp [])
   >- (
     rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw []
@@ -433,20 +433,20 @@ Proof
   gvs [oneline v_or_def, AllCaseEqs(), oneline to_reg_def]
   \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def]
   >- (
-    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    Cases_on `r_eval (env ((n' + base) DIV &^period)) r` \\ rw [] \\ simp [e_cell_def]
     \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
-    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ `(n' + base - k) DIV &^period = (n' + base) DIV &^period` by ARITH_TAC
     \\ simp [])
   >- (
-    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    Cases_on `r_eval (env ((n' + base) DIV &^period)) r` \\ rw [] \\ simp [e_cell_def]
     \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
-    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ `(n' + base - k) DIV &^period = (n' + base) DIV &^period` by ARITH_TAC
     \\ simp [])
   >- (
     `(∃k. i = &k ∧ k ≤ n + base) ∧ ∃k'. i' = &k' ∧ k' ≤ n + base` by ARITH_TAC
     \\ gvs [e_cell_def, INT_SUB, INT_SUB_LE]
-    \\ `(n + base - k) DIV 586 = (n + base) DIV 586 ∧
-        (n + base - k') DIV 586 = (n + base) DIV 586` by ARITH_TAC
+    \\ `(n + base - k) DIV &^period = (n + base) DIV &^period ∧
+        (n + base - k') DIV &^period = (n + base) DIV &^period` by ARITH_TAC
     \\ simp [])
   >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw [])
   >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw [])
@@ -810,11 +810,10 @@ Theorem floodfill_finish:
   ⇒
   gol_in_gol build_mega_cells (^period * 60) read_mega_cells
 Proof
-  cheat
-  (* rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
+  rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
   \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
   \\ rename [‘FUNPOW step n s_init (x,y) = _’]
-  \\ qabbrev_tac ‘env = λn. FUNPOW step (Num n) s_init’
+  \\ qabbrev_tac ‘env = λn. FUNPOW step n s_init’
   \\ ‘env_wf env’ by cheat
   \\ first_x_assum drule \\ strip_tac
   \\ PairCases_on ‘s’ \\ gvs [assign_sat_def]
@@ -839,7 +838,7 @@ Proof
   \\ dxrule run_to_clear_mods
   \\ strip_tac
   \\ Cases_on ‘n = 0’
-  >- gvs [read_mega_cells_build_mega_cells_thm]
+  >- gvs [read_mega_cells_build_mega_cells_thm, Abbr`env`]
   \\ pop_assum mp_tac
   \\ pop_assum mp_tac
   \\ asm_rewrite_tac [] \\ pop_assum kall_tac
@@ -899,8 +898,8 @@ Proof
   \\ gvs [IN_DEF,is_ew_def]
   \\ ‘(^period * 60 * n − 1) DIV 60 = ^period * n - 1’ by gvs [DIV_EQ_X]
   \\ gvs []
-  \\ ‘(&(^period * n − 1) − &base) / & ^period = (& n) : int’ by cheat
-  \\ gvs [] \\ gvs [Abbr‘env’] *)
+  \\ ‘Num (&(586 * n + base − 1) + 15) DIV 586 = n’ by cheat
+  \\ gvs [] \\ gvs [Abbr‘env’, e_cell_def]
 QED
 
 Theorem floodfill_add_gate:
