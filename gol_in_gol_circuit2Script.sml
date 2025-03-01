@@ -350,14 +350,6 @@ Proof
   rw [v_eval_def] \\ metis_tac [v_eval'_v_delay, env_wf_translate]
 QED
 
-Theorem add_mul_sub_div:
-  n ≤ i ∧ i < ^period ⇒ (&(i + (^period * n' + base)) − &(n + base):int) / &^period = &n'
-Proof
-  rw []
-  \\ DEP_REWRITE_TAC [ARITH_PROVE ``b ≤ i ⇒ (&(i + (a + t)):int) − &(b + t) = &(i − b + a)``]
-  \\ `(i - n) DIV ^period = 0` by rw [DIV_EQ_X] \\ pop_assum (rw o single)
-QED
-
 Theorem v_eval'_v_not:
   v_eval' env v1 a1 ⇒
   v_eval' env (v_not v1) (λn. ¬a1 n)
@@ -438,16 +430,26 @@ Theorem v_eval'_v_or:
   env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
   v_eval' env (v_or v1 v2) (λn. a1 n ∨ a2 n)
 Proof
-  cheat
-  (* `∃P. P v1 v2` by (qexists_tac `λ_ _.T` \\ rw []) \\ *)
-  (* gvs [oneline v_or_def, AllCaseEqs(), oneline to_reg_def]
-  \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def, add_mul_sub_div]
-  \\ `(&n'' − &(n + base) − &n':int) = &n'' − &(base + 586)` by ARITH_TAC
-  \\ pop_assum (rw o single)
-  \\ Cases_on `(&n'' − &(base + &^period)) % &^period < &^pulse` \\ rw []
-  >- rw [ARITH_PROVE ``(&n'' − &(base + 586):int) / 586 + 1 = (&n'' − &base) / 586``]
-  \\ `((&n'' − &(n + base)) / 586:int) = (&n'' − &base) / 586` suffices_by rw []
-  \\ cheat *)
+  gvs [oneline v_or_def, AllCaseEqs(), oneline to_reg_def]
+  \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def]
+  >- (
+    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
+    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ simp [])
+  >- (
+    Cases_on `r_eval (env ((n' + base) DIV 586)) r` \\ rw [] \\ simp [e_cell_def]
+    \\ `∃k. i = &k ∧ k ≤ n' + base` by ARITH_TAC \\ gvs [INT_SUB]
+    \\ `(n' + base - k) DIV 586 = (n' + base) DIV 586` by ARITH_TAC
+    \\ simp [])
+  >- (
+    `(∃k. i = &k ∧ k ≤ n + base) ∧ ∃k'. i' = &k' ∧ k' ≤ n + base` by ARITH_TAC
+    \\ gvs [e_cell_def, INT_SUB, INT_SUB_LE]
+    \\ `(n + base - k) DIV 586 = (n + base) DIV 586 ∧
+        (n + base - k') DIV 586 = (n + base) DIV 586` by ARITH_TAC
+    \\ simp [])
+  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw [])
+  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw [])
 QED
 
 Theorem v_eval_v_or:
