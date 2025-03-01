@@ -11,7 +11,7 @@ val _ = new_theory "gol_in_gol_circuit";
 Quote diag = gol_diagramLib.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
          ^   ^                                                               v   v         |
- 0   o > o > o > o > o > o > o > o > o > o > o > o > o > o > s > s > s > s > o > o > o   0 |
+ 0   o > o > o > o > o > o > o > o > o > s > s > s > s > s > s > s > o > o > o > o > o   0 |
      ^   ^   ^                       v                                       v   v   v     |
  1 > o > o > o > H - H > o > o > o > o > o > o > o > o > o   o > o > o > o > o > o > o > 1 |
      ^   ^       |   |               v                   v   ^               v   v   v     |
@@ -23,11 +23,11 @@ Quote diag = gol_diagramLib.parse:
      ^   ^   ^   ^   ^   ^           v   ^       ^   v   v       v   v   v       v   v     |
  5   o   o   o   N   o   o           o > o > N > A < o   o > o > o > o > o > o   o   s   5 |
      ^   ^   ^   ^   ^   ^                                       v   v   v   v   v   v     |
- 6   s   o < o < o < o < o < o < o < o < o < o < o < o < o < o < o   o   o   H - H   s   6 |
+ 6   o   o < o < o < o < o < o < o < o < o < o < o < o < o < o < o   o   o   H - H   s   6 |
      ^       ^   ^       ^                                   v   v   v   v   |   |   v     |
- 7   s   o > o > o > o > o   o < o < o < o < o < o < o < o < o   o   o   o   H - H   s   7 |
+ 7   o   o > o > o > o > o   o < o < o < o < o < o < o < o < o   o   o   o   H - H   s   7 |
      ^   ^   ^   ^                                           v   v   v   v   v   v   v     |
- 8   s   o   o   O < o < o   o < o < o < o < o < o < o < o < o   o   o   o > O   o   s   8 |
+ 8   o   o   o   O < o < o   o < o < o < o < o < o < o < o < o   o   o   o > O   o   s   8 |
      ^   ^   ^   ^       ^                                   v   v   v       v   v   v     |
  9   s   o   H - H       o   o < o < o < o < o < o < o < o < o   o   o > o   o   o   s   9 |
      ^   ^   |   |       ^                                   v   v       v   v   v   v     |
@@ -58,8 +58,8 @@ End
 
 Theorem floodfill_result = floodfill diag {
   period = 586,
-  pulse = 18,
-  asserts = [((16, 0), E, Exact (0, Clock)), ((11, 4), E, Exact (0, ThisCell))]
+  pulse = 22,
+  asserts = [((6, 0), E, Exact (~77, Clock)), ((11, 4), E, Exact (~15, ThisCell))]
 };
 
 val _ = export_theory();

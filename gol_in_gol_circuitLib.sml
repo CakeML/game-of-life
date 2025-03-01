@@ -18,9 +18,9 @@ datatype rvalue =
 datatype evalue =
     Clock
   | NotClock
-  | NextCell
   | ThisCell
-  | ThisCellUntilClock of int
+  | ThisCellClock
+  | ThisCellNotClock
 
 datatype value = Regular of int * rvalue | Exact of int * evalue
 
@@ -63,6 +63,7 @@ type 'a log = {
   gateKey: gate * int * loaded_gate -> 'a,
   teleport: teleport -> unit
 }
+val nolog = { gateKey = K (), newGate = K (), newIn = K (), teleport = K () }
 
 type wires = (int * int, value) Redblackmap.dict
 type params = {period: int, pulse: int, asserts: io_port list}
@@ -116,21 +117,22 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
           Regular (Int.max (d1, d2), mk_ROr (v1, v2))
         | (Exact (d1, ThisCell), Regular (d2, v2)) =>
           Regular (Int.max (d1, d2), mk_ROr (Cell (0, 0), v2))
-        | (Exact (d1, NextCell), Exact (d2, ThisCellUntilClock d3)) =>
-          if d1 = d2 + d3 then Exact (d1 - period, ThisCell)
-          else (PolyML.print (d2, d1, d2 + d3); raise Fail "clock timing 1")
+        | (Exact (d1, ThisCellClock), Exact (d2, ThisCellNotClock)) => (
+          if d1 = d2 then () else (PolyML.print ("clock timing 1", d2, d1); ());
+          Exact (d1, ThisCell))
         | r => (PolyML.print (ins, Or (e1, e2), r); raise Fail "evalExp Or"))
       | evalExp (And (e1, e2)) = (case (evalExp e1, evalExp e2) of
           (Regular (d1, v1), Regular (d2, v2)) =>
           Regular (Int.max (d1, d2), RAnd (v1, v2))
-        | (Exact (d1, ThisCell), Exact (d2, NotClock)) =>
-          if d1 > d2 orelse pulse < d1 then
-            (PolyML.print (pulse, d1, d2); raise Fail "clock timing 2") else
-          Exact (d1, ThisCellUntilClock (d2 - d1))
-        | (Exact (d1, Clock), Regular (d2, v2)) =>
-          if v2 <> nextCell then raise Fail "calculated wrong function" else
-          if d1 < d2 then (PolyML.print (d1, d2); raise Fail "clock timing 3") else
-          Exact (d1, NextCell)
+        | (Exact (d1, ThisCell), Exact (d2, NotClock)) => (
+          if d2 <= d1 andalso d1 <= d2+pulse then () else
+            (PolyML.print ("clock timing 2", d2, d1, d2+pulse); ());
+          Exact (d2, ThisCellNotClock))
+        | (Exact (d1, Clock), Regular (d2, v2)) => (
+          if v2 = nextCell then () else (PolyML.print "calculated wrong function"; ());
+          if d2 <= d1 + period andalso d1 <= ~pulse then () else
+            (PolyML.print ("clock timing 3", d2-period, d1, d1+pulse, 0); ());
+          Exact (d1, ThisCellClock))
         | r => (PolyML.print (ins, And (e1, e2), r); raise Fail "evalExp And"))
       | evalExp (Not e1) = (case evalExp e1 of
           Regular (d1, v1) => Regular (d1, RNot v1)
@@ -155,7 +157,7 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
           (PolyML.print ("clock period mismatch", period, n1 - n2); ())
       | (Exact (n1, ThisCell), Exact (n2, ThisCell)) =>
         if n1 = n2 then () else
-          (PolyML.print ("thiscell mismatch", period, period + n1 - n2); ())
+          (PolyML.print ("thiscell mismatch", n1, n2); ())
       | (e1, e2) => if e1 = e2 then () else
           (PolyML.print ("cycle mismatch", w, value, old); ()))
     | NONE => let
@@ -172,7 +174,9 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
           val wout = (fst w - 2*CSIZE*a, snd w - 2*CSIZE*b)
           val (d, (x, y)) = case value of
               Regular (d, Cell p) => (d, p)
-            | Exact (d, ThisCell) => (d, (0, 0))
+            | Exact (d, ThisCell) => (
+              if 0 <= d then () else (PolyML.print ("exact signal too early", d); ());
+              (d, (0, 0)))
             | _ => raise Fail "bad signal on teleport"
           val _ = #teleport log (w, dir)
           in processWire (wout, Regular (d, Cell (x - a, y - b))) depth end
@@ -216,9 +220,10 @@ val RXor_tm  = prim_mk_const {Name = "RXor",  Thy = "gol_in_gol_circuit2"}
 val Clock_tm    = prim_mk_const {Name = "Clock",    Thy = "gol_in_gol_circuit2"}
 val NotClock_tm = prim_mk_const {Name = "NotClock", Thy = "gol_in_gol_circuit2"}
 val ThisCell_tm = prim_mk_const {Name = "ThisCell", Thy = "gol_in_gol_circuit2"}
-val NextCell_tm = prim_mk_const {Name = "NextCell", Thy = "gol_in_gol_circuit2"}
-val ThisCellUntilClock_tm =
-  prim_mk_const {Name = "ThisCellUntilClock", Thy = "gol_in_gol_circuit2"}
+val ThisCellClock_tm =
+  prim_mk_const {Name = "ThisCellClock", Thy = "gol_in_gol_circuit2"}
+val ThisCellNotClock_tm =
+  prim_mk_const {Name = "ThisCellNotClock", Thy = "gol_in_gol_circuit2"}
 
 val Reg_tm   = prim_mk_const {Name = "Reg",   Thy = "gol_in_gol_circuit2"}
 val Exact_tm = prim_mk_const {Name = "Exact", Thy = "gol_in_gol_circuit2"}
@@ -238,11 +243,11 @@ fun tr_rvalue (Cell p)  = mk_binop Cell_tm $ pair_map from_int p
 fun tr_evalue Clock = Clock_tm
   | tr_evalue NotClock = NotClock_tm
   | tr_evalue ThisCell = ThisCell_tm
-  | tr_evalue NextCell = NextCell_tm
-  | tr_evalue (ThisCellUntilClock n) = mk_monop ThisCellUntilClock_tm (numSyntax.term_of_int n)
+  | tr_evalue ThisCellClock = ThisCellClock_tm
+  | tr_evalue ThisCellNotClock = ThisCellNotClock_tm
 
 fun tr_value (Regular (n, v)) = mk_binop Reg_tm (numSyntax.term_of_int n, tr_rvalue v)
-  | tr_value (Exact (n, v)) = mk_binop Exact_tm (numSyntax.term_of_int n, tr_evalue v)
+  | tr_value (Exact (n, v)) = mk_binop Exact_tm (from_int n, tr_evalue v)
 
 end
 

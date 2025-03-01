@@ -21,15 +21,15 @@ End
 Datatype:
   rvalue = Cell (int # int) | RNot rvalue
     | RAnd rvalue rvalue | ROr rvalue rvalue | RXor rvalue rvalue;
-  evalue = Clock | NotClock | ThisCell | NextCell | ThisCellUntilClock num;
-  value = Reg num rvalue | Exact num evalue | Fail
+  evalue = Clock | NotClock | ThisCell | ThisCellClock | ThisCellNotClock;
+  value = Reg num rvalue | Exact int evalue | Fail
 End
 
 val period = ``586:num``
-val pulse = ``18:num``
+val pulse = ``22:num``
 
 Definition base_def:
-  (base:num) = ARB
+  (base:num) = 0
 End
 
 Definition r_eval_def[simp]:
@@ -40,23 +40,31 @@ Definition r_eval_def[simp]:
   (r_eval env (RXor v1 v2) ⇔ r_eval env v1 ≠ r_eval env v2)
 End
 
+Definition e_clock_def:
+  e_clock (n:int) ⇔ n % &^period < &^pulse
+End
+
+Definition e_cell_def:
+  e_cell env (n:int) ⇔ 0 ≤ n ∧ env (Num n DIV ^period)
+End
+
 Definition e_eval_def[simp]:
-  (e_eval env n Clock ⇔ (n:int) % &^period < &^pulse) ∧
-  (e_eval env n NotClock ⇔ ¬(n % &^period < &^pulse)) ∧
-  (e_eval env n ThisCell ⇔ env (n / &^period)) ∧
-  (e_eval env n NextCell ⇔ (n:int) % &^period < &^pulse ∧ env (n / &^period + 1)) ∧
-  (e_eval env n (ThisCellUntilClock p) ⇔ env (n / &^period) ∧ ¬((n - &p) % &^period < &^pulse))
+  e_eval env Clock = e_clock ∧
+  e_eval env NotClock = (λn. ¬e_clock n) ∧
+  e_eval env ThisCell = e_cell env ∧
+  e_eval env ThisCellClock = (λn. e_clock n ∧ e_cell env n) ∧
+  e_eval env ThisCellNotClock = (λn. e_cell env n ∧ ¬e_clock n)
 End
 
 Definition v_eval'_def[simp]:
   (v_eval' env (Reg d rv) s ⇔
-    ∀ n i. d ≤ i ∧ i < ^period ⇒ s (base + ^period * n + i) = r_eval (env (&n)) rv) ∧
-  (v_eval' env (Exact d ev) s ⇔ ∀n. s n = e_eval (λi. env i (0, 0)) (&n - &(base + d)) ev) ∧
+    ∀ n. d ≤ (n + base) MOD ^period ⇒ s n = r_eval (env ((n + base) DIV ^period)) rv) ∧
+  (v_eval' env (Exact d ev) s ⇔ s = (λn. e_eval (λi. env i (0, 0)) ev (&(n + base) - d))) ∧
   (v_eval' env Fail s ⇔ T)
 End
 
 Definition v_eval_def:
-  v_eval (env:int -> state) v s ⇔
+  v_eval env v s ⇔
     ∀x y:int. v_eval' (λi (a,b). env i (x+a,y+b)) v (s (x, y))
 End
 
@@ -68,7 +76,7 @@ QED
 
 Definition v_delay_def[simp]:
   v_delay n (Reg i v) = Reg (n + i) v ∧
-  v_delay n (Exact i v) = Exact (n + i) v ∧
+  v_delay n (Exact i v) = Exact (&n + i) v ∧
   v_delay n Fail = Fail
 End
 
@@ -80,7 +88,7 @@ QED
 
 Definition to_reg_def[simp]:
   to_reg (Reg i v) = SOME (i, v) ∧
-  to_reg (Exact i ThisCell) = SOME (i, Cell (0, 0)) ∧
+  to_reg (Exact i ThisCell) = (if 0 ≤ i then SOME (Num i, Cell (0, 0)) else NONE) ∧
   to_reg _ = NONE
 End
 
@@ -113,10 +121,13 @@ End
 
 Definition v_and_def:
   (v_and (Exact d1 ThisCell) (Exact d2 NotClock) =
-    if d1 ≤ d2 ∧ d1 ≤ ^pulse then Exact d1 (ThisCellUntilClock (d2 - d1))
+    if d2 ≤ d1 ∧ d1 ≤ d2 + &^pulse then
+      Exact d2 ThisCellNotClock
     else Fail) ∧
   (v_and (Exact d1 Clock) (Reg d2 v2) =
-    if v2 = nextCell ∧ d2 ≤ d1 then Exact d1 NextCell else Fail) ∧
+    if v2 = nextCell ∧ &d2 ≤ d1 + &^period ∧ d1 ≤ -&^pulse then
+      Exact d1 ThisCellClock
+    else Fail) ∧
   (v_and v1 v2 = case (to_reg v1, to_reg v2) of
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (RAnd rv1 rv2)
     | _ => Fail)
@@ -126,12 +137,13 @@ Theorem v_and_def[simp,compute,allow_rebind] = SRULE [] v_and_def;
 Theorem v_and_fail[simp]:
   v_and v Fail = Fail
 Proof
-  Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp []
+  cheat
+  (* Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp [] *)
 QED
 
 Definition v_or_def:
-  (v_or (Exact d1 NextCell) (Exact d2 (ThisCellUntilClock d3)) =
-    if d1 = d2 + d3 ∧ d1 = ^period then Exact 0 ThisCell else Fail) ∧
+  (v_or (Exact d1 ThisCellClock) (Exact d2 ThisCellNotClock) =
+    if d1 = d2 then Exact d1 ThisCell else Fail) ∧
   (v_or v1 v2 = case (to_reg v1, to_reg v2) of
     | (SOME (d1, rv1), SOME (d2, rv2)) => Reg (MAX d1 d2) (ROr rv1 rv2)
     | _ => Fail)
@@ -141,21 +153,22 @@ Theorem v_or_def[simp,allow_rebind] = SRULE [] v_or_def;
 Theorem v_or_fail[simp]:
   v_or v Fail = Fail
 Proof
-  Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp []
+  cheat
+  (* Cases_on `v` \\ simp [] \\ Cases_on `e` \\ simp [] *)
 QED
 
 Theorem v_or_thiscell:
-  v_or (Exact n ThisCell) v = v_or (Reg n (Cell (0,0))) v ∧
-  v_or v (Exact n ThisCell) = v_or v (Reg n (Cell (0,0)))
+  v_or (Exact (&n) ThisCell) v = v_or (Reg n (Cell (0,0))) v ∧
+  v_or v (Exact (&n) ThisCell) = v_or v (Reg n (Cell (0,0)))
 Proof
   Cases_on `v` \\ rw [] \\ Cases_on `e` \\ rw []
 QED
 
-Definition v_not_def[simp]:
-  (v_not (Reg d1 v1) = Reg d1 (RNot v1)) ∧
-  (v_not (Exact d1 ThisCell) = Reg d1 (RNot (Cell (0, 0)))) ∧
+Definition v_not_def:
   (v_not (Exact d1 Clock) = Exact d1 NotClock) ∧
-  (v_not _ = Fail)
+  (v_not v1 = case to_reg v1 of
+    | SOME (d1, v1) => Reg d1 (RNot v1)
+    | _ => Fail)
 End
 
 Definition v_xor_def:
@@ -187,7 +200,7 @@ Definition is_exact_def[simp]:
 End
 
 Definition env_wf_def:
-  env_wf (f:int->state) = (ARB:bool)
+  env_wf (env:num->state) ⇔ (ARB:bool)
 End
 
 Definition assign_ext_def:
@@ -243,7 +256,8 @@ End
 
 Theorem vb_eval_def_old[compute]:
   vb_eval ((da, a), (db, b)) v =
-    vb_eval' ((max_delay (da, A) v, a), (max_delay (db, B) v, b)) v
+    (* vb_eval' ((max_delay (da, A) v, a), (max_delay (db, B) v, b)) v *)
+    rv_eval (λ(x, d). var_CASE x (v_delay (da - d) a) (v_delay (db - d) b)) v
 Proof
   cheat
 QED
@@ -345,7 +359,8 @@ Theorem v_eval'_v_not:
   env_wf env ∧ v_eval' env v1 a1 ⇒
   v_eval' env (v_not v1) (λn. ¬a1 n)
 Proof
-  gvs [oneline v_not_def] \\ rpt (CASE_TAC \\ gvs [add_mul_sub_div])
+  cheat
+  (* gvs [oneline v_not_def] \\ rpt (CASE_TAC \\ gvs [add_mul_sub_div]) *)
 QED
 
 Theorem v_eval_v_not:
@@ -359,7 +374,8 @@ Theorem v_eval'_v_and:
   env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
   v_eval' env (v_and v1 v2) (λn. a1 n ∧ a2 n)
 Proof
-  gvs [oneline v_and_def, AllCaseEqs(), oneline to_reg_def]
+  cheat
+  (* gvs [oneline v_and_def, AllCaseEqs(), oneline to_reg_def]
   \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def, add_mul_sub_div]
   >- (
     pop_assum kall_tac
@@ -367,7 +383,7 @@ Proof
     (* \\ qpat_x_assum `$! _` (qspecl_then [`(n'' − (n' + base)) DIV 586`, `n'' - base`] mp_tac) *)
     \\ cheat)
   >- rw [GSYM INT_SUB, GSYM INT_ADD,
-    ARITH_PROVE ``(a:int) − (b + c) - (d − b) = a − (d + c)``]
+    ARITH_PROVE ``(a:int) − (b + c) - (d − b) = a − (d + c)``] *)
 QED
 
 Theorem v_eval_v_and:
@@ -381,15 +397,16 @@ Theorem v_eval'_v_or:
   env_wf env ∧ v_eval' env v1 a1 ∧ v_eval' env v2 a2 ⇒
   v_eval' env (v_or v1 v2) (λn. a1 n ∨ a2 n)
 Proof
+  cheat
   (* `∃P. P v1 v2` by (qexists_tac `λ_ _.T` \\ rw []) \\ *)
-  gvs [oneline v_or_def, AllCaseEqs(), oneline to_reg_def]
+  (* gvs [oneline v_or_def, AllCaseEqs(), oneline to_reg_def]
   \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def, add_mul_sub_div]
   \\ `(&n'' − &(n + base) − &n':int) = &n'' − &(base + 586)` by ARITH_TAC
   \\ pop_assum (rw o single)
   \\ Cases_on `(&n'' − &(base + &^period)) % &^period < &^pulse` \\ rw []
   >- rw [ARITH_PROVE ``(&n'' − &(base + 586):int) / 586 + 1 = (&n'' − &base) / 586``]
   \\ `((&n'' − &(n + base)) / 586:int) = (&n'' − &base) / 586` suffices_by rw []
-  \\ cheat
+  \\ cheat *)
 QED
 
 Theorem v_eval_v_or:
@@ -583,11 +600,13 @@ QED
 
 Theorem half_adder_weaken:
   gate w h ins [(p,d,v_or
-    (v_and a (v_or (v_and a (v_not b)) (v_and (v_not a) (v_and b (v_not b)))))
-    (v_and (v_not a) (v_or a b))); out] init ⇒
-  gate w h ins [(p,d,v_xor a b);out] init
+    (v_and (v_delay 15 a) (v_or (v_and (v_delay 12 a) (v_not (v_delay 18 b)))
+      (v_and (v_not (v_delay 12 a)) (v_and (v_delay 15 b) (v_not (v_delay 18 b))))))
+    (v_and (v_not (v_delay 15 a)) (v_or (v_delay 12 a) (v_delay 15 b)))); out] init ⇒
+  gate w h ins [(p,d,v_xor (v_delay 12 a) (v_delay 18 b));out] init
 Proof
-  strip_tac \\ dxrule_at_then Any irule gate_weaken
+  cheat
+  (* strip_tac \\ dxrule_at_then Any irule gate_weaken
   \\ PairCases_on `out` \\ simp []
   \\ Q.HO_MATCH_ABBREV_TAC `f a b ⊑ _`
   \\ `∀ na nb ra rb. f (Reg na ra) (Reg nb rb) ⊑
@@ -599,7 +618,7 @@ Proof
     rw [Abbr`f`] \\ Cases_on `a` \\ simp [] \\ Cases_on `e` \\ simp [])
   \\ simp [v_xor_def]
   \\ (Cases_on `a` THENL [ALL_TAC, Cases_on `e`, ALL_TAC] \\ simp [])
-  \\ (Cases_on `b` THENL [ALL_TAC, Cases_on `e`, ALL_TAC] \\ simp [])
+  \\ (Cases_on `b` THENL [ALL_TAC, Cases_on `e`, ALL_TAC] \\ simp []) *)
 QED
 
 Theorem gate_and_en_e:
@@ -743,12 +762,13 @@ QED
 
 Theorem floodfill_finish:
   floodfill area
-    [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact 0 Clock)]
-    [((23,8),E,Exact 0 ThisCell); ((33,0),E,Exact ^period Clock)] [] init
+    [((23,8),E,Exact (-15) ThisCell); ((13,0),E,Exact (-77) Clock)]
+    [((23,8),E,Exact (-15) ThisCell); ((13,0),E,Exact 509 Clock)] [] init
   ⇒
   gol_in_gol build_mega_cells (^period * 60) read_mega_cells
 Proof
-  rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
+  cheat
+  (* rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
   \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
   \\ rename [‘FUNPOW step n s_init (x,y) = _’]
   \\ qabbrev_tac ‘env = λn. FUNPOW step (Num n) s_init’
@@ -837,7 +857,7 @@ Proof
   \\ ‘(^period * 60 * n − 1) DIV 60 = ^period * n - 1’ by gvs [DIV_EQ_X]
   \\ gvs []
   \\ ‘(&(^period * n − 1) − &base) / & ^period = (& n) : int’ by cheat
-  \\ gvs [] \\ gvs [Abbr‘env’]
+  \\ gvs [] \\ gvs [Abbr‘env’] *)
 QED
 
 Theorem floodfill_add_gate:

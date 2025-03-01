@@ -11,10 +11,10 @@ sig
 
   datatype evalue =
       Clock
-    | NextCell
     | NotClock
     | ThisCell
-    | ThisCellUntilClock of int
+    | ThisCellClock
+    | ThisCellNotClock
 
   datatype value = Exact of int * evalue | Regular of int * rvalue
 
@@ -40,6 +40,7 @@ sig
   type wires
   type params = {period: int, pulse: int, asserts: io_port list}
   val build: gol_diagramLib.gates * teleport list -> params -> 'b log -> wires
+  val nolog: unit log
   val getWire: wires -> int * int -> dir -> value
 
   val floodfill: gol_diagramLib.diag -> params -> thm
