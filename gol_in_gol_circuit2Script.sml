@@ -450,10 +450,25 @@ Proof
   \\ cheat
 QED *)
 
+Definition has_var_def:
+  (has_var a (Var a' _) ⇔ a = a') ∧
+  (has_var a (Not x)   ⇔ has_var a x) ∧
+  (has_var a (And x y) ⇔ has_var a x ∨ has_var a y) ∧
+  (has_var a (Or x y)  ⇔ has_var a x ∨ has_var a y)
+End
+
 Definition is_admissible_def:
-  is_admissible ins outs da db =
-    ∃p1 d1. ins = [(p1,d1,Var A da)] ∨
+  is_admissible ins outs da db ⇔
+    ∃p1 d1. ins = [(p1,d1,Var A da)] ∧ EVERY (λ(_,_,v). ¬has_var B v) outs ∨
     ∃p2 d2. ins = [(p1,d1,Var A da); (p2,d2,Var B db)]
+End
+
+Definition is_bounded_def:
+  (is_bounded (da,_) (Var A n) ⇔ n ≤ da) ∧
+  (is_bounded (_,db) (Var B n) ⇔ n ≤ db) ∧
+  (is_bounded env (Not x)   ⇔ is_bounded env x) ∧
+  (is_bounded env (And x y) ⇔ is_bounded env x ∧ is_bounded env y) ∧
+  (is_bounded env (Or x y)  ⇔ is_bounded env x ∧ is_bounded env y)
 End
 
 Theorem blist_simulation_ok_imp_gate:
@@ -469,7 +484,8 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_new:
   blist_simulation_ok w h ins outs init ∧
-  is_admissible ins outs da db
+  is_admissible ins outs da db ∧
+  EVERY (λ(_,_,v). is_bounded (da, db) v) outs
   ⇒
   ∀a b. gate w h
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
@@ -488,45 +504,41 @@ Proof
     \\ irule (ISPEC ``FST`` ALL_DISTINCT_MAP)
     \\ fs [MAP_COMPOSE, blist_simulation_ok_def, blist_simple_checks_def])
   \\ gvs [] \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
+  \\ qabbrev_tac `ok = λx. v_eval env (var_CASE x a b) (q (find_in ins x))`
   \\ qabbrev_tac `env2 = λz (a,n). delay (var_CASE a da db) (q (find_in ins a) z) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
-  \\ sg `∀v. v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
+  \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
   >- (
-    simp [Abbr`s1`] \\ Induct \\ rw []
-    >- (Cases_on `v` \\ rw [Abbr`env2`]
-      >- (
-        sg `n ≤ da` >- cheat
-        \\ sg `v_eval env a (q (find_in ins A))` >- cheat
-        \\ drule_then (drule_then (qspecl_then [`da - n`, `da - n`] mp_tac)) v_eval_v_delay
-        \\ sg `∀a. delay (da - n) a = (λn'. delay da a (n + n'))`
-        >- rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < da − n) ⇔ (n + n' < da)``]
+    `∀v. (∀x. has_var x v ⇒ ok x) ∧ is_bounded (da,db) v ⇒
+      v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` suffices_by (
+      rw [] \\ first_x_assum irule \\ rw []
+      >- (rw [Abbr`ok`] \\ CASE_TAC
+        \\ gvs [is_admissible_def, find_in_def, FIND_thm, Abbr`f`, assign_sat_def]
+        \\ fs [EVERY_MEM] \\ last_x_assum drule \\ simp [])
+      >- (fs [EVERY_MEM] \\ first_x_assum drule \\ simp []))
+    \\ simp [Abbr`s1`] \\ Induct \\ rw [has_var_def, is_bounded_def]
+    >- (Cases_on `v` \\ fs [Abbr`env2`, Abbr`ok`, is_bounded_def]
+      >- (drule_then (drule_then (qspecl_then [`da - n`, `da - n`] mp_tac)) v_eval_v_delay
+        \\ `∀a. delay (da - n) a = (λn'. delay da a (n + n'))` by
+          rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < da − n) ⇔ (n + n' < da)``]
         \\ pop_assum (rw o single))
-      >- (
-        sg `n ≤ db` >- cheat
-        \\ sg `v_eval env b (q (find_in ins B))` >- cheat
-        \\ drule_then (drule_then (qspecl_then [`db - n`, `db - n`] mp_tac)) v_eval_v_delay
-        \\ sg `∀a. delay (db - n) a = (λn'. delay db a (n + n'))`
-        >- rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < db − n) ⇔ (n + n' < db)``]
+      >- (drule_then (drule_then (qspecl_then [`db - n`, `db - n`] mp_tac)) v_eval_v_delay
+        \\ `∀a. delay (db - n) a = (λn'. delay db a (n + n'))` by
+          rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < db − n) ⇔ (n + n' < db)``]
         \\ pop_assum (rw o single)))
     >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
-    >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw [])
-    (* \\ `∀v. rv_eval (λ(x, d). var_CASE x (v_delay (da - d) a) (v_delay (db - d) b)) v`
-    \\ `∀na nb. na ≤ da ∧ nb ≤ db ⇒
-          ∀v. v_eval env (vb_eval' ((na,a),nb,b) v) (λz n. eval (age n (env2 z)) v)`
-      suffices_by metis_tac [max_delay_le]
-    \\ rw [] \\ Induct_on `v` \\ rw []
-    >- (Cases_on `v` \\ rw [Abbr`env2`, delay_def]) *)
-  )
+    >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw []))
   \\ qexists_tac `λx. case ALOOKUP outs' x of | NONE => q x | SOME v => s1 v` \\ rw []
   >- (rpt CASE_TAC \\ rw []
     \\ drule_then assume_tac ALOOKUP_MEM
     \\ fs [EVERY_MEM, Abbr`outs'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD]
-    \\ first_x_assum (drule_at Any)
+    \\ ntac 2 $ first_x_assum (drule_at Any)
     \\ rw [Abbr`f`, assign_sat_def]
     \\ irule is_exact_unique \\ rpt $ first_assum $ irule_at Any)
   >- (rw [EVERY_MEM, MEM_MAP, EXISTS_PROD] \\ rw [Abbr`f`, assign_sat_def]
     >- (simp [MEM_MAP, EXISTS_PROD, Abbr`outs'`] \\ metis_tac [])
+    \\ res_tac
     \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM \\ fs [ALL_DISTINCT_APPEND])
