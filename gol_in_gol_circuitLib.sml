@@ -119,8 +119,6 @@ fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a lo
       | evalExp (Or (e1, e2)) = (case (evalExp e1, evalExp e2) of
           (Regular (d1, v1), Regular (d2, v2)) =>
           Regular (Int.max (d1, d2), mk_ROr (v1, v2))
-        (* | (Exact (d1, ThisCell), Regular (d2, v2)) =>
-          Regular (Int.max (d1, d2), mk_ROr (Cell (0, 0), v2)) *)
         | (Exact (d1, ThisCellClock), Exact (d2, ThisCellNotClock)) => (
           if d1 = d2 then () else (PolyML.print ("clock timing 1", d2, d1); ());
           Exact (d1, ThisCell))
