@@ -34,11 +34,12 @@ sig
     newIn: 'a * (int * int) * int * (int * value) vector -> unit,
     newGate: 'a * (int * int) * int -> unit,
     gateKey: gol_simLib.gate * int * gol_simLib.loaded_gate -> 'a,
-    teleport: teleport -> unit
+    teleport: teleport -> unit,
+    weaken: (int * int) * value -> unit
   }
 
   type wires
-  type params = {period: int, pulse: int, asserts: io_port list}
+  type params = {period: int, pulse: int, asserts: io_port list, weaken: ((int * int) * dir) list}
   val build: gol_diagramLib.gates * teleport list -> params -> 'b log -> wires
   val nolog: unit log
   val getWire: wires -> int * int -> dir -> value

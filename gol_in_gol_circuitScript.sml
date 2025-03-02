@@ -57,7 +57,8 @@ End
 Theorem floodfill_result = floodfill diag {
   period = 586,
   pulse = 22,
-  asserts = [((6, 0), E, Exact (~77, Clock)), ((11, 4), E, Exact (~15, ThisCell))]
+  asserts = [((6, 0), E, Exact (~77, Clock)), ((11, 4), E, Exact (~15, ThisCell))],
+  weaken = [((14, 4), E), ((14, 4), N)]
 };
 
 val _ = export_theory();

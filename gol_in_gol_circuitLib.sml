@@ -61,13 +61,14 @@ type 'a log = {
   newIn: 'a * (int * int) * int * (int * value) vector -> unit,
   newGate: 'a * (int * int) * int -> unit,
   gateKey: gate * int * loaded_gate -> 'a,
-  teleport: teleport -> unit
+  teleport: teleport -> unit,
+  weaken: (int * int) * value -> unit
 }
-val nolog = { gateKey = K (), newGate = K (), newIn = K (), teleport = K () }
+val nolog = { gateKey = K (), newGate = K (), newIn = K (), teleport = K (), weaken = K () }
 
 type wires = (int * int, value) Redblackmap.dict
-type params = {period: int, pulse: int, asserts: io_port list}
-fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
+type params = {period: int, pulse: int, asserts: io_port list, weaken: ((int * int) * dir) list}
+fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a log) = let
   val gateData = ref (Redblackmap.mkDict String.compare)
   fun getGateData (gate, i) = let
     val key = List.nth (#stems gate, i)
@@ -101,6 +102,9 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
           (i+1, Redblackmap.insert (map, (p, i), (ref false, a, data)))))
         (0, map) ls end)
     (Redblackmap.mkDict int3cmp) gates)
+  val weaken = foldl
+    (fn ((p, d), map) => Redblackset.add (map, wpos (p, dirToXY d)))
+    (Redblackset.empty int2cmp) weaken
   val queue = ref []
   val wires = ref (Redblackmap.mkDict int2cmp)
   fun isMissingWire p port = not (Redblackmap.inDomain (!wires, wpos (p, #1 port)))
@@ -115,8 +119,8 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
       | evalExp (Or (e1, e2)) = (case (evalExp e1, evalExp e2) of
           (Regular (d1, v1), Regular (d2, v2)) =>
           Regular (Int.max (d1, d2), mk_ROr (v1, v2))
-        | (Exact (d1, ThisCell), Regular (d2, v2)) =>
-          Regular (Int.max (d1, d2), mk_ROr (Cell (0, 0), v2))
+        (* | (Exact (d1, ThisCell), Regular (d2, v2)) =>
+          Regular (Int.max (d1, d2), mk_ROr (Cell (0, 0), v2)) *)
         | (Exact (d1, ThisCellClock), Exact (d2, ThisCellNotClock)) => (
           if d1 = d2 then () else (PolyML.print ("clock timing 1", d2, d1); ());
           Exact (d1, ThisCell))
@@ -163,6 +167,15 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
     | NONE => let
       val (wireIn', tgt) = Redblackmap.remove (!wireIn, w)
       val _ = wireIn := wireIn'
+      val value =
+        if Redblackset.member (weaken, w) then
+          case value of
+            Exact (d, ThisCell) => (
+              if 0 <= d then () else (PolyML.print ("exact signal too early", d); ());
+              #weaken log (w, Regular (d, Cell (0, 0)));
+              Regular (d, Cell (0, 0)))
+          | _ => raise Fail "bad weaken"
+        else value
       val _ = wires := Redblackmap.insert (!wires, w, value)
       in
         case tgt of
@@ -174,9 +187,6 @@ fun build (gates, teleport) ({period, pulse, asserts}:params) (log:'a log) = let
           val wout = (fst w - 2*CSIZE*a, snd w - 2*CSIZE*b)
           val (d, (x, y)) = case value of
               Regular (d, Cell p) => (d, p)
-            | Exact (d, ThisCell) => (
-              if 0 <= d then () else (PolyML.print ("exact signal too early", d); ());
-              (d, (0, 0)))
             | _ => raise Fail "bad signal on teleport"
           val _ = #teleport log (w, dir)
           in processWire (wout, Regular (d, Cell (x - a, y - b))) depth end
@@ -366,15 +376,22 @@ fun floodfill diag params = let
   fun teleport ((ix, iy), d) = let
     val inp = mk_pair $ pair_map from_int (ix, iy)
     val f = term_eq inp o fst o dest_pair o fst o dest_pair
-    val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
+    val outs = lhand $ rator $ concl (!thm)
     val permth = pull_perm1 f outs
     val thm' = MATCH_MP floodfill_teleport $ CONJ (!thm) permth
     val (dx, dy) = dirToXY d
     val thm' = SPECL [from_int (~dx), from_int (~dy)] thm'
     val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV (SCONV [v_teleport_def])) thm'
     in thm := thm' end
+  fun weaken ((ix, iy), _) = let
+    val inp = mk_pair $ pair_map from_int (ix, iy)
+    val f = term_eq inp o fst o dest_pair o fst o dest_pair
+    val outs = lhand $ rator $ concl (!thm)
+    val permth = pull_perm1 f outs
+    val thm' = MATCH_MP floodfill_weaken $ CONJ (!thm) permth
+    in thm := thm' end
   val _ = build (recognize diag) params
-    {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport}
+    {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport, weaken = weaken}
   val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)
   val (f, args) = strip_comb (concl thm)
   val x = mk_var ("area", type_of (hd args))

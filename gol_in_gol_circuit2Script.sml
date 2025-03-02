@@ -678,6 +678,14 @@ Proof
   \\ (Cases_on `b` THENL [ALL_TAC, Cases_on `e`, ALL_TAC] \\ simp []) *)
 QED
 
+Theorem floodfill_weaken:
+  floodfill area ins outs crosses init ∧
+  PERM outs ((pd,Exact (&d) ThisCell) :: outs') ⇒
+  floodfill area ins ((pd,Reg d (Cell (0, 0))) :: outs') crosses init
+Proof
+  cheat
+QED
+
 Theorem gate_and_en_e:
   gate 1 1 [(((-1,0),E),a); (((0,1),N),b)]
     [(((1,0),E), v_and (v_delay 5 a) (v_delay 5 b))]
