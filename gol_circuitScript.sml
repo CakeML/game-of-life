@@ -1,11 +1,9 @@
 (*
   A formalisation of the rules of Conway's Game of Life (GOL).
 *)
-(* val _ = HOL_Interactive.toggle_quietdec(); *)
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
-(* val _ = HOL_Interactive.toggle_quietdec(); *)
 
 val _ = new_theory "gol_circuit";
 
