@@ -365,15 +365,16 @@ Proof
 QED
 
 Theorem v_eval'_v_delay':
-  classify da a = SOME ea ∧ v_eval' env a s ⇒
-  v_eval' env (v_delay da a) (delay' (da,eval_pair (env 0 (0,0)) ea) s)
+  classify da a = SOME ea ∧ v_eval' env a s ∧ k ≤ da ⇒
+  v_eval' env (v_delay (da - k) a) (λi. delay' (da,eval_pair (env 0 (0,0)) ea) s (k + i))
 Proof
   gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [FUN_EQ_THM]
   \\ gvs [v_eval_def, delay'_def, base_def]
-  >- (`da ≤ n' ∧ n ≤ (n' - da) MOD ^period ∧
-      (n' − da) DIV ^period = n' DIV ^period` by ARITH_TAC
+  >- (`da ≤ i + k ∧ n ≤ (i + k - da) MOD ^period ∧
+      (i + k − da) DIV ^period = i DIV ^period` by ARITH_TAC
     \\ simp [])
   \\ reverse (rw []) >- (AP_TERM_TAC \\ ARITH_TAC)
+  \\ `&n − (&(da − k) + i) = &(k + n) − (&da + i)` by ARITH_TAC
   \\ Cases_on `e` \\ gvs [classify_def, base_def, eval_pair_def]
   \\ FIRST (map (drule_then drule) [eval_classify_clock, eval_classify_this]) \\ strip_tac
   \\ drule e_cell_init \\ strip_tac \\ fs []
@@ -381,11 +382,12 @@ Proof
 QED
 
 Theorem v_eval_v_delay':
-  classify da a = SOME ea ∧ v_eval env a s ⇒
-  v_eval env (v_delay da a) (λz. delay' (da,eval_pair (env 0 z) ea) (s z))
+  classify da a = SOME ea ∧ v_eval env a s ∧ k ≤ da ⇒
+  v_eval env (v_delay (da - k) a) (λz i. delay' (da,eval_pair (env 0 z) ea) (s z) (k + i))
 Proof
   rw [v_eval_def]
-  \\ drule_then (qspecl_then [`s (x,y)`, `λi (a,b). env i (x + a,y + b)`] mp_tac) v_eval'_v_delay'
+  \\ drule_then (drule_at_then Any $
+    qspecl_then [`s (x,y)`, `λi (a,b). env i (x + a,y + b)`] mp_tac) v_eval'_v_delay'
   \\ rw []
 QED
 
@@ -593,8 +595,8 @@ Proof
     \\ fs [MAP_COMPOSE, blist_simulation_ok_def, blist_simple_checks_def])
   \\ gvs [] \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
   \\ qabbrev_tac `ok = λx. v_eval env (var_CASE x a b) (q (find_in ins x))`
-  \\ qabbrev_tac `ee = λx z. (if env 0 z then SND else FST) (var_CASE x ea eb)`
-  \\ qabbrev_tac `env2 = λz (x,n). delay' (da,ee x z) (q (find_in ins x) z) n`
+  \\ qabbrev_tac `ee = λx z. eval_pair (env 0 z) (var_CASE x ea eb)`
+  \\ qabbrev_tac `env2 = λz (x,n). delay' (var_CASE x da db,ee x z) (q (find_in ins x) z) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
   \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
   >- (
@@ -606,17 +608,9 @@ Proof
         \\ fs [EVERY_MEM] \\ last_x_assum drule \\ simp [])
       >- (fs [EVERY_MEM] \\ first_x_assum drule \\ simp []))
     \\ simp [Abbr`s1`] \\ Induct \\ rw [has_var_def, is_bounded_def]
-    >- (Cases_on `v` \\ fs [Abbr`env2`, Abbr`ok`, is_bounded_def]
-      (* >- (
-        drule_at_then (Pos (el 2)) (drule) v_eval_v_delay'
-        \\ `∀a. delay (da - n) a = (λn'. delay da a (n + n'))` by
-          rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < da − n) ⇔ (n + n' < da)``]
-        \\ pop_assum (rw o single))
-      >- (drule_then (drule_then (qspecl_then [`db - n`, `db - n`] mp_tac)) v_eval_v_delay'
-        \\ `∀a. delay (db - n) a = (λn'. delay db a (n + n'))` by
-          rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < db − n) ⇔ (n + n' < db)``]
-        \\ pop_assum (rw o single)) *)
-      \\ cheat)
+    >- (Cases_on `v`
+      \\ fs [Abbr`env2`, Abbr`ok`, is_bounded_def, Abbr`ee`]
+      \\ drule_at_then (Pos (el 1)) (drule_then $ drule_then ACCEPT_TAC) v_eval_v_delay')
     >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw []))
