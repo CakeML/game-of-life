@@ -264,15 +264,14 @@ QED *)
 
 Definition classify_clock_def[compute]:
   (classify_clock da T d =
-    if &da + d + &^pulse ≤ &^period ∧ -&^period < d then
-      if d ≤ 0 ∧ 0 < &da + d + &^pulse then
+    if &da + d + &^pulse ≤ &^period ∧ -&^period ≤ d then
+      if 0 ≤ d ∨ &da + d + &^pulse ≤ 0 then SOME Zeros else
         SOME (Pulse
           (if 0 ≤ &da + d then Num (&da + d) else 0)
           (Num (&da + d + &^pulse)))
-      else SOME Zeros
     else NONE) ∧
   (classify_clock da F d =
-    if &da + d ≤ -&^pulse ∧ -(&^pulse + &^period) < d then
+    if &da + d + &^pulse ≤ 0 ∧ -&^period ≤ d then
       SOME (Pulse 0 (Num (&da + d + &^period)))
     else NONE)
 End
@@ -334,24 +333,60 @@ Proof
   cheat (* todo *)
 QED
 
-Theorem v_eval'_v_delay:
-  env_wf env ∧ v_eval' env v1 a1 ∧ n ≤ m ⇒
-  v_eval' env (v_delay m v1) (delay n a1)
+Definition delay'_def:
+  delay' (n,env) a i = if i < n then eval_env_kind env i else a (i - n:num)
+End
+
+Definition eval_pair_def:
+  eval_pair b (rF,rT) = if b then rT else rF
+End
+
+Theorem eval_classify_clock:
+  classify_clock da b d = SOME ea ∧ n < da ⇒
+  &n − (&da + d) < &^period ∧
+  (eval_env_kind ea n ⇔ e_clock (&n − (&da + d)) = b) ∧
+  (e_clock (&n − (&da + d)) ∨ ¬b ⇒ 0 ≤ &n − (&da + d))
 Proof
-  cheat
-  (* `∃P. P v1` by (qexists_tac `λ_.T` \\ rw [])
-  gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [] \\ gvs [v_eval_def, delay_def]
-  >- (qpat_x_assum `$! _` (qspecl_then [`n''`, `i - n`] mp_tac) \\ rw[])
-  \\ Cases_on `n'' < n` \\ rw [] *)
-
-
+  Cases_on `b` \\ rw [classify_clock_def, e_clock_def] \\ rw [eval_env_kind_def] \\ TRY ARITH_TAC
 QED
 
-Theorem v_eval_v_delay:
-  env_wf env ∧ v_eval env v1 a1 ∧ n ≤ m ⇒
-  v_eval env (v_delay m v1) (λz. delay n (a1 z))
+Theorem eval_classify_this:
+  classify_this da d = SOME ea ∧ n < da ⇒
+  &n − (&da + d) < &^period ∧
+  (eval_env_kind ea n ⇔ 0 ≤ &n − (&da + d))
 Proof
-  rw [v_eval_def] \\ metis_tac [v_eval'_v_delay, env_wf_translate]
+  rw [classify_this_def] \\ rw [eval_env_kind_def, e_cell_def] \\ ARITH_TAC
+QED
+
+Theorem e_cell_init:
+  i < &^period ⇒ (∀env. e_cell env i ⇔ 0 ≤ i ∧ env 0)
+Proof
+  rw [e_cell_def] \\ Cases_on `0 ≤ i` \\ rw [] \\ AP_TERM_TAC \\ ARITH_TAC
+QED
+
+Theorem v_eval'_v_delay':
+  classify da a = SOME ea ∧ v_eval' env a s ⇒
+  v_eval' env (v_delay da a) (delay' (da,eval_pair (env 0 (0,0)) ea) s)
+Proof
+  gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [FUN_EQ_THM]
+  \\ gvs [v_eval_def, delay'_def, base_def]
+  >- (`da ≤ n' ∧ n ≤ (n' - da) MOD ^period ∧
+      (n' − da) DIV ^period = n' DIV ^period` by ARITH_TAC
+    \\ simp [])
+  \\ reverse (rw []) >- (AP_TERM_TAC \\ ARITH_TAC)
+  \\ Cases_on `e` \\ gvs [classify_def, base_def, eval_pair_def]
+  \\ FIRST (map (drule_then drule) [eval_classify_clock, eval_classify_this]) \\ strip_tac
+  \\ drule e_cell_init \\ strip_tac \\ fs []
+  \\ rw [eval_env_kind_def] \\ metis_tac []
+QED
+
+Theorem v_eval_v_delay':
+  classify da a = SOME ea ∧ v_eval env a s ⇒
+  v_eval env (v_delay da a) (λz. delay' (da,eval_pair (env 0 z) ea) (s z))
+Proof
+  rw [v_eval_def]
+  \\ drule_then (qspecl_then [`s (x,y)`, `λi (a,b). env i (x + a,y + b)`] mp_tac) v_eval'_v_delay'
+  \\ rw []
 QED
 
 Theorem v_eval'_v_not:
@@ -424,6 +459,7 @@ Proof
   rw [v_eval_def] \\ metis_tac [v_eval'_v_or, env_wf_translate]
 QED
 
+(*
 Theorem circuit_conj_imp_gate:
   (∀a1 a2 env.
     circuit (make_area w h)
@@ -447,7 +483,7 @@ Proof
     rw [conj_def] \\ HO_BACKCHAIN_TAC v_eval_v_and \\ rw []
     \\ CONV_TAC (DEPTH_CONV ETA_CONV) \\ irule v_eval_v_delay \\ rw [])
   \\ gvs [] \\ rw [] \\ gvs [] \\ imp_res_tac is_exact_unique
-QED
+QED *)
 
 Definition find_in_def:
   (* find_in: (α # β # bexp) list -> var -> α *)
@@ -528,14 +564,19 @@ Proof
   cheat
 QED
 
+Definition instantiate2_def:
+  instantiate2 ((eaF, eaT), (ebF, ebT)) init =
+    (instantiate (eaF, ebF) init, instantiate (eaT, ebT) init)
+End
+
 Theorem blist_simulation_ok_imp_gate_new:
   blist_simulation_ok w h ins outs init ∧
-  classify da a = SOME (eaF, eaT) ∧
-  classify db b = SOME (ebF, ebT) ⇒
+  classify da a = SOME ea ∧
+  classify db b = SOME eb ⇒
   gate w h
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
-    (instantiate (eaF, ebF) init, instantiate (eaT, ebT) init)
+    (instantiate2 (ea, eb) init)
 Proof
   simp [gate_def] \\ strip_tac
   \\ `is_admissible ins outs da db ∧
@@ -552,7 +593,8 @@ Proof
     \\ fs [MAP_COMPOSE, blist_simulation_ok_def, blist_simple_checks_def])
   \\ gvs [] \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
   \\ qabbrev_tac `ok = λx. v_eval env (var_CASE x a b) (q (find_in ins x))`
-  \\ qabbrev_tac `env2 = λz (a,n). delay (var_CASE a da db) (q (find_in ins a) z) n`
+  \\ qabbrev_tac `ee = λx z. (if env 0 z then SND else FST) (var_CASE x ea eb)`
+  \\ qabbrev_tac `env2 = λz (x,n). delay' (da,ee x z) (q (find_in ins x) z) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
   \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
   >- (
@@ -565,14 +607,16 @@ Proof
       >- (fs [EVERY_MEM] \\ first_x_assum drule \\ simp []))
     \\ simp [Abbr`s1`] \\ Induct \\ rw [has_var_def, is_bounded_def]
     >- (Cases_on `v` \\ fs [Abbr`env2`, Abbr`ok`, is_bounded_def]
-      >- (drule_then (drule_then (qspecl_then [`da - n`, `da - n`] mp_tac)) v_eval_v_delay
+      (* >- (
+        drule_at_then (Pos (el 2)) (drule) v_eval_v_delay'
         \\ `∀a. delay (da - n) a = (λn'. delay da a (n + n'))` by
           rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < da − n) ⇔ (n + n' < da)``]
         \\ pop_assum (rw o single))
-      >- (drule_then (drule_then (qspecl_then [`db - n`, `db - n`] mp_tac)) v_eval_v_delay
+      >- (drule_then (drule_then (qspecl_then [`db - n`, `db - n`] mp_tac)) v_eval_v_delay'
         \\ `∀a. delay (db - n) a = (λn'. delay db a (n + n'))` by
           rw [FUN_EQ_THM, delay_def, ARITH_PROVE ``((n':num) < db − n) ⇔ (n + n' < db)``]
-        \\ pop_assum (rw o single)))
+        \\ pop_assum (rw o single)) *)
+      \\ cheat)
     >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw []))
@@ -600,7 +644,8 @@ Proof
       \\ fs [Abbr`outs'`, Abbr`ins'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD,
         ALL_DISTINCT_APPEND] \\ metis_tac [])
     \\ rw [FUN_EQ_THM, Abbr`s1`, Abbr`env2`]
-    \\ gvs [is_admissible_def, find_in_def, FIND_thm, delay_def])
+    \\ gvs [is_admissible_def, find_in_def, FIND_thm, delay'_def]
+    \\ cheat)
   \\ `MAP f' outs = eval_io (env2 z) outs` by (
     fs [eval_io_def, Abbr`f'`, Abbr`f`]
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [FUN_EQ_THM]
@@ -608,9 +653,10 @@ Proof
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM
     \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM])
-  \\ `from_masks (env 0n z) (instantiate (eaF,ebF) init, instantiate (eaT,ebT) init) =
+  \\ `from_masks (env 0n z) (instantiate2 (ea,eb) init) =
       from_rows (-85,-85) (MAP (MAP (eval (env2 z))) (MAP from_blist init))` by (
-    simp [from_masks_def, Abbr`env2`] \\ AP_TERM_TAC
+    Cases_on `ea` \\ Cases_on `eb` \\ simp [instantiate2_def, from_masks_def, Abbr`env2`]
+    \\ AP_TERM_TAC
     \\ cheat)
   \\ rw []
 QED
@@ -802,7 +848,7 @@ End
 Theorem read_mega_cells_build_mega_cells_thm:
   read_mega_cells (build_mega_cells s) = s
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Triviality in_if_set_empty:
@@ -935,7 +981,7 @@ Theorem floodfill_add_gate:
     (MAP (λ(((a,b),d),Q). (((x+a,y+b),d),Q)) outs1 ++ outs') crosses
     (gate_at (x,y) init1 ∪ init)
 Proof
-  cheat
+  cheat (* todo, generalization of floodfill_add_small_gate *)
 QED
 
 Theorem assign_ext_sat:
@@ -1023,7 +1069,7 @@ Proof
     by simp [FUN_EQ_THM, delay_def]
   \\ `from_rows (-85,-85)
       (MAP (MAP (eval (λ(x,n). delay 5 (var_CASE x a b) n)))
-        (MAP from_blist init)) = ARB` by cheat
+        (MAP from_blist init)) = ARB` by cheat (* fixme *)
   \\ fs [eval_io_def, make_area_def]
 QED
 

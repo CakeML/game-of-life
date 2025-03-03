@@ -2843,8 +2843,8 @@ Definition admissible_ins_def:
 End
 
 Definition admissible_bexpr_def:
-  (admissible_bexpr env (Var A d) ⇔ d ≤ FST env) ∧
-  (admissible_bexpr env (Var B d) ⇔ case SND env of NONE => F | SOME db => d ≤ db) ∧
+  (admissible_bexpr env (Var A d) ⇔ d < FST env) ∧
+  (admissible_bexpr env (Var B d) ⇔ case SND env of NONE => F | SOME db => d < db) ∧
   (admissible_bexpr env True ⇔ T) ∧
   (admissible_bexpr env False ⇔ T) ∧
   (admissible_bexpr env (Not x) ⇔ admissible_bexpr env x) ∧
@@ -2935,14 +2935,14 @@ Datatype:
   env_kind = Zeros | Pulse num num
 End
 
-Definition instantiate_var'_def:
-  (instantiate_var' Zeros n ⇔ F) ∧
-  (instantiate_var' (Pulse a b) n ⇔ a ≤ n ∧ n < b)
+Definition eval_env_kind_def:
+  (eval_env_kind Zeros n ⇔ F) ∧
+  (eval_env_kind (Pulse a b) n ⇔ a ≤ n ∧ n < b)
 End
 
 Definition instantiate_var_def:
-  instantiate_var (ea, _) (A, n) = instantiate_var' ea n ∧
-  instantiate_var (_, eb) (B, n) = instantiate_var' eb n
+  instantiate_var (ea, _) (A, n) = eval_env_kind ea n ∧
+  instantiate_var (_, eb) (B, n) = eval_env_kind eb n
 End
 
 Definition instantiate_row_def:
