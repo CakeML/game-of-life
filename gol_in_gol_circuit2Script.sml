@@ -331,7 +331,7 @@ End
 Theorem env_wf_translate:
   env_wf f ⇒ env_wf (λi (a,b). f i (x + a,y + b))
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Theorem v_eval'_v_delay:
@@ -516,6 +516,7 @@ Definition is_bounded_def:
   (is_bounded env (Or x y)  ⇔ is_bounded env x ∧ is_bounded env y)
 End
 
+(* delete me *)
 Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init
   ⇒
@@ -618,7 +619,7 @@ Theorem gate_weaken:
   LIST_REL (λ(pd,v) (pd',v'). pd = pd' ∧ v ⊑ v') outs outs' ∧
   gate w h ins outs init ⇒ gate w h ins outs' init
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Theorem half_adder_weaken:
@@ -709,7 +710,7 @@ Theorem floodfill_add_ins:
     (MAP (λ(((a',b'),d'),Q). (((x+a',y+b'),d'),Q)) outs' ++ outs) []
     (gate_at (x,y) init1 ∪ init)
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Theorem floodfill_perm:
@@ -946,7 +947,7 @@ Proof
   \\ PairCases_on ‘s3’
   \\ PairCases_on ‘v’
   \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF]
-  \\ cheat
+  \\ metis_tac []
 QED
 
 Theorem floodfill_add_small_gate:
@@ -983,7 +984,7 @@ Proof
   \\ cheat
 QED
 
-Definition half_adder_ee_ee_concrete_def:
+(* Definition half_adder_ee_ee_concrete_def:
   half_adder_ee_ee_concrete = (ARB:mask list # mask list)
 End
 
@@ -994,7 +995,7 @@ Theorem gate_half_adder_ee_ee:
   half_adder_ee_ee_concrete
 Proof
   cheat
-QED
+QED *)
 
 Definition crossover_def:
   crossover
@@ -1046,7 +1047,7 @@ Theorem floodfill_add_crossover:
     (((x+c,y+d), (x+c',y+d'), d2) :: crosses)
     (gate_at (x,y) init1 ∪ init)
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Theorem floodfill_finish_crossover:
@@ -1055,7 +1056,7 @@ Theorem floodfill_finish_crossover:
   PERM crosses ((p,q,d) :: crosses') ⇒
   floodfill area ins (((q,d),v_delay 5 P) :: outs') crosses' init
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Theorem floodfill_teleport:
@@ -1066,7 +1067,7 @@ Theorem floodfill_teleport:
     ((((a + 2 * &^tile * x, b + 2 * &^tile * y),d),v_teleport (x, y) P) :: outs')
     crosses init
 Proof
-  cheat
+  cheat (* todo *)
 QED
 
 Theorem make_area_2_2 = EVAL ``EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area 2 2)``
