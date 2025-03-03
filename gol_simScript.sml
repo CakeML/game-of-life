@@ -2038,6 +2038,14 @@ Definition from_mask_def:
   from_mask (Forbid n m) = REPLICATE n F ++ from_mask m
 End
 
+Theorem from_mask_mk:
+  from_mask (mk_Allow n m) = REPLICATE n T ++ from_mask m ∧
+  from_mask (mk_Forbid n m) = REPLICATE n F ++ from_mask m
+Proof
+  rw [oneline mk_Allow_def, oneline mk_Forbid_def] \\ CASE_TAC
+  \\ rw [from_mask_def, REPLICATE_APPEND]
+QED
+
 Definition blist_length_def:
   blist_length Nil = 0 ∧
   blist_length (Falses n b) = n + blist_length b ∧

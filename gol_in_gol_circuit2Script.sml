@@ -341,6 +341,12 @@ Definition eval_pair_def:
   eval_pair b (rF,rT) = if b then rT else rF
 End
 
+Theorem eval_pair_var_CASE:
+  eval_pair b (var_CASE x rF rT) = var_CASE x (eval_pair b rF) (eval_pair b rT)
+Proof
+  Cases_on `x` \\ rw []
+QED
+
 Theorem eval_classify_clock:
   classify_clock da b d = SOME ea ∧ n < da ⇒
   &n − (&da + d) < &^period ∧
@@ -533,27 +539,6 @@ Proof
   \\ cheat
 QED *)
 
-Definition has_var_def:
-  (has_var a (Var a' _) ⇔ a = a') ∧
-  (has_var a (Not x)   ⇔ has_var a x) ∧
-  (has_var a (And x y) ⇔ has_var a x ∨ has_var a y) ∧
-  (has_var a (Or x y)  ⇔ has_var a x ∨ has_var a y)
-End
-
-Definition is_admissible_def:
-  is_admissible ins outs da db ⇔
-    ∃p1 d1. ins = [(p1,d1,Var A da)] ∧ EVERY (λ(_,_,v). ¬has_var B v) outs ∨
-    ∃p2 d2. ins = [(p1,d1,Var A da); (p2,d2,Var B db)]
-End
-
-Definition is_bounded_def:
-  (is_bounded (da,_) (Var A n) ⇔ n ≤ da) ∧
-  (is_bounded (_,db) (Var B n) ⇔ n ≤ db) ∧
-  (is_bounded env (Not x)   ⇔ is_bounded env x) ∧
-  (is_bounded env (And x y) ⇔ is_bounded env x ∧ is_bounded env y) ∧
-  (is_bounded env (Or x y)  ⇔ is_bounded env x ∧ is_bounded env y)
-End
-
 (* delete me *)
 Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init
@@ -573,6 +558,8 @@ End
 
 Theorem blist_simulation_ok_imp_gate_new:
   blist_simulation_ok w h ins outs init ∧
+  admissible_ins ins = SOME (da, db') ∧
+  (∀x. db' = SOME x ⇒ x = db) ∧
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
   gate w h
@@ -581,8 +568,6 @@ Theorem blist_simulation_ok_imp_gate_new:
     (instantiate2 (ea, eb) init)
 Proof
   simp [gate_def] \\ strip_tac
-  \\ `is_admissible ins outs da db ∧
-      EVERY (λ(_,_,v). is_bounded (da, db) v) outs` by cheat
   \\ qpat_abbrev_tac `f = λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)`
   \\ qabbrev_tac `g = λ((p,d,v):(int # int) # dir # bexp). ((p,d),v)`
   \\ qabbrev_tac `ins' = MAP g ins` \\ qabbrev_tac `outs' = MAP g outs`
@@ -594,22 +579,27 @@ Proof
     \\ irule (ISPEC ``FST`` ALL_DISTINCT_MAP)
     \\ fs [MAP_COMPOSE, blist_simulation_ok_def, blist_simple_checks_def])
   \\ gvs [] \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
-  \\ qabbrev_tac `ok = λx. v_eval env (var_CASE x a b) (q (find_in ins x))`
   \\ qabbrev_tac `ee = λx z. eval_pair (env 0 z) (var_CASE x ea eb)`
   \\ qabbrev_tac `env2 = λz (x,n). delay' (var_CASE x da db,ee x z) (q (find_in ins x) z) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
   \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
   >- (
-    `∀v. (∀x. has_var x v ⇒ ok x) ∧ is_bounded (da,db) v ⇒
+    `∀v. admissible_bexpr (da, db') v ⇒
       v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` suffices_by (
-      rw [] \\ first_x_assum irule \\ rw []
-      >- (rw [Abbr`ok`] \\ CASE_TAC
-        \\ gvs [is_admissible_def, find_in_def, FIND_thm, Abbr`f`, assign_sat_def]
-        \\ fs [EVERY_MEM] \\ last_x_assum drule \\ simp [])
-      >- (fs [EVERY_MEM] \\ first_x_assum drule \\ simp []))
-    \\ simp [Abbr`s1`] \\ Induct \\ rw [has_var_def, is_bounded_def]
-    >- (Cases_on `v`
-      \\ fs [Abbr`env2`, Abbr`ok`, is_bounded_def, Abbr`ee`]
+      rw [] \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+      \\ disch_then (mp_tac o CONJUNCT1 o CONJUNCT2) \\ simp [EVERY_MEM]
+      \\ disch_then (drule o CONJUNCT1) \\ simp [])
+    \\ simp [Abbr`s1`] \\ Induct \\ rw [admissible_bexpr_def]
+    >- (
+      `v_eval env a (q (find_in ins A)) ∧
+        (db' = SOME db ⇒ v_eval env b (q (find_in ins B)))` by (
+        qpat_x_assum `admissible_ins _ = _` mp_tac
+        \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC
+        \\ rw [find_in_def, FIND_thm] \\ fs [assign_sat_def, Abbr`f`])
+      \\ Cases_on `v`
+      \\ fs [Abbr`env2`, oneline admissible_bexpr_def, Abbr`ee`]
+      THENL [ALL_TAC, Cases_on `db'` \\ gvs []]
+      \\ dxrule_then assume_tac LT_IMP_LE
       \\ drule_at_then (Pos (el 1)) (drule_then $ drule_then ACCEPT_TAC) v_eval_v_delay')
     >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
@@ -627,32 +617,57 @@ Proof
     \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM \\ fs [ALL_DISTINCT_APPEND])
-  \\ dxrule_then (qspec_then `env2 z` assume_tac o
+  \\ drule_then (qspec_then `env2 z` assume_tac o
       MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
   \\ simp [MAP_COMPOSE] \\ qmatch_goalsub_abbrev_tac `MAP f'`
-  \\ `MAP f' ins = eval_io (env2 z) ins` by (
+  \\ `MAP f' ins = eval_io (env2 z) ins ∧
+      MAP f' outs = eval_io (env2 z) outs ∧
+      from_masks (env 0n z) (instantiate2 (ea,eb) init) =
+      from_rows (-85,-85) (MAP (MAP (eval (env2 z))) (MAP from_blist init))`
+    suffices_by rw []
+  \\ qpat_x_assum `circuit _ _ _ _ _` kall_tac \\ rpt conj_tac
+  >- (
     fs [eval_io_def, Abbr`f'`, Abbr`f`] \\ Cases_on `z`
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [] \\ reverse CASE_TAC
     >- (
       drule_then assume_tac ALOOKUP_MEM
       \\ fs [Abbr`outs'`, Abbr`ins'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD,
         ALL_DISTINCT_APPEND] \\ metis_tac [])
+    \\ qpat_x_assum `admissible_ins _ = _` mp_tac
+    \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC \\ rw []
     \\ rw [FUN_EQ_THM, Abbr`s1`, Abbr`env2`]
-    \\ gvs [is_admissible_def, find_in_def, FIND_thm, delay'_def]
-    \\ cheat)
-  \\ `MAP f' outs = eval_io (env2 z) outs` by (
+    \\ gvs [find_in_def, FIND_thm, delay'_def])
+  >- (
     fs [eval_io_def, Abbr`f'`, Abbr`f`]
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [FUN_EQ_THM]
     \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM
     \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM])
-  \\ `from_masks (env 0n z) (instantiate2 (ea,eb) init) =
-      from_rows (-85,-85) (MAP (MAP (eval (env2 z))) (MAP from_blist init))` by (
-    Cases_on `ea` \\ Cases_on `eb` \\ simp [instantiate2_def, from_masks_def, Abbr`env2`]
-    \\ AP_TERM_TAC
-    \\ cheat)
-  \\ rw []
+  \\ Cases_on `ea` \\ Cases_on `eb` \\ rename [`((eaF,eaT),(ebF,ebT))`]
+  \\ simp [instantiate2_def, from_masks_def, MAP_COMPOSE]
+  \\ AP_TERM_TAC \\ simp [Abbr`env2`, Abbr`ee`, eval_pair_var_CASE]
+  \\ `∀ea eb.
+        MAP from_mask (instantiate (ea,eb) init) =
+        MAP (MAP (eval (λ(x,n). delay'
+          (var_CASE x da db, var_CASE x ea eb)
+          (q (find_in ins x) z) n)) ∘ from_blist) init` suffices_by (
+    CASE_TAC \\ simp [eval_pair_def])
+  \\ rw [MAP_COMPOSE, instantiate_def]
+  \\ qmatch_goalsub_abbrev_tac `eval env3`
+  \\ irule MAP_CONG \\ rw []
+  \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+  \\ disch_then (mp_tac o CONJUNCT1 o CONJUNCT2) \\ simp [EVERY_MEM]
+  \\ disch_then (dxrule o CONJUNCT2)
+  \\ `∀v. admissible_bexpr (da,db') v ⇒
+    eval (instantiate_var (ea,eb)) v = eval env3 v` suffices_by (
+    Induct_on `x` \\ simp [admissible_row_def, instantiate_row_def,
+      from_blist_def, from_mask_def, from_mask_mk]
+    \\ rw [from_mask_mk] \\ EVAL_TAC)
+  \\ Induct_on `v` \\ simp [admissible_bexpr_def, instantiate_var_def]
+  \\ Cases \\ simp [admissible_bexpr_def, instantiate_var_def,
+    Abbr`env3`, delay'_def]
+  \\ Cases_on `db'` \\ rw []
 QED
 
 Theorem gate_weaken:
