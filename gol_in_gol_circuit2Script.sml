@@ -262,11 +262,60 @@ Proof
   )
 QED *)
 
+Definition classify_clock_def[compute]:
+  (classify_clock da T d =
+    if &da + d + &^pulse ≤ &^period ∧ -&^period < d then
+      if d ≤ 0 ∧ 0 < &da + d + &^pulse then
+        SOME (Pulse
+          (if 0 ≤ &da + d then Num (&da + d) else 0)
+          (Num (&da + d + &^pulse)))
+      else SOME Zeros
+    else NONE) ∧
+  (classify_clock da F d =
+    if &da + d ≤ -&^pulse ∧ -(&^pulse + &^period) < d then
+      SOME (Pulse 0 (Num (&da + d + &^period)))
+    else NONE)
+End
+
+Definition classify_this_def[compute]:
+  classify_this da d =
+    if 0 < d then SOME Zeros else
+    if 0 < d + &^period then
+      SOME (Pulse
+        (if 0 ≤ &da + d then Num (&da + d) else 0)
+        (da + Num (d + &^period)))
+    else NONE
+End
+
+Definition classify_def[compute]:
+  classify _ (Reg _ _) = SOME (Zeros, Zeros) ∧
+  classify da (Exact d Clock) =
+    OPTION_MAP (λx. (x, x)) (classify_clock da T (d - &base)) ∧
+  classify da (Exact d NotClock) =
+    OPTION_MAP (λx. (x, x)) (classify_clock da F (d - &base)) ∧
+  classify da (Exact d ThisCell) =
+    OPTION_MAP (λx. (Zeros, x)) (classify_this da (d - &base)) ∧
+  classify da (Exact d ThisCellClock) =
+    OPTION_MAP (λx. (Zeros, x)) (classify_clock da T (d - &base)) ∧
+  classify da (Exact d ThisCellNotClock) =
+    OPTION_MAP (λx. (Zeros, x)) (classify_clock da F (d - &base)) ∧
+  classify _ Fail = NONE
+End
+
+Definition twice_def:
+  twice x = (x, x)
+End
+
+Definition from_masks_def:
+  from_masks env (initF, initT) =
+    from_rows (-85,-85) (MAP from_mask (if env then initT else initF))
+End
+
 Definition gate_def:
   gate (width:num) (height:num)
     (ins: (((int # int) # dir) # value) list)
     (outs: (((int # int) # dir) # value) list)
-    (init: bool list list) ⇔
+    (init: mask list # mask list) ⇔
   ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
   ∀env. env_wf env ⇒
   ∀s. EVERY (assign_sat env s) ins ∧
@@ -276,7 +325,7 @@ Definition gate_def:
   ∀z. circuit (make_area width height)
     (MAP (λ((p,d),_). (p,d,FST s' (p,d) z)) ins)
     (MAP (λ((p,d),_). (p,d,FST s' (p,d) z)) outs)
-    [] (from_rows (-85,-85) init)
+    [] (from_masks (env 0 z) init)
 End
 
 Theorem env_wf_translate:
@@ -376,10 +425,10 @@ Proof
 QED
 
 Theorem circuit_conj_imp_gate:
-  (∀a1 a2.
+  (∀a1 a2 env.
     circuit (make_area w h)
       [(xy1,d1,a1);(xy2,d2,a2)] [(xy3,d3,conj (delay 5 a1) (delay 5 a2))] []
-         (from_rows (-85, -85) init))
+         (from_masks env init))
   ⇒
   ALL_DISTINCT [(xy1,d1);(xy2,d2);(xy3,d3)]
   ⇒
@@ -405,10 +454,6 @@ Definition find_in_def:
   find_in ins a =
     let (p,d,_) = THE (FIND (λ(_,_,v). case v of Var a' _ => a = a' | _ => F) ins) in
     (p,d)
-End
-
-Definition instantiate_def:
-  instantiate env init =  ARB
 End
 
 (*
@@ -484,15 +529,16 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_new:
   blist_simulation_ok w h ins outs init ∧
-  is_admissible ins outs da db ∧
-  EVERY (λ(_,_,v). is_bounded (da, db) v) outs
-  ⇒
-  ∀a b. gate w h
+  classify da a = SOME (eaF, eaT) ∧
+  classify db b = SOME (ebF, ebT) ⇒
+  gate w h
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
-    (instantiate ((da,a),(db,b)) init)
+    (instantiate (eaF, ebF) init, instantiate (eaT, ebT) init)
 Proof
-  simp [gate_def] \\ ntac 3 strip_tac
+  simp [gate_def] \\ strip_tac
+  \\ `is_admissible ins outs da db ∧
+      EVERY (λ(_,_,v). is_bounded (da, db) v) outs` by cheat
   \\ qpat_abbrev_tac `f = λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)`
   \\ qabbrev_tac `g = λ((p,d,v):(int # int) # dir # bexp). ((p,d),v)`
   \\ qabbrev_tac `ins' = MAP g ins` \\ qabbrev_tac `outs' = MAP g outs`
@@ -561,8 +607,9 @@ Proof
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM
     \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM])
-  \\ `instantiate ((da,a),db,b) init = MAP (MAP (eval (env2 z))) (MAP from_blist init)` by (
-    simp [instantiate_def, Abbr`env2`]
+  \\ `from_masks (env 0n z) (instantiate (eaF,ebF) init, instantiate (eaT,ebT) init) =
+      from_rows (-85,-85) (MAP (MAP (eval (env2 z))) (MAP from_blist init))` by (
+    simp [from_masks_def, Abbr`env2`] \\ AP_TERM_TAC
     \\ cheat)
   \\ rw []
 QED
@@ -587,24 +634,24 @@ Proof
   \\ irule Reg_mono \\ simp [] \\ metis_tac []
 QED
 
-Theorem gate_and_en_e:
+(* Theorem gate_and_en_e:
   gate 1 1 [(((-1,0),E),a); (((0,1),N),b)]
     [(((1,0),E), v_and (v_delay 5 a) (v_delay 5 b))]
     and_en_e_concrete
 Proof
   cheat
-QED
+QED *)
 
 val tile = ``21:num``;
 
 Definition gate_at'_def:
-  gate_at' (inst:unit) (x,y) (init:bool list list) =
-    from_rows (75*x-85, 75*y-85) (instantiate inst init)
+  gate_at' (x,y) (init:mask list # mask list) =
+    from_rows (75*x-85, 75*y-85) ARB
 End
 
 Definition gate_at_def:
-  gate_at inst (x:int,y:int) init =
-    U {gate_at' inst (x + i * 2 * &^tile, y + j * 2 * &^tile) init | i, j | T}
+  gate_at (x:int,y:int) init =
+    U {gate_at' (x + i * 2 * &^tile, y + j * 2 * &^tile) init | i, j | T}
 End
 
 Definition floodfill_mod_def:
@@ -660,7 +707,7 @@ Theorem floodfill_add_ins:
   ¬MEM (x+a,y+b) (MAP (FST ∘ FST) (ins ++ outs)) ⇒
   floodfill ((x,y) :: area) ((((x+a,y+b),d),Exact dl v) :: ins)
     (MAP (λ(((a',b'),d'),Q). (((x+a',y+b'),d'),Q)) outs' ++ outs) []
-    (gate_at ARB (x,y) init1 ∪ init)
+    (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
 QED
@@ -885,7 +932,7 @@ Theorem floodfill_add_gate:
   floodfill
     (MAP (λ(a,b). (x+a,y+b)) (make_area w h) ++ area) ins
     (MAP (λ(((a,b),d),Q). (((x+a,y+b),d),Q)) outs1 ++ outs') crosses
-    (gate_at ARB (x,y) init1 ∪ init)
+    (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
 QED
@@ -912,7 +959,7 @@ Theorem floodfill_add_small_gate:
   LIST_REL (λ(((a,b),d),P) (pd,Q). pd = ((x+a,y+b), d) ∧ P ⊑ Q) ins1 del ⇒
   floodfill ((x,y) :: area) ins
     (MAP (λ(((a,b),d),Q). (((x+a,y+b),d),Q)) outs1 ++ outs') crosses
-    (gate_at ARB (x,y) init1 ∪ init)
+    (gate_at (x,y) init1 ∪ init)
 Proof
   rw [] \\ gvs [floodfill_def]
   \\ gvs [SF DNF_ss, SF SFY_ss,gate_def] \\ rw []
@@ -937,7 +984,7 @@ Proof
 QED
 
 Definition half_adder_ee_ee_concrete_def:
-  half_adder_ee_ee_concrete = (ARB:bool list list)
+  half_adder_ee_ee_concrete = (ARB:mask list # mask list)
 End
 
 Theorem gate_half_adder_ee_ee:
@@ -953,11 +1000,11 @@ Definition crossover_def:
   crossover
     (i1: int # int) (o1: int # int) (d1: dir)
     (i2: int # int) (o2: int # int) (d2: dir)
-    (init: bool list list) ⇔
+    (init: mask list # mask list) ⇔
   ∀a b. circuit [(0,0)]
     [(i1,d1,a); (i2,d2,b)]
     [(o1,d1,delay 5 a); (o2,d2,delay 5 b)]
-    [] (from_rows (-85,-85) init)
+    [] ARB
 End
 
 Theorem blist_simulation_ok_imp_crossover:
@@ -973,8 +1020,9 @@ Proof
   \\ Cases_on `i1` \\ Cases_on `i2` \\ Cases_on `o1` \\ Cases_on `o2`
   \\ `∀a. (λn. delay 5 a (n + 5)) = a ∧ (λn. delay 5 a n) = delay 5 a`
     by simp [FUN_EQ_THM, delay_def]
-  \\ `MAP (MAP (eval (λ(x,n). delay 5 (var_CASE x a b) n)))
-      (MAP from_blist init) = ARB` by cheat
+  \\ `from_rows (-85,-85)
+      (MAP (MAP (eval (λ(x,n). delay 5 (var_CASE x a b) n)))
+        (MAP from_blist init)) = ARB` by cheat
   \\ fs [eval_io_def, make_area_def]
 QED
 
@@ -996,7 +1044,7 @@ Theorem floodfill_add_crossover:
   floodfill ((x,y) :: area) ins
     ((((x+a',y+b'),d1),v_delay 5 P) :: outs')
     (((x+c,y+d), (x+c',y+d'), d2) :: crosses)
-    (gate_at ARB (x,y) init1 ∪ init)
+    (gate_at (x,y) init1 ∪ init)
 Proof
   cheat
 QED

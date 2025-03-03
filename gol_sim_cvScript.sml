@@ -105,5 +105,6 @@ QED
 
 val _ = cv_auto_trans blist_simple_checks_eq;
 val _ = cv_auto_trans blist_simulation_ok_def;
+val _ = cv_auto_trans instantiate_def;
 
 val _ = export_theory();

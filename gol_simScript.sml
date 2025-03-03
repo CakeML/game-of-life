@@ -2018,18 +2018,18 @@ Definition mask_length_def:
 End
 
 Definition mk_Allow_def:
-  mk_Allow (Allow n rest) = Allow (n+1) rest ∧
-  mk_Allow other = Allow 1 other
+  mk_Allow m (Allow n rest) = Allow (n+m) rest ∧
+  mk_Allow m other = Allow m other
 End
 
 Definition mk_Forbid_def:
-  mk_Forbid (Forbid n rest) = Forbid (n+1) rest ∧
-  mk_Forbid other = Forbid 1 other
+  mk_Forbid m (Forbid n rest) = Forbid (n+m) rest ∧
+  mk_Forbid m other = Forbid m other
 End
 
 Definition to_mask_def:
   to_mask [] = End ∧
-  to_mask (x::xs) = if x then mk_Allow (to_mask xs) else mk_Forbid (to_mask xs)
+  to_mask (x::xs) = if x then mk_Allow 1 (to_mask xs) else mk_Forbid 1 (to_mask xs)
 End
 
 Definition from_mask_def:
@@ -2100,9 +2100,9 @@ Proof
   gvs [FUN_EQ_THM]
   \\ Induct \\ gvs [to_mask_def,from_mask_def]
   \\ Cases \\ gvs []
-  \\ ‘∀y. from_mask (mk_Allow y) = T :: from_mask y’ by
+  \\ ‘∀y. from_mask (mk_Allow 1 y) = T :: from_mask y’ by
     (Cases \\ gvs [from_mask_def,mk_Allow_def,GSYM ADD1] \\ EVAL_TAC)
-  \\ ‘∀y. from_mask (mk_Forbid y) = F :: from_mask y’ by
+  \\ ‘∀y. from_mask (mk_Forbid 1 y) = F :: from_mask y’ by
     (Cases \\ gvs [from_mask_def,mk_Forbid_def,GSYM ADD1] \\ EVAL_TAC)
   \\ gvs []
 QED
@@ -2836,9 +2836,36 @@ Proof
   \\ Cases_on ‘blist_gol_rows xs z zs’ \\ gvs []
 QED
 
+Definition admissible_ins_def:
+  admissible_ins [(p1,d1,Var A da)] = SOME (da, NONE) ∧
+  admissible_ins [(p1,d1,Var A da); (p2,d2,Var B db)] = SOME (da, SOME db) ∧
+  admissible_ins _ = NONE
+End
+
+Definition admissible_bexpr_def:
+  (admissible_bexpr env (Var A d) ⇔ d ≤ FST env) ∧
+  (admissible_bexpr env (Var B d) ⇔ case SND env of NONE => F | SOME db => d ≤ db) ∧
+  (admissible_bexpr env True ⇔ T) ∧
+  (admissible_bexpr env False ⇔ T) ∧
+  (admissible_bexpr env (Not x) ⇔ admissible_bexpr env x) ∧
+  (admissible_bexpr env (And x y) ⇔ admissible_bexpr env x ∧ admissible_bexpr env y) ∧
+  (admissible_bexpr env (Or x y) ⇔ admissible_bexpr env x ∧ admissible_bexpr env y)
+End
+
+Definition admissible_row_def:
+  (admissible_row env Nil ⇔ T) ∧
+  (admissible_row env (Falses _ rest) ⇔ admissible_row env rest) ∧
+  (admissible_row env (Cell e rest) ⇔ admissible_bexpr env e ∧ admissible_row env rest)
+End
+
 Definition blist_simulation_ok_def:
   blist_simulation_ok w h ins outs (rows : blist list) ⇔
     blist_simple_checks w h ins outs rows ∧
+    (case admissible_ins ins of
+    | NONE => F
+    | SOME (da, db) =>
+      EVERY (λ(_,_,v). admissible_bexpr (da, db) v) outs ∧
+      EVERY (admissible_row (da, db)) rows) ∧
     let (m1,m2) = masks w h ins outs in
     let mask1 = MAP to_mask (shrink m1) in
     let mask2 = MAP to_mask (shrink m2) in
@@ -2885,6 +2912,7 @@ Proof
   \\ ‘shrink m1 = MAP from_mask (MAP to_mask (shrink m1)) ∧
       shrink m2 = MAP from_mask (MAP to_mask (shrink m2))’ by
         gvs [MAP_MAP_o,from_mask_o_to_mask]
+  \\ disch_then (mp_tac o CONJUNCT2)
   \\ pop_assum (fn th => CONV_TAC (RAND_CONV $ ONCE_REWRITE_CONV [th]))
   \\ pop_assum (fn th => CONV_TAC (RAND_CONV $ ONCE_REWRITE_CONV [th]))
   \\ simp [blist_gol_checked_steps_thm]
@@ -2902,5 +2930,33 @@ Proof
   \\ BasicProvers.CASE_TAC \\ gvs []
   \\ gvs [blist_inc_vars_thm]
 QED
+
+Datatype:
+  env_kind = Zeros | Pulse num num
+End
+
+Definition instantiate_var'_def:
+  (instantiate_var' Zeros n ⇔ F) ∧
+  (instantiate_var' (Pulse a b) n ⇔ a ≤ n ∧ n < b)
+End
+
+Definition instantiate_var_def:
+  instantiate_var (ea, _) (A, n) = instantiate_var' ea n ∧
+  instantiate_var (_, eb) (B, n) = instantiate_var' eb n
+End
+
+Definition instantiate_row_def:
+  instantiate_row env Nil = End ∧
+  instantiate_row env (Falses n b) =
+    mk_Forbid n (instantiate_row env b) ∧
+  instantiate_row env (Cell e b) =
+    if eval (instantiate_var env) e
+    then mk_Allow 1 (instantiate_row env b)
+    else mk_Forbid 1 (instantiate_row env b)
+End
+
+Definition instantiate_def:
+  instantiate env = MAP (instantiate_row env)
+End
 
 val _ = export_theory();
