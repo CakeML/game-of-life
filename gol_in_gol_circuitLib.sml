@@ -340,8 +340,7 @@ fun floodfill diag params = let
       val tm = ``instantiate (^ea, ^eb) ^init``
       val name = get_unused_name $
         "instantiate" ^ extract_name (lhand tm) ^ "__" ^ fst (dest_const init)
-      val th = boolLib.new_definition (name^"_def",
-        mk_eq (mk_var (name, type_of tm), tm)) |> SYM
+      val th = make_abbrev name tm
       in cache := Redblackmap.insert (!cache, key, th); th end
   fun instantiate2_conv t = let
     val (((eaF, eaT), (ebF, ebT)), init) =
