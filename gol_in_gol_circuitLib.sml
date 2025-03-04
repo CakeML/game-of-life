@@ -354,11 +354,7 @@ fun floodfill diag params = let
           (((eaF, ebF), init), ((eaT, ebT), init))) t
     in thm end
   fun specGate vs gth = let
-    fun HACK th = if optionSyntax.is_none (rhs (concl th)) then (
-      PolyML.print ("cheating for " ^ term_to_string (concl th) ^ "\n");
-      Thm.mk_oracle_thm "cheat" ([], mk_eq (lhs (concl th), ``SOME (Zeros, Zeros)``)))
-    else th
-    val cths = map2 (fn eq => fn v => HACK $
+    val cths = map2 (fn eq => fn v =>
       EVAL (mk_comb (rator (lhs eq), v))) (strip_conj $ lhand $ concl gth) vs
     val gth = MATCH_MP gth (LIST_CONJ cths)
     handle e => (PolyML.print (gth, cths); raise e)

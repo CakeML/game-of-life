@@ -268,11 +268,13 @@ Definition classify_clock_def[compute]:
       if 0 ≤ d ∨ &da + d + &^pulse ≤ 0 then SOME Zeros else
         SOME (Pulse
           (if 0 ≤ &da + d then Num (&da + d) else 0)
-          (Num (&da + d + &^pulse)))
+          (MIN da (Num (&da + d + &^pulse))))
     else NONE) ∧
   (classify_clock da F d =
-    if &da + d + &^pulse ≤ 0 ∧ -&^period ≤ d then
-      SOME (Pulse 0 (Num (&da + d + &^period)))
+    if &da + d ≤ 0 ∧ -&^period ≤ d then
+      SOME (Pulse
+        (if 0 ≤ &da + d + &^pulse then Num (&da + d + &^pulse) else 0)
+        (MIN da (Num (&da + d + &^period))))
     else NONE)
 End
 
@@ -280,9 +282,7 @@ Definition classify_this_def[compute]:
   classify_this da d =
     if 0 < d then SOME Zeros else
     if 0 < d + &^period then
-      SOME (Pulse
-        (if 0 ≤ &da + d then Num (&da + d) else 0)
-        (da + Num (d + &^period)))
+      SOME (Pulse (if 0 ≤ &da + d then Num (&da + d) else 0) da)
     else NONE
 End
 
