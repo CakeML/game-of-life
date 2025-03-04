@@ -177,15 +177,56 @@ Proof
   simp [v_subset_def]
 QED
 
+Theorem v_subset_trans:
+  v1 ⊑ v2 ∧ v2 ⊑ v3 ⇒ v1 ⊑ v3
+Proof
+  simp [v_subset_def]
+QED
+
 Theorem Reg_mono:
   na ≤ nb ∧ (∀env. r_eval env va ⇔ r_eval env vb) ⇒ Reg na va ⊑ Reg nb vb
 Proof
   simp [v_subset_def, v_eval_def] \\ metis_tac [LE_TRANS]
 QED
 
-Definition is_exact_def[simp]:
-  is_exact (Exact _ _) = T ∧ is_exact _ = F
+Definition is_exact_def:
+  is_exact v ⇔ (∀env s s'. v_eval env v s ∧ v_eval env v s' ⇒ s = s') ∧ (∀v'. v' ⊑ v ⇒ v ⊑ v')
 End
+
+Theorem is_exact_unique:
+  is_exact v ∧ v_eval env v s ∧ v_eval env v t ⇒ s = t
+Proof
+  metis_tac [is_exact_def]
+QED
+
+Theorem is_exact_minimal:
+  is_exact v ∧ v' ⊑ v ⇒ v ⊑ v'
+Proof
+  metis_tac [is_exact_def]
+QED
+
+Theorem is_exact_exact[simp]:
+  is_exact (Exact i v)
+Proof
+  simp [FUN_EQ_THM, is_exact_def, FORALL_PROD] \\ rpt strip_tac
+  >- fs [v_eval_def, v_eval'_def]
+  \\ fs [v_subset_def, v_eval_def] \\ fs [GSYM FORALL_PROD, GSYM FUN_EQ_THM] \\ rw []
+  \\ `∀x y. ∃s'. v_eval' (λi (a,b). env i (x + a,y + b)) v' s'` by (
+    pop_assum kall_tac \\ Cases_on `v'` \\ rw [v_eval'_def]
+    \\ qexists_tac `λn'. r_eval (λ(a,b). env ((n' + base) DIV 586) (x + a,y + b)) r`
+    \\ simp [])
+  \\ fs [SKOLEM_THM]
+  \\ last_x_assum (qspecl_then [`env`,`λ(x,y). f x y`] mp_tac) \\ rw []
+  \\ qmatch_asmsub_abbrev_tac `_ = f'`
+  \\ first_x_assum (fn h => `(λx y. f' (x, y)) = f` by simp [SYM h, FUN_EQ_THM])
+  \\ gvs [Abbr`f'`]
+QED
+
+Theorem is_exact_mono:
+  v ⊑ v' ∧ is_exact v' ⇒ is_exact v
+Proof
+  simp [is_exact_def, v_subset_def] \\ metis_tac []
+QED
 
 Definition env_wf_def:
   env_wf (env:num->state) ⇔
@@ -219,13 +260,6 @@ Definition vb_eval_def[simp,compute]:
   (vb_eval env (Or x y)  = v_or  (vb_eval env x) (vb_eval env y)) ∧
   (vb_eval _ _ = Fail)
 End
-
-Theorem is_exact_unique:
-  is_exact v ∧ v_eval env v s ∧ v_eval env v t ⇒ s = t
-Proof
-  Cases_on `v` \\ simp [FUN_EQ_THM, is_exact_def, FORALL_PROD]
-  \\ simp [v_eval_def, v_eval'_def]
-QED
 
 (*
 Definition to_env'_def:
@@ -680,7 +714,32 @@ Theorem gate_weaken:
   LIST_REL (λ(pd,v) (pd',v'). pd = pd' ∧ v ⊑ v') outs outs' ∧
   gate w h ins outs init ⇒ gate w h ins outs' init
 Proof
-  cheat (* todo *)
+  simp [gate_def] \\ strip_tac
+  \\ `MAP FST outs = MAP FST outs'` by (
+    CONV_TAC $ PATH_CONV "ll" $ REWR_CONV $ SYM LIST_REL_eq
+    \\ simp [EVERY2_MAP] \\ drule_at_then Any irule EVERY2_mono
+    \\ simp [FORALL_PROD])
+  \\ fs [] \\ rpt strip_tac
+  \\ last_x_assum (dxrule_then dxrule) \\ impl_tac
+  >- (
+    fs [EVERY_MEM] \\ rw []
+    \\ dxrule_then dxrule LIST_REL_MEM_IMP \\ strip_tac
+    \\ first_x_assum dxrule
+    \\ PairCases_on `e` \\ PairCases_on `y` \\ gvs [] \\ rw [] \\ gvs []
+    >- metis_tac [is_exact_mono]
+    \\ metis_tac [is_exact_minimal, assign_sat_mono])
+  \\ strip_tac \\ rpt $ last_x_assum $ irule_at Any \\ conj_tac
+  >- (
+    fs [EVERY_MEM] \\ rw []
+    \\ dxrule_then dxrule LIST_REL_MEM_IMP_R \\ strip_tac
+    \\ first_x_assum dxrule
+    \\ PairCases_on `e` \\ PairCases_on `x` \\ gvs []
+    \\ metis_tac [assign_sat_mono])
+  \\ strip_tac \\ pop_assum (qspec_then `z` mp_tac)
+  \\ qmatch_goalsub_abbrev_tac `MAP f`
+  \\ `f = (λ(p,d). (p,d,FST s' (p,d) z)) ∘ FST` by
+    simp [Abbr`f`, FUN_EQ_THM, FORALL_PROD]
+  \\ rw [GSYM MAP_COMPOSE]
 QED
 
 Theorem half_adder_weaken:
@@ -1046,19 +1105,6 @@ Proof
   \\ strip_tac
   \\ cheat
 QED
-
-(* Definition half_adder_ee_ee_concrete_def:
-  half_adder_ee_ee_concrete = (ARB:mask list # mask list)
-End
-
-Theorem gate_half_adder_ee_ee:
-  gate 2 2 [(((-1,0),E),a); (((-1,2),E),b)]
-    [(((3,0),E), v_xor (v_delay 15 a) (v_delay 18 b));
-     (((3,2),E), v_and (v_delay 17 a) (v_delay 15 b))]
-  half_adder_ee_ee_concrete
-Proof
-  cheat
-QED *)
 
 Theorem floodfill_add_crossover_gen:
   floodfill area ins outs crosses init ∧
