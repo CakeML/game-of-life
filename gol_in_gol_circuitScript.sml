@@ -60,5 +60,9 @@ Theorem floodfill_result = floodfill diag {
   asserts = [((6, 0), E, Exact (~77, Clock)), ((11, 4), E, Exact (~15, ThisCell))],
   weaken = [((14, 4), E), ((14, 4), N)]
 };
+(* FIXME:
+classify 9 (Exact (-29) NotClock) = NONE
+classify 5 (Exact (-20) ThisCellNotClock) = NONE
+*)
 
 val _ = export_theory();

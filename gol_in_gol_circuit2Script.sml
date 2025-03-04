@@ -539,24 +539,19 @@ Proof
   \\ cheat
 QED *)
 
-(* delete me *)
-Theorem blist_simulation_ok_imp_gate:
-  blist_simulation_ok w h ins outs init
-  ⇒
-  ∀da db a b. gate w h
-    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
-    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
-    ARB
-Proof
-  cheat
-QED
-
 Definition instantiate2_def:
   instantiate2 ((eaF, eaT), (ebF, ebT)) init =
     (instantiate (eaF, ebF) init, instantiate (eaT, ebT) init)
 End
 
-Theorem blist_simulation_ok_imp_gate_new:
+Theorem instantiate_twice:
+  instantiate (ea, eb) init = res ⇒
+  instantiate2 ((ea, ea), (eb, eb)) init = twice res
+Proof
+  simp [instantiate2_def, twice_def]
+QED
+
+Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
   (∀x. db' = SOME x ⇒ x = db) ∧
@@ -670,6 +665,33 @@ Proof
   \\ Cases_on `db'` \\ rw []
 QED
 
+Theorem blist_simulation_ok_imp_gate_1:
+  blist_simulation_ok w h [(p1,d1,Var A da)] outs init ⇒
+  classify da a = SOME ea ⇒
+  gate w h [((p1,d1),a)]
+    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(da,a)) v)) outs)
+    (instantiate2 (ea, ea) init)
+Proof
+  rpt strip_tac
+  \\ dxrule_then (drule_at_then Any $ dxrule_at_then Any $
+      qspec_then `NONE` (irule o SRULE [])) blist_simulation_ok_imp_gate
+  \\ simp [admissible_ins_def]
+QED
+
+Theorem blist_simulation_ok_imp_gate_2:
+  blist_simulation_ok w h [(p1,d1,Var A da); (p2,d2,Var B db)] outs init ⇒
+  classify da a = SOME ea ∧
+  classify db b = SOME eb ⇒
+  gate w h [((p1,d1),a); ((p2,d2),b)]
+    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
+    (instantiate2 (ea, eb) init)
+Proof
+  rpt strip_tac
+  \\ dxrule_then (dxrule_at_then (Pos (el 4)) $ dxrule_at_then Any $
+      qspec_then `SOME db` (irule o SRULE [])) blist_simulation_ok_imp_gate
+  \\ simp [admissible_ins_def]
+QED
+
 Theorem gate_weaken:
   LIST_REL (λ(pd,v) (pd',v'). pd = pd' ∧ v ⊑ v') outs outs' ∧
   gate w h ins outs init ⇒ gate w h ins outs' init
@@ -678,13 +700,14 @@ Proof
 QED
 
 Theorem half_adder_weaken:
-  gate w h ins [(pd,v_or
+  (p ⇒ gate w h ins [(pd,v_or
     (v_and (v_delay 15 a) (v_or (v_and (v_delay 12 a) (v_not (v_delay 18 b)))
       (v_and (v_not (v_delay 12 a)) (v_and (v_delay 15 b) (v_not (v_delay 18 b))))))
-    (v_and (v_not (v_delay 15 a)) (v_or (v_delay 12 a) (v_delay 15 b)))); out] init ⇒
-  gate w h ins [(pd,v_xor (v_delay 15 a) (v_delay 18 b));out] init
+    (v_and (v_not (v_delay 15 a)) (v_or (v_delay 12 a) (v_delay 15 b)))); out] init) ⇒
+  p ⇒ gate w h ins [(pd,v_xor (v_delay 15 a) (v_delay 18 b));out] init
 Proof
-  strip_tac \\ dxrule_at_then Any irule gate_weaken
+  rpt strip_tac \\ first_x_assum dxrule
+  \\ strip_tac \\ dxrule_at_then Any irule gate_weaken
   \\ PairCases_on `out` \\ simp []
   \\ Cases_on `a` \\ simp [] \\ Cases_on `b` \\ simp []
   \\ irule Reg_mono \\ simp [] \\ metis_tac []

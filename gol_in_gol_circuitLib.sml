@@ -276,6 +276,35 @@ val (append_nil, append_cons) = CONJ_PAIR APPEND_def
 fun append_conv tm =
   ((REWR_CONV append_cons THENC RAND_CONV append_conv) ORELSEC REWR_CONV append_nil) tm
 
+(* from cvTransLib *)
+  val clean_name = let
+    fun okay_char c = (#"a" <= c andalso c <= #"z") orelse
+                      (#"A" <= c andalso c <= #"Z") orelse
+                      (#"0" <= c andalso c <= #"9") orelse
+                      c = #"_" orelse c = #"'"
+    in String.translate (fn c => if okay_char c then implode [c] else "_") end;
+
+  fun get_unused_name s = let
+    val cs = constants "-" |> map (fst o dest_const)
+    fun loop i = let
+      val suggest = s ^ "_" ^ int_to_string i
+      in if mem suggest cs then loop (i+1) else suggest end
+    in if mem s cs then loop 1 else s end
+
+  fun extract_name tm = let
+    fun extract_parts tm =
+      if numSyntax.is_numeral tm then [term_to_string tm]
+      else if is_var tm then []
+      else if is_abs tm then "lam"::extract_parts (tm |> dest_abs |> snd)
+      else if is_comb tm then extract_parts (rator tm) @ extract_parts (rand tm)
+      else (* is_const tm *) [tm |> dest_const |> fst |> clean_name]
+    val concat_parts = String.concatWith "_" (extract_parts tm)
+    fun string_take n s =
+      if n < String.size s then String.substring(s, 0, n) else s
+    val cut_parts = string_take 30 concat_parts
+    in cut_parts end
+(*  *)
+
 fun floodfill diag params = let
   datatype gate_kind = Regular of thm | Crossover of thm list
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
@@ -291,24 +320,53 @@ fun floodfill diag params = let
       val (ins, outs) = apfst rand $ dest_comb $ rator $ concl thm
       val (ins', outs') =
         pair_map (map (apsnd dest_pair o dest_pair) o fst o dest_list) (ins, outs)
-      val vars = List.take ([``a:value``, ``b:value``], length ins')
-      val env = map2 (fn (_,(_,d)) => fn a => (snd (dest_Var d), a)) ins' vars
-      val env = case env of
-          [(da, a)] => [da, da, a, a]
-        | [(da, a), (db, b)] => [da, db, a, b]
+      val thm = case ins' of
+          [_] => MATCH_MP blist_simulation_ok_imp_gate_1 thm
+        | [_, _] => MATCH_MP blist_simulation_ok_imp_gate_2 thm
         | _ => raise Match
-      val thm = SPECL env (MATCH_MP blist_simulation_ok_imp_gate thm)
-      val thm = CONV_RULE (RATOR_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm
+      val thm = CONV_RULE (PATH_CONV "rl" (BINOP_CONV (EVAL THENC SCONV []))) thm
       val thm = case g0 of
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
         | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
         | _ => thm
-      in Regular (save_thm (genth, GENL vars thm)) end
+      in Regular (save_thm (genth, thm)) end
     in (lgate, genth, res) end
+  val cache = ref $ Redblackmap.mkDict $
+    pair_compare (pair_compare (Term.compare, Term.compare), Term.compare)
+  fun instantiate_conv (key as ((ea, eb), init)) =
+    case Redblackmap.peek (!cache, key) of
+      SOME th => th
+    | NONE => let
+      val tm = ``instantiate (^ea, ^eb) ^init``
+      val name = get_unused_name $
+        "instantiate" ^ extract_name (lhand tm) ^ "__" ^ fst (dest_const init)
+      val th = boolLib.new_definition (name^"_def",
+        mk_eq (mk_var (name, type_of tm), tm)) |> SYM
+      in cache := Redblackmap.insert (!cache, key, th); th end
+  fun instantiate2_conv t = let
+    val (((eaF, eaT), (ebF, ebT)), init) =
+      apfst (pair_map dest_pair o dest_pair o rand) $ dest_comb t
+    val thm = if term_eq eaF eaT andalso term_eq ebF ebT then
+      MATCH_MP instantiate_twice (instantiate_conv ((eaF, ebF), init))
+    else
+      (PART_MATCH lhs instantiate2_def THENC
+        FORK_CONV $ pair_map (K o instantiate_conv)
+          (((eaF, ebF), init), ((eaT, ebT), init))) t
+    in thm end
+  fun specGate vs gth = let
+    fun HACK th = if optionSyntax.is_none (rhs (concl th)) then (
+      PolyML.print ("cheating for " ^ term_to_string (concl th) ^ "\n");
+      Thm.mk_oracle_thm "cheat" ([], mk_eq (lhs (concl th), ``SOME (Zeros, Zeros)``)))
+    else th
+    val cths = map2 (fn eq => fn v => HACK $
+      EVAL (mk_comb (rator (lhs eq), v))) (strip_conj $ lhand $ concl gth) vs
+    val gth = MATCH_MP gth (LIST_CONJ cths)
+    handle e => (PolyML.print (gth, cths); raise e)
+    in CONV_RULE (RAND_CONV instantiate2_conv) gth end
   val thm = ref floodfill_start
   fun newIn ((_, s, g), (x', y'), _, ins) = let
     val gth = case g of Regular g => g | _ => raise Match
-    val gth = SPECL (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
+    val gth = specGate (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
     val thm' = MATCH_MP floodfill_add_ins (CONJ (!thm) gth)
     val (x, y) = pair_map from_int (2*x', 2*y')
     val (x', y') = pair_map numSyntax.term_of_int (x', y')
@@ -324,7 +382,7 @@ fun floodfill diag params = let
         (map (fn a => term_eq a o fst o dest_pair o fst o dest_pair) ins)
         (lhand $ rator $ concl (!thm))
       val del = fst $ dest_list $ lhand $ rand $ concl permth
-      val gth = SPECL (map (snd o dest_pair) del) gth
+      val gth = specGate (map (snd o dest_pair) del) gth
       val thm' = case (#width lg, #height lg) of
         (1, 1) => let
         val thm' = floodfill_add_small_gate
