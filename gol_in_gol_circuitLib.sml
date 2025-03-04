@@ -306,16 +306,14 @@ fun append_conv tm =
 (*  *)
 
 fun floodfill diag params = let
-  datatype gate_kind = Regular of thm | Crossover of thm list
+  datatype gate_kind = Regular of thm | Crossover of thm
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
     val g = List.nth (#stems gate, i)
     val g0 = List.nth (#stems gate, 0)
     val genth = g ^ "_gate_gen"
     val thm = fetch "gol_gates" (g ^ "_thm")
-    val res = if g0 = "cross_es_es" then let
-      val thm1 = MATCH_MP blist_simulation_ok_imp_crossover thm
-      val thm2 = MATCH_MP crossover_symm thm1
-      in Crossover [save_thm (genth, thm1), save_thm (genth^"_rev", thm2)] end
+    val res = if g0 = "cross_es_es" then
+      Crossover thm
     else let
       val (ins, outs) = apfst rand $ dest_comb $ rator $ concl thm
       val (ins', outs') =
@@ -380,8 +378,7 @@ fun floodfill diag params = let
       val gth = specGate (map (snd o dest_pair) del) gth
       val thm' = case (#width lg, #height lg) of
         (1, 1) => let
-        val thm' = floodfill_add_small_gate
-        val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
+        val thm' = MATCH_MP floodfill_add_small_gate $ CONJ (!thm) $ CONJ gth permth
         val (x, y) = pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [x, y, x', y'] thm'
@@ -389,8 +386,7 @@ fun floodfill diag params = let
         val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV EVAL THENC append_conv)) thm'
         in thm' end
       | (2, 2) => let
-        val thm' = floodfill_add_gate
-        val thm' = MATCH_MP thm' $ CONJ (!thm) $ CONJ gth permth
+        val thm' = MATCH_MP floodfill_add_gate $ CONJ (!thm) $ CONJ gth permth
         val (x, y) = pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [x, y, x', y'] thm'
@@ -402,7 +398,7 @@ fun floodfill diag params = let
         in thm' end
       | _ => raise Match
       in thm' end
-    | Crossover gths => let
+    | Crossover gth => let
       val (x, y) = (2*x', 2*y')
       val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
       val inp = List.nth (ins, i)
@@ -411,8 +407,10 @@ fun floodfill diag params = let
       val (outs, crosses) = apfst rand $ dest_comb $ rator $ concl (!thm)
       val (first, permth) = (false, pull_perm1 f1 crosses) handle _ => (true, pull_perm1 f2 outs)
       val (conv, thm') = if first then let
-        val gth = List.nth (gths, i)
-        val thm' = MATCH_MP floodfill_add_crossover $ CONJ (!thm) $ CONJ gth permth
+        val mainth = List.nth ([floodfill_add_crossover_l, floodfill_add_crossover_r], i)
+        val thm' = MATCH_MP mainth $ CONJ (!thm) $ CONJ gth permth
+        val thm' = MATCH_MP thm' $ EVAL $ lhs $ lhand $ concl thm'
+        val thm' = MATCH_MP thm' $ instantiate2_conv $ lhs $ lhand $ concl thm'
         val (x, y) = pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [x, y, x', y'] thm'
@@ -421,6 +419,7 @@ fun floodfill diag params = let
       else let
         val permth2 = pull_perm1 f2 outs
         val thm' = MATCH_MP floodfill_finish_crossover $ CONJ (!thm) $ CONJ permth2 permth
+        val thm' = MATCH_MP thm' $ PolyML.print $ EVAL $ lhs $ lhand $ concl thm'
         in (LAND_CONV, thm') end
       in CONV_RULE (RATOR_CONV $ conv $ LAND_CONV (SCONV [])) thm' end
     in thm := thm' end

@@ -550,7 +550,7 @@ fun vector_to_svg grid =
 fun make_abbrev name tm =
   let
     val v = mk_var(name,type_of tm)
-    val th = new_definition(name,mk_eq(v,tm))
+    val th = new_definition(name^"_def",mk_eq(v,tm))
   in SYM th end
 
 val gates = []
