@@ -74,6 +74,10 @@ fun translate_gate dirs gate = let
     val defn = boolLib.new_definition (stem^"_def",
       mk_eq (mk_var (stem, ``:blist list``), tm))
     val _ = cv_trans_deep_embedding EVAL defn
+    (* <workaround for https://hol.zulipchat.com/#narrow/channel/486798-.E2.9D.84.EF.B8.8F-HOL4/topic/cv.20theorems.20not.20showing.20up.20in.20another.20file/near/503146927> *)
+    val _ = save_thm (stem^"_cv_eq'[cv_rep]", definition (stem^"_cv_def") |> SPEC_ALL |>
+      INST [mk_var ("x", cvSyntax.cv) |-> cvSyntax.mk_cv_num (numSyntax.term_of_int 0)] |> SYM)
+    (* </workaround> *)
     val rows = lhs (concl defn)
     val w = numSyntax.term_of_int (#width gate)
     val h = numSyntax.term_of_int (#height gate)
