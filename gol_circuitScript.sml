@@ -4,6 +4,7 @@
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
+     integerTheory
 
 val _ = new_theory "gol_circuit";
 
@@ -646,7 +647,49 @@ Definition is_ew_def:
   is_ew ((x,y),d,r) = (d = E ∨ d = W)
 End
 
+Definition add_pt_def[simp]:
+  add_pt (a:int,b:int) (c,d) = (a+c,b+d)
+End
+
+Definition sub_pt_def[simp]:
+  sub_pt (a:int,b:int) (c,d) = (a-c,b-d)
+End
+
+Definition neg_pt_def[simp]:
+  neg_pt (a:int,b:int) = (-a,-b)
+End
+
+Theorem add_pt_0[simp]:
+  add_pt x (0,0) = x
+Proof
+  Cases_on `x` \\ simp []
+QED
+
+Theorem add_pt_assoc:
+  add_pt a (add_pt b c) = add_pt (add_pt a b) c
+Proof
+  MAP_EVERY Cases_on [`a`,`b`,`c`] \\ simp [INT_ADD_ASSOC]
+QED
+
+Definition dir_to_xy_def[simp]:
+  dir_to_xy N = (0,-1) ∧
+  dir_to_xy S = (0,1) ∧
+  dir_to_xy E = (1,0) ∧
+  dir_to_xy W = (-1,0)
+End
+
 Definition circ_mod_wf_def:
+  circ_mod_wf area ins outs as ⇔
+    (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
+    (∀x y r. ((x,y),r) ∈ ins ∪ outs ∪ as ⇒ ((x % 2 = 0) ≠ (y % 2 = 0))) ∧
+    (∀x y r1 r2. ((x,y),r1) ∈ ins ∧ ((x,y),r2) ∈ ins ⇒ r1 = r2) ∧
+    (∀x y r1 r2. ((x,y),r1) ∈ outs ∪ as ∧ ((x,y),r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
+    (∀p d r. (p,d,r) ∈ ins ∪ as ⇒ add_pt p (dir_to_xy d) ∈ area) ∧
+    (∀p d r. (p,d,r) ∈ outs ∪ as ⇒ sub_pt p (dir_to_xy d) ∈ area) ∧
+    (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉ outs)
+End
+
+Theorem circ_mod_wf_def_old:
   circ_mod_wf area ins outs as ⇔
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
     (∀x y r. ((x,y),r) ∈ ins ∪ outs ∪ as ⇒ ((x % 2 = 0) ≠ (y % 2 = 0))) ∧
@@ -661,7 +704,13 @@ Definition circ_mod_wf_def:
     (∀x y r. ((x,y),E,r) ∈ outs ∪ as ⇒ (x-1,y) ∈ area) ∧
     (∀x y r. ((x,y),W,r) ∈ outs ∪ as ⇒ (x+1,y) ∈ area) ∧
     (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉outs)
-End
+Proof
+  simp [circ_mod_wf_def] \\ rpt AP_TERM_TAC
+  \\ `∀P. (∀d. P d) ⇔ P N ∧ P S ∧ P E ∧ P W` by
+    (strip_tac \\ eq_tac \\ strip_tac \\ TRY Cases \\ metis_tac [])
+  \\ pop_assum (rw o single) \\ rw [FORALL_PROD, GSYM int_sub]
+  \\ metis_tac []
+QED
 
 Definition circ_area_def:
   circ_area area ins outs n =
@@ -862,7 +911,7 @@ Theorem mods_wf_circ_mod:
   circ_mod_wf area ins outs as ⇒
   mods_wf (circ_mod area ins outs as)
 Proof
-  rw [circ_mod_wf_def]
+  rw [circ_mod_wf_def_old]
   \\ gvs [mods_wf_def,mod_wf_def,circ_mod_def] \\ rw []
   >-
    (gvs [circ_output_area_def,circ_area_def] \\ rw []
@@ -1035,13 +1084,6 @@ Proof
   cheat
 QED
 *)
-
-Definition dir_to_xy_def:
-  dir_to_xy N = (0,-1) ∧
-  dir_to_xy S = (0,1) ∧
-  dir_to_xy E = (1,0) ∧
-  dir_to_xy W = (-1,0)
-End
 
 Definition translate_set_def:
   translate_set (x,y) s (a,b) ⇔ (a-x,b-y) ∈ s

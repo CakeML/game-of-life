@@ -523,14 +523,8 @@ Definition simple_checks_def:
           (ins ++ outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
-      EVERY (λ((x,y),d,r). d = N ⇒ MEM (x,y-1) area) ins ∧
-      EVERY (λ((x,y),d,r). d = S ⇒ MEM (x,y+1) area) ins ∧
-      EVERY (λ((x,y),d,r). d = E ⇒ MEM (x+1,y) area) ins ∧
-      EVERY (λ((x,y),d,r). d = W ⇒ MEM (x-1,y) area) ins ∧
-      EVERY (λ((x,y),d,r). d = N ⇒ MEM (x,y+1) area) outs ∧
-      EVERY (λ((x,y),d,r). d = S ⇒ MEM (x,y-1) area) outs ∧
-      EVERY (λ((x,y),d,r). d = E ⇒ MEM (x-1,y) area) outs ∧
-      EVERY (λ((x,y),d,r). d = W ⇒ MEM (x+1,y) area) outs
+      EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area) ins ∧
+      EVERY (λ(p,d,r). MEM (sub_pt p (dir_to_xy d)) area) outs
 End
 
 Definition simulation_ok_def:
@@ -2092,14 +2086,8 @@ Definition blist_simple_checks_def:
           (ins ++ outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
-      EVERY (λ((x,y),d,r). d = N ⇒ MEM (x,y-1) area) ins ∧
-      EVERY (λ((x,y),d,r). d = S ⇒ MEM (x,y+1) area) ins ∧
-      EVERY (λ((x,y),d,r). d = E ⇒ MEM (x+1,y) area) ins ∧
-      EVERY (λ((x,y),d,r). d = W ⇒ MEM (x-1,y) area) ins ∧
-      EVERY (λ((x,y),d,r). d = N ⇒ MEM (x,y+1) area) outs ∧
-      EVERY (λ((x,y),d,r). d = S ⇒ MEM (x,y-1) area) outs ∧
-      EVERY (λ((x,y),d,r). d = E ⇒ MEM (x-1,y) area) outs ∧
-      EVERY (λ((x,y),d,r). d = W ⇒ MEM (x+1,y) area) outs
+      EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area) ins ∧
+      EVERY (λ(p,d,r). MEM (sub_pt p (dir_to_xy d)) area) outs
 End
 
 Theorem from_mask_o_to_mask:

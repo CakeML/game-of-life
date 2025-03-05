@@ -361,9 +361,9 @@ fun floodfill diag params = let
     val gth = case g of Regular g => g | _ => raise Match
     val gth = specGate (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
     val thm' = MATCH_MP floodfill_add_ins (CONJ (!thm) gth)
-    val (x, y) = pair_map from_int (2*x', 2*y')
+    val p = mk_pair $ pair_map from_int (2*x', 2*y')
     val (x', y') = pair_map numSyntax.term_of_int (x', y')
-    val thm' = SPECL [x, y, x', y'] thm'
+    val thm' = SPECL [p, x', y'] thm'
     val thm' = SRULE [] $ MATCH_MP thm' $ EQT_ELIM $ EVAL $ lhand $ concl thm'
     in thm := thm' end
   fun newGate ((lg:loaded_gate, s, g), (x', y'), i) = let
@@ -379,17 +379,17 @@ fun floodfill diag params = let
       val thm' = case (#width lg, #height lg) of
         (1, 1) => let
         val thm' = MATCH_MP floodfill_add_small_gate $ CONJ (!thm) $ CONJ gth permth
-        val (x, y) = pair_map from_int (x, y)
+        val p = mk_pair $ pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
-        val thm' = SPECL [x, y, x', y'] thm'
+        val thm' = SPECL [p, x', y'] thm'
         val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
         val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV (LAND_CONV EVAL THENC append_conv)) thm'
         in thm' end
       | (2, 2) => let
         val thm' = MATCH_MP floodfill_add_gate $ CONJ (!thm) $ CONJ gth permth
-        val (x, y) = pair_map from_int (x, y)
+        val p = mk_pair $ pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
-        val thm' = SPECL [x, y, x', y'] thm'
+        val thm' = SPECL [p, x', y'] thm'
         val conv = RAND_CONV (REWR_CONV make_area_2_2) THENC SCONV []
         val thm' = MATCH_MP thm' $ EQT_ELIM $ conv $ lhand $ concl thm'
         fun conv c = LAND_CONV c THENC append_conv
@@ -411,15 +411,15 @@ fun floodfill diag params = let
         val thm' = MATCH_MP mainth $ CONJ (!thm) $ CONJ gth permth
         val thm' = MATCH_MP thm' $ EVAL $ lhs $ lhand $ concl thm'
         val thm' = MATCH_MP thm' $ instantiate2_conv $ lhs $ lhand $ concl thm'
-        val (x, y) = pair_map from_int (x, y)
+        val p = mk_pair $ pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
-        val thm' = SPECL [x, y, x', y'] thm'
+        val thm' = SPECL [p, x', y'] thm'
         val thm' = MATCH_MP thm' $ EQT_ELIM $ SCONV [] $ lhand $ concl thm'
         in (BINOP_CONV, thm') end
       else let
         val permth2 = pull_perm1 f2 outs
         val thm' = MATCH_MP floodfill_finish_crossover $ CONJ (!thm) $ CONJ permth2 permth
-        val thm' = MATCH_MP thm' $ PolyML.print $ EVAL $ lhs $ lhand $ concl thm'
+        val thm' = MATCH_MP thm' $ EVAL $ lhs $ lhand $ concl thm'
         in (LAND_CONV, thm') end
       in CONV_RULE (RATOR_CONV $ conv $ LAND_CONV (SCONV [])) thm' end
     in thm := thm' end
@@ -430,7 +430,7 @@ fun floodfill diag params = let
     val permth = pull_perm1 f outs
     val thm' = MATCH_MP floodfill_teleport $ CONJ (!thm) permth
     val (dx, dy) = dirToXY d
-    val thm' = SPECL [from_int (~dx), from_int (~dy)] thm'
+    val thm' = SPEC (mk_pair (from_int (~dx), from_int (~dy))) thm'
     val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV (SCONV [v_teleport_def])) thm'
     in thm := thm' end
   fun weaken ((ix, iy), _) = let

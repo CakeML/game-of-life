@@ -1,7 +1,7 @@
 open HolKernel bossLib boolLib Parse;
 open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
      pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
-     dep_rewrite intLib;
+     dep_rewrite intLib combinTheory;
 
 val _ = new_theory "gol_in_gol_circuit2";
 
@@ -31,7 +31,7 @@ Definition base_def:
 End
 
 Definition r_eval_def[simp]:
-  (r_eval env (Cell (i,j)) ⇔ env (i, j)) ∧
+  (r_eval env (Cell p) ⇔ env p) ∧
   (r_eval env (RNot v) ⇔ ¬r_eval env v) ∧
   (r_eval env (RAnd v1 v2) ⇔ r_eval env v1 ∧ r_eval env v2) ∧
   (r_eval env (ROr v1 v2) ⇔ r_eval env v1 ∨ r_eval env v2) ∧
@@ -63,7 +63,7 @@ End
 
 Definition v_eval_def:
   v_eval env v s ⇔
-    ∀x y:int. v_eval' (λi (a,b). env i (x+a,y+b)) v (s (x, y))
+    ∀x. v_eval' (λi p. env i (add_pt x p)) v (s x)
 End
 
 Theorem v_eval_fail[simp]:
@@ -85,8 +85,8 @@ Proof
 QED
 
 Definition v_teleport_def:
-  v_teleport (x, y) (Reg i (Cell (a, b))) = Reg i (Cell (a + x, b + y)) ∧
-  v_teleport (x, y) _ = Fail
+  v_teleport p (Reg i (Cell a)) = Reg i (Cell (add_pt a p)) ∧
+  v_teleport _ _ = Fail
 End
 
 Definition nextCell_def[compute]:
@@ -211,15 +211,12 @@ Proof
   simp [FUN_EQ_THM, is_exact_def, FORALL_PROD] \\ rpt strip_tac
   >- fs [v_eval_def, v_eval'_def]
   \\ fs [v_subset_def, v_eval_def] \\ fs [GSYM FORALL_PROD, GSYM FUN_EQ_THM] \\ rw []
-  \\ `∀x y. ∃s'. v_eval' (λi (a,b). env i (x + a,y + b)) v' s'` by (
+  \\ `∀x. ∃s'. v_eval' (λi a. env i (add_pt x a)) v' s'` by (
     pop_assum kall_tac \\ Cases_on `v'` \\ rw [v_eval'_def]
-    \\ qexists_tac `λn'. r_eval (λ(a,b). env ((n' + base) DIV 586) (x + a,y + b)) r`
+    \\ qexists_tac `λn'. r_eval (λa. env ((n' + base) DIV 586) (add_pt x a)) r`
     \\ simp [])
   \\ fs [SKOLEM_THM]
-  \\ last_x_assum (qspecl_then [`env`,`λ(x,y). f x y`] mp_tac) \\ rw []
-  \\ qmatch_asmsub_abbrev_tac `_ = f'`
-  \\ first_x_assum (fn h => `(λx y. f' (x, y)) = f` by simp [SYM h, FUN_EQ_THM])
-  \\ gvs [Abbr`f'`]
+  \\ last_x_assum (qspecl_then [`env`,`f`] mp_tac) \\ rw [] \\ gvs []
 QED
 
 Theorem is_exact_mono:
@@ -230,15 +227,58 @@ QED
 
 Definition env_wf_def:
   env_wf (env:num->state) ⇔
-    ∀t x y. env (t + 1) (x,y) = r_eval (λ(a,b). env t (x+a,y+b)) nextCell
+    ∀t x. env (t + 1) x = r_eval (env t ∘ add_pt x) nextCell
 End
 
+val tile = ``21:num``;
+val tile2 = ``42:num``;
+
+Definition mul_pt_def[simp]:
+  mul_pt (n:int) (a, b) ⇔ (n * a, n * b)
+End
+
+Definition mk_pt_def:
+  mk_pt (a, d:dir) z ⇔ (add_pt a (mul_pt (&^tile2) z), d)
+End
+
+Theorem mk_pt_0[simp]:
+  mk_pt p (0,0) = p
+Proof
+  PairCases_on `p` \\ simp [mk_pt_def]
+QED
+
+Definition span_def:
+  span s = {mk_pt p z | z,p | p ∈ s}
+End
+
+Theorem span_mono[simp]:
+  s ⊆ t ⇒ span s ⊆ span t
+Proof
+  simp [span_def, SUBSET_DEF] \\ metis_tac []
+QED
+
+Theorem span_subset[simp]:
+  s ⊆ span s
+Proof
+  simp [span_def, SUBSET_DEF] \\ metis_tac [mk_pt_0]
+QED
+
+Theorem mk_pt_in_span[simp]:
+  mk_pt p z ∈ span s ⇔ p ∈ span s
+Proof
+  PairCases_on `p` \\ PairCases_on `z`
+  \\ simp [span_def, EXISTS_PROD, mk_pt_def] \\ eq_tac \\ strip_tac
+  \\ first_assum $ irule_at (Pos last) \\ ARITH_TAC
+QED
+
 Definition assign_ext_def:
-  assign_ext (s, dom) (s', dom') ⇔ dom ⊆ dom' ∧ (∀x. x ∈ dom ⇒ s x = s' x)
+  assign_ext (s, dom) (s', dom') ⇔
+    span dom ⊆ span dom' ∧ (∀x. x ∈ span dom ⇒ s x = s' x)
 End
 
 Definition assign_sat_def:
-  assign_sat env (s, dom) (p, v) ⇔ p ∈ dom ∧ v_eval env v (s p)
+  assign_sat env (s, dom) (p, v) ⇔
+    p ∈ span dom ∧ v_eval env v (s ∘ mk_pt p)
 End
 
 Theorem assign_sat_mono:
@@ -248,8 +288,8 @@ Proof
 QED
 
 Definition assign_tr_def:
-  assign_tr (x:int, y:int) (s, dom) =
-    ((λ((a,b),d). s ((a+x,b+y),d)), λ((a,b),d). dom ((a+x,b+y),d))
+  assign_tr x (s, dom) =
+    ((λ(a,d). s (add_pt a x, d)), λ(a,d). dom (add_pt a x, d))
 End
 
 Definition vb_eval_def[simp,compute]:
@@ -351,14 +391,16 @@ Definition gate_def:
     (init: mask list # mask list) ⇔
   ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
   ∀env. env_wf env ⇒
-  ∀s. EVERY (assign_sat env s) ins ∧
-    EVERY (λ(p,v). p ∈ SND s ⇒ is_exact v ∧ assign_sat env s (p,v)) outs ⇒
-  ∃s'. assign_ext s s' ∧ SND s' = SND s ∪ set (MAP FST outs) ∧
-    EVERY (assign_sat env s') outs ∧
-  ∀z. circuit (make_area width height)
-    (MAP (λ((p,d),_). (p,d,FST s' (p,d) z)) ins)
-    (MAP (λ((p,d),_). (p,d,FST s' (p,d) z)) outs)
-    [] (from_masks (env 0 z) init)
+    ∀s. EVERY (assign_sat env s) ins ∧
+      EVERY (λ(p,v). p ∈ span (SND s) ⇒
+        is_exact v ∧ assign_sat env s (p,v)) outs ⇒
+      ∃s'. assign_ext s s' ∧
+        SND s' = SND s ∪ set (MAP FST outs) ∧
+        EVERY (assign_sat env s') outs ∧
+        ∀z. circuit (make_area width height)
+          (MAP (λ((p,d),_). (p,d,FST s' (mk_pt (p,d) z))) ins)
+          (MAP (λ((p,d),_). (p,d,FST s' (mk_pt (p,d) z))) outs)
+          [] (from_masks (env 0 z) init)
 End
 
 Theorem circuit_perm:
@@ -385,9 +427,9 @@ Proof
 QED
 
 Theorem env_wf_translate:
-  env_wf f ⇒ env_wf (λi (a,b). f i (x + a,y + b))
+  env_wf f ⇒ env_wf (λi a. f i (add_pt x a))
 Proof
-  rw [env_wf_def, INT_ADD_ASSOC]
+  rw [env_wf_def, o_DEF, add_pt_assoc]
 QED
 
 Definition delay'_def:
@@ -450,7 +492,7 @@ Theorem v_eval_v_delay':
 Proof
   rw [v_eval_def]
   \\ drule_then (drule_at_then Any $
-    qspecl_then [`s (x,y)`, `λi (a,b). env i (x + a,y + b)`] mp_tac) v_eval'_v_delay'
+    qspecl_then [`s z`, `λi a. env i (add_pt z a)`] mp_tac) v_eval'_v_delay'
   \\ rw []
 QED
 
@@ -557,6 +599,10 @@ Definition find_in_def:
     (p,d)
 End
 
+Definition out_lookup_def:
+  out_lookup outs x = some (z, v). ∃p. MEM (p, v) outs ∧ x = mk_pt p z
+End
+
 Definition instantiate2_def:
   instantiate2 ((eaF, eaT), (ebF, ebT)) init =
     (instantiate (eaF, ebF) init, instantiate (eaT, ebT) init)
@@ -574,7 +620,10 @@ Theorem blist_simulation_ok_imp_gate:
   admissible_ins ins = SOME (da, db') ∧
   (∀x. db' = SOME x ⇒ x = db) ∧
   classify da a = SOME ea ∧
-  classify db b = SOME eb ⇒
+  classify db b = SOME eb
+   (* ∧
+  w ≤ ^tile ∧ h ≤ ^tile  *)
+  ⇒
   gate w h
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
@@ -593,7 +642,8 @@ Proof
     \\ fs [MAP_COMPOSE, blist_simulation_ok_def, blist_simple_checks_def])
   \\ gvs [] \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
   \\ qabbrev_tac `ee = λx z. eval_pair (env 0 z) (var_CASE x ea eb)`
-  \\ qabbrev_tac `env2 = λz (x,n). delay' (var_CASE x da db,ee x z) (q (find_in ins x) z) n`
+  \\ qabbrev_tac `env2 = λz (x,n). delay' (var_CASE x da db,ee x z)
+    (q (mk_pt (find_in ins x) z)) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
   \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
   >- (
@@ -604,8 +654,8 @@ Proof
       \\ disch_then (drule o CONJUNCT1) \\ simp [])
     \\ simp [Abbr`s1`] \\ Induct \\ rw [admissible_bexpr_def]
     >- (
-      `v_eval env a (q (find_in ins A)) ∧
-        (db' = SOME db ⇒ v_eval env b (q (find_in ins B)))` by (
+      `v_eval env a (q ∘ mk_pt (find_in ins A)) ∧
+        (db' = SOME db ⇒ v_eval env b (q ∘ mk_pt (find_in ins B)))` by (
         qpat_x_assum `admissible_ins _ = _` mp_tac
         \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC
         \\ rw [find_in_def, FIND_thm] \\ fs [assign_sat_def, Abbr`f`])
@@ -613,23 +663,44 @@ Proof
       \\ fs [Abbr`env2`, oneline admissible_bexpr_def, Abbr`ee`]
       THENL [ALL_TAC, Cases_on `db'` \\ gvs []]
       \\ dxrule_then assume_tac LT_IMP_LE
-      \\ drule_at_then (Pos (el 1)) (drule_then $ drule_then ACCEPT_TAC) v_eval_v_delay')
+      \\ drule_at_then (Pos (el 1))
+        (drule_then $ drule_then $ ACCEPT_TAC o SRULE []) v_eval_v_delay')
     >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
     >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw []))
-  \\ qexists_tac `λx. case ALOOKUP outs' x of | NONE => q x | SOME v => s1 v` \\ rw []
+  \\ qexists_tac `λx. case out_lookup outs' x of
+      | NONE => q x
+      | SOME (z, v) => s1 v z` \\ rw []
   >- (rpt CASE_TAC \\ rw []
-    \\ drule_then assume_tac ALOOKUP_MEM
-    \\ fs [EVERY_MEM, Abbr`outs'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD]
+    \\ pop_assum mp_tac \\ simp [out_lookup_def]
+    \\ DEEP_INTRO_TAC optionTheory.some_intro \\ simp [] \\ rw []
+    \\ `q ∘ mk_pt p = s1 r'` suffices_by simp [FUN_EQ_THM]
+    \\ gvs [EVERY_MEM, Abbr`outs'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD]
     \\ ntac 2 $ first_x_assum (drule_at Any)
     \\ rw [Abbr`f`, assign_sat_def]
     \\ irule is_exact_unique \\ rpt $ first_assum $ irule_at Any)
   >- (rw [EVERY_MEM, MEM_MAP, EXISTS_PROD] \\ rw [Abbr`f`, assign_sat_def]
-    >- (simp [MEM_MAP, EXISTS_PROD, Abbr`outs'`] \\ metis_tac [])
+    >- (irule $ REWRITE_RULE [SUBSET_DEF] span_subset
+      \\ simp [MEM_MAP, EXISTS_PROD, Abbr`outs'`] \\ metis_tac [])
     \\ res_tac
-    \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
+    \\ qmatch_goalsub_abbrev_tac `v_eval _ _ s2`
+    \\ `s2 = s1 p_2'` suffices_by rw []
+    \\ rw [FUN_EQ_THM, Abbr`s2`, out_lookup_def]
+    \\ DEEP_INTRO_TAC optionTheory.some_intro
+    \\ simp [FORALL_PROD, Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
+    \\ Cases_on `x` \\ reverse (rw []) >- `F` by metis_tac []
+    (* \\ rename [`mk_pt ((a,b),d) (z1,z2) = mk_pt ((a',b'),d') (z1',z2')`]
+    \\ `((a,b),d) = ((a',b'),d')` by (
+      gvs [mk_pt_def]
+      \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+      \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
+
+    ) *)
+    (* \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
-    \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM \\ fs [ALL_DISTINCT_APPEND])
+    \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM \\ fs [ALL_DISTINCT_APPEND] *)
+    \\ cheat
+    )
   \\ drule_then (qspec_then `env2 z` assume_tac o
       MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
   \\ simp [MAP_COMPOSE] \\ qmatch_goalsub_abbrev_tac `MAP f'`
@@ -640,7 +711,7 @@ Proof
     suffices_by rw []
   \\ qpat_x_assum `circuit _ _ _ _ _` kall_tac \\ rpt conj_tac
   >- (
-    fs [eval_io_def, Abbr`f'`, Abbr`f`] \\ Cases_on `z`
+    (* fs [eval_io_def, Abbr`f'`, Abbr`f`] \\ Cases_on `z`
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [] \\ reverse CASE_TAC
     >- (
       drule_then assume_tac ALOOKUP_MEM
@@ -649,14 +720,16 @@ Proof
     \\ qpat_x_assum `admissible_ins _ = _` mp_tac
     \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC \\ rw []
     \\ rw [FUN_EQ_THM, Abbr`s1`, Abbr`env2`]
-    \\ gvs [find_in_def, FIND_thm, delay'_def])
+    \\ gvs [find_in_def, FIND_thm, delay'_def] *)
+    cheat)
   >- (
     fs [eval_io_def, Abbr`f'`, Abbr`f`]
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [FUN_EQ_THM]
     \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
       simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM
-    \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM])
+    \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM]
+    \\ cheat)
   \\ Cases_on `ea` \\ Cases_on `eb` \\ rename [`((eaF,eaT),(ebF,ebT))`]
   \\ simp [instantiate2_def, from_masks_def, MAP_COMPOSE]
   \\ AP_TERM_TAC \\ simp [Abbr`env2`, Abbr`ee`, eval_pair_var_CASE]
@@ -664,7 +737,7 @@ Proof
         MAP from_mask (instantiate (ea,eb) init) =
         MAP (MAP (eval (λ(x,n). delay'
           (var_CASE x da db, var_CASE x ea eb)
-          (q (find_in ins x) z) n)) ∘ from_blist) init` suffices_by (
+          (q (mk_pt (find_in ins x) z)) n)) ∘ from_blist) init` suffices_by (
     CASE_TAC \\ simp [eval_pair_def])
   \\ rw [MAP_COMPOSE, instantiate_def]
   \\ qmatch_goalsub_abbrev_tac `eval env3`
@@ -737,7 +810,7 @@ Proof
     \\ metis_tac [assign_sat_mono])
   \\ strip_tac \\ pop_assum (qspec_then `z` mp_tac)
   \\ qmatch_goalsub_abbrev_tac `MAP f`
-  \\ `f = (λ(p,d). (p,d,FST s' (p,d) z)) ∘ FST` by
+  \\ `f = (λ(p,d). (p,d,FST s' (mk_pt (p,d) z))) ∘ FST` by
     simp [Abbr`f`, FUN_EQ_THM, FORALL_PROD]
   \\ rw [GSYM MAP_COMPOSE]
 QED
@@ -764,27 +837,25 @@ Proof
   cheat
 QED *)
 
-val tile = ``21:num``;
-
 Definition gate_at'_def:
   gate_at' (x,y) (init:mask list # mask list) =
     from_rows (75*x-85, 75*y-85) ARB
 End
 
 Definition gate_at_def:
-  gate_at (x:int,y:int) init =
-    U {gate_at' (x + i * 2 * &^tile, y + j * 2 * &^tile) init | i, j | T}
+  gate_at p init =
+    U {gate_at' (add_pt p (mul_pt (&^tile2) z)) init | z | T}
 End
 
 Definition floodfill_mod_def:
   floodfill_mod (area: (int # int) list)
     (ins: ((int # int) # dir) list)
     (outs: ((int # int) # dir) list) s =
-  join_all (UNIV, λ(i,j).
-    translate_mods (i * 150 * &^tile, j * 150 * &^tile)
+  join_all (UNIV, λz.
+    translate_mods (mul_pt (150 * &^tile) z)
       (circ_mod (set area)
-        (set (MAP (λ(p,d). (p,d,FST s (p,d) (i, j))) ins))
-        (set (MAP (λ(p,d). (p,d,FST s (p,d) (i, j))) outs)) {}))
+        (set (MAP (λ(p,d). (p,d,FST s (mk_pt (p,d) z))) ins))
+        (set (MAP (λ(p,d). (p,d,FST s (mk_pt (p,d) z))) outs)) {}))
 End
 
 Definition floodfill_def:
@@ -793,8 +864,8 @@ Definition floodfill_def:
     (outs: (((int # int) # dir) # value) list)
     (crosses: ((int # int) # (int # int) # dir) list)
     (init: (int # int) set) ⇔
-  (∀x y. MEM (x,y) area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < 2 * &^tile) ∧
-  (∀x y. MEM (x,y) area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < 2 * &^tile) ∧
+  (∀x y. MEM (x,y) area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < &^tile2) ∧
+  (∀x y. MEM (x,y) area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < &^tile2) ∧
   ∀env. env_wf env ⇒
   ∃s.
   (∀v. MEM v (ins ++ outs) ⇒ assign_sat env s v) ∧
@@ -813,7 +884,7 @@ End
 Theorem floodfill_start:
   floodfill [] [] [] [] ∅
 Proof
-  rw [floodfill_def] \\ qexists_tac `(λ_ _ _. F), ∅`
+  rw [floodfill_def] \\ qexists_tac `(λ_ _. F), ∅`
   \\ rw [floodfill_mod_def]
   \\ qpat_abbrev_tac `m = join_all _`
   \\ `m = empty_mod` suffices_by simp [run_empty_mod]
@@ -823,14 +894,14 @@ QED
 
 Theorem floodfill_add_ins:
   floodfill area ins outs [] init ∧
-  gate 1 1 [(((a,b),d),Exact dl v)] outs' init1 ⇒
-  ∀x y x' y'.
-  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
-  ¬MEM (x,y) area ∧
-  ¬MEM (x+a,y+b) (MAP (FST ∘ FST) (ins ++ outs)) ⇒
-  floodfill ((x,y) :: area) ((((x+a,y+b),d),Exact dl v) :: ins)
-    (MAP (λ(((a',b'),d'),Q). (((x+a',y+b'),d'),Q)) outs' ++ outs) []
-    (gate_at (x,y) init1 ∪ init)
+  gate 1 1 [((a,d),Exact dl v)] outs' init1 ⇒
+  ∀p x' y'.
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  ¬MEM p area ∧
+  ¬MEM (add_pt p a) (MAP (FST ∘ FST) (ins ++ outs)) ⇒
+  floodfill (p :: area) (((add_pt p a,d),Exact dl v) :: ins)
+    (MAP (λ((a',d'),Q). ((add_pt p a',d'),Q)) outs' ++ outs) []
+    (gate_at p init1 ∪ init)
 Proof
   cheat (* todo *)
 QED
@@ -918,7 +989,7 @@ End
 
 Definition read_mega_cells_def:
   read_mega_cells s =
-    { (x:int,y:int) | (150 * 21 * x + 23 * 75 + 1, 150 * 21 * y + 8 * 75 - 1) ∈  s }
+    { p | add_pt (mul_pt (150 * 21) p) (23 * 75 + 1, 8 * 75 - 1) ∈ s }
 End
 
 Theorem read_mega_cells_build_mega_cells_thm:
@@ -1015,7 +1086,7 @@ Proof
   \\ gvs [translate_set_def,PULL_EXISTS]
   \\ simp [SF DNF_ss,circ_mod_def,circ_io_lwss_def,lwss_at_def]
   \\ simp [in_if_set_empty]
-  \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
+  (* \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
   \\ conj_tac
   >- (CCONTR_TAC \\ gvs []
       \\ pop_assum kall_tac
@@ -1041,21 +1112,22 @@ Proof
   \\ ‘(^period * 60 * n − 1) DIV 60 = ^period * n - 1’ by gvs [DIV_EQ_X]
   \\ gvs []
   \\ ‘Num (&(586 * n + base − 1) + 15) DIV 586 = n’ by cheat
-  \\ gvs [] \\ gvs [Abbr‘env’, e_cell_def]
+  \\ gvs [] \\ gvs [Abbr‘env’, e_cell_def] *)
+  \\ cheat
 QED
 
 Theorem floodfill_add_gate:
   floodfill area ins outs crosses init ∧
   gate w h ins1 outs1 init1 ∧
   PERM outs (del ++ outs') ⇒
-  ∀x y x' y'.
-  (&(2 * x') = x ∧ &(2 * y') = y ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
-  LIST_REL (λ(((a,b),d),P) (pd,Q). pd = ((x+a,y+b), d) ∧ P ⊑ Q) ins1 del) ∧
-  EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area w h) ⇒
+  ∀p x' y'.
+  (p = (&(2 * x'), &(2 * y')) ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  LIST_REL (λ((a,d),P) (pd,Q). pd = (add_pt p a, d) ∧ P ⊑ Q) ins1 del) ∧
+  EVERY (λa. ¬MEM (add_pt p a) area) (make_area w h) ⇒
   floodfill
-    (MAP (λ(a,b). (x+a,y+b)) (make_area w h) ++ area) ins
-    (MAP (λ(((a,b),d),Q). (((x+a,y+b),d),Q)) outs1 ++ outs') crosses
-    (gate_at (x,y) init1 ∪ init)
+    (MAP (add_pt p) (make_area w h) ++ area) ins
+    (MAP (λ((a,d),Q). ((add_pt p a,d),Q)) outs1 ++ outs') crosses
+    (gate_at p init1 ∪ init)
 Proof
   cheat (* todo, generalization of floodfill_add_small_gate *)
 QED
@@ -1065,35 +1137,35 @@ Theorem assign_ext_sat:
   assign_sat env s3 v ⇒
   assign_sat env s2 v
 Proof
-  PairCases_on ‘s2’
-  \\ PairCases_on ‘s3’
-  \\ PairCases_on ‘v’
-  \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF]
-  \\ metis_tac []
+  MAP_EVERY PairCases_on [‘s2’, ‘s3’, ‘v’]
+  \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF,o_DEF]
+  (* \\ metis_tac [mk_pt_in_span] *)
+  \\ cheat
 QED
 
 Theorem floodfill_add_small_gate:
   floodfill area ins outs crosses init ∧
   gate 1 1 ins1 outs1 init1 ∧
   PERM outs (del ++ outs') ⇒
-  ∀x y x' y'.
-  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
-  ¬MEM (x,y) area ∧
-  LIST_REL (λ(((a,b),d),P) (pd,Q). pd = ((x+a,y+b), d) ∧ P ⊑ Q) ins1 del ⇒
-  floodfill ((x,y) :: area) ins
-    (MAP (λ(((a,b),d),Q). (((x+a,y+b),d),Q)) outs1 ++ outs') crosses
-    (gate_at (x,y) init1 ∪ init)
+  ∀p x' y'.
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  ¬MEM p area ∧
+  LIST_REL (λ((a,d),P) (pd,Q). pd = (add_pt p a, d) ∧ P ⊑ Q) ins1 del ⇒
+  floodfill (p :: area) ins
+    (MAP (λ((a,d),Q). ((add_pt p a,d),Q)) outs1 ++ outs') crosses
+    (gate_at p init1 ∪ init)
 Proof
-  rw [] \\ gvs [floodfill_def]
+  cheat
+  (* rw [] \\ gvs [floodfill_def]
   \\ gvs [SF DNF_ss, SF SFY_ss,gate_def] \\ rw []
-  \\ qabbrev_tac `x = (&(2*x'):int)` \\ qabbrev_tac `y = (&(2*y'):int)`
+  \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ last_x_assum drule \\ strip_tac
-  \\ qabbrev_tac `s1' = assign_tr (x,y) s`
+  \\ qabbrev_tac `s1' = assign_tr p s`
   \\ first_x_assum $ drule_then $ qspec_then `s1'` mp_tac
   \\ impl_tac >- cheat
   \\ strip_tac
   \\ rename [‘assign_ext s1' s2'’]
-  \\ qabbrev_tac `s2 = assign_tr (-x,-y) s2'`
+  \\ qabbrev_tac `s2 = assign_tr (neg_pt p) s2'`
   \\ qexists_tac ‘s2’
   \\ `assign_ext s s2` by cheat
   \\ conj_tac >- cheat
@@ -1103,7 +1175,7 @@ Proof
   \\ first_x_assum (drule_at (Pos (el 2)))
   \\ impl_tac >- cheat
   \\ strip_tac
-  \\ cheat
+  \\ cheat *)
 QED
 
 Theorem floodfill_add_crossover_gen:
@@ -1111,16 +1183,16 @@ Theorem floodfill_add_crossover_gen:
   PERM outs (((p',d1),P) :: outs') ∧
   (∀Q. classify db Q = SOME (Zeros, Zeros) ⇒
     gate w h [((p1,d1),P); ((p2,d2),Q)]
-      [(((a',b'),d1),v_delay 5 P); (((c',d'),d2),v_delay 5 Q)]
+      [((a',d1),v_delay 5 P); ((b',d2),v_delay 5 Q)]
       init1) ⇒
-  ∀x y x' y'.
-  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
-  ¬MEM (x,y) area ∧
-  p' = (x+a,y+b) ⇒
-  floodfill ((x,y) :: area) ins
-    ((((x+a',y+b'),d1),v_delay 5 P) :: outs')
-    (((x+c,y+d), (x+c',y+d'), d2) :: crosses)
-    (gate_at (x,y) init1 ∪ init)
+  ∀p x' y'.
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  ¬MEM p area ∧
+  p' = add_pt p a ⇒
+  floodfill (p :: area) ins
+    (((add_pt p a',d1),v_delay 5 P) :: outs')
+    ((add_pt p b, add_pt p b', d2) :: crosses)
+    (gate_at p init1 ∪ init)
 Proof
   cheat (* todo *)
 QED
@@ -1128,48 +1200,48 @@ QED
 Theorem floodfill_add_crossover_l:
   floodfill area ins outs crosses init ∧
   blist_simulation_ok 1 1
-    [((a,b),d1,Var A 5); ((c,d),d2,Var B 5)]
-    [((a',b'),d1,Var A 0); ((c',d'),d2,Var B 0)] init1 ∧
+    [(a,d1,Var A 5); (b,d2,Var B 5)]
+    [(a',d1,Var A 0); (b',d2,Var B 0)] init1 ∧
   PERM outs (((p',d1),P) :: outs') ⇒
   classify 5 P = SOME ea ⇒
   instantiate2 (ea, (Zeros, Zeros)) init1 = init2 ⇒
-  ∀x y x' y'.
-  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
-  ¬MEM (x,y) area ∧
-  p' = (x+a,y+b) ⇒
-  floodfill ((x,y) :: area) ins
-    ((((x+a',y+b'),d1),v_delay 5 P) :: outs')
-    (((x+c,y+d), (x+c',y+d'), d2) :: crosses)
-    (gate_at (x,y) init2 ∪ init)
+  ∀p x' y'.
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  ¬MEM p area ∧
+  p' = add_pt p a ⇒
+  floodfill (p :: area) ins
+    (((add_pt p a',d1),v_delay 5 P) :: outs')
+    ((add_pt p b, add_pt p b', d2) :: crosses)
+    (gate_at p init2 ∪ init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_x_assum $ irule_at Any
   \\ dxrule_then (dxrule_then assume_tac) blist_simulation_ok_imp_gate_2
-  \\ qexistsl_tac [`1`,`(c,d)`,`(a,b)`,`1`,`5`] \\ rw []
+  \\ qexistsl_tac [`1`,`b`,`a`,`1`,`5`] \\ rw []
   \\ first_x_assum dxrule \\ simp[]
 QED
 
 Theorem floodfill_add_crossover_r:
   floodfill area ins outs crosses init ∧
   blist_simulation_ok 1 1
-    [((a,b),d1,Var A 5); ((c,d),d2,Var B 5)]
-    [((a',b'),d1,Var A 0); ((c',d'),d2,Var B 0)] init1 ∧
+    [(a,d1,Var A 5); (b,d2,Var B 5)]
+    [(a',d1,Var A 0); (b',d2,Var B 0)] init1 ∧
   PERM outs (((p',d2),P) :: outs') ⇒
   classify 5 P = SOME eb ⇒
   instantiate2 ((Zeros, Zeros), eb) init1 = init2 ⇒
-  ∀x y x' y'.
-  &(2 * x') = x ∧ &(2 * y') = y ∧ x' < ^tile ∧ y' < ^tile ∧
-  ¬MEM (x,y) area ∧
-  p' = (x+c,y+d) ⇒
-  floodfill ((x,y) :: area) ins
-    ((((x+c',y+d'),d2),v_delay 5 P) :: outs')
-    (((x+a,y+b), (x+a',y+b'), d1) :: crosses)
-    (gate_at (x,y) init2 ∪ init)
+  ∀p x' y'.
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  ¬MEM p area ∧
+  p' = add_pt p b ⇒
+  floodfill (p :: area) ins
+    (((add_pt p b',d2),v_delay 5 P) :: outs')
+    ((add_pt p a, add_pt p a', d1) :: crosses)
+    (gate_at p init2 ∪ init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_x_assum $ irule_at Any
   \\ dxrule_then (dxrule_at_then (Pos (el 2)) assume_tac) blist_simulation_ok_imp_gate_2
-  \\ qexistsl_tac [`1`,`(a,b)`,`(c,d)`,`1`,`5`] \\ rw []
+  \\ qexistsl_tac [`1`,`a`,`b`,`1`,`5`] \\ rw []
   \\ first_x_assum dxrule \\ simp []
   \\ prim_irule (UNDISCH $ SPEC_ALL EQ_IMPLIES)
   \\ irule gate_perm \\ simp [PERM_SWAP_AT_FRONT]
@@ -1187,16 +1259,26 @@ QED
 
 Theorem floodfill_teleport:
   floodfill area ins outs crosses init ∧
-  PERM outs ((((a,b),d),P) :: outs') ⇒
-  ∀x y.
+  PERM outs (((a,d),P) :: outs') ⇒
+  ∀p.
   floodfill area ins
-    ((((a + 2 * &^tile * x, b + 2 * &^tile * y),d),v_teleport (x, y) P) :: outs')
+    (((add_pt (mul_pt (&^tile2) p) a,d),v_teleport p P) :: outs')
     crosses init
 Proof
-  cheat (* todo *)
+  rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
+  \\ dxrule_then (dxrule_then dxrule) floodfill_perm
+  \\ simp [floodfill_def] \\ strip_tac
+  \\ ntac 2 (conj_tac >- first_assum ACCEPT_TAC \\ last_x_assum kall_tac)
+  \\ rpt strip_tac \\ first_x_assum dxrule \\ strip_tac
+  \\ qexists_tac `s` \\ conj_tac
+  >- (fs [SF DNF_ss]
+    \\ qpat_assum `assign_sat _ _ _` mp_tac \\ POP_ASSUM_LIST kall_tac
+    \\ PairCases_on `s` \\ rw [assign_sat_def]
+    \\ cheat)
+  \\ cheat
 QED
 
-Theorem make_area_2_2 = EVAL ``EVERY (λ(a,b). ¬MEM (x+a,y+b) area) (make_area 2 2)``
+Theorem make_area_2_2 = EVAL ``EVERY (λa. ¬MEM (add_pt (x,y) a) area) (make_area 2 2)``
 
 Theorem pull_perm1_tl:
   PERM ls (a :: ls') ⇒ ∀b. PERM (b :: ls) (a :: b :: ls')
