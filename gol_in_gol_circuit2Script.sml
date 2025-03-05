@@ -625,11 +625,71 @@ Proof
   simp [instantiate2_def, twice_def]
 QED
 
+Theorem dir_to_xy_bounded:
+  dir_to_xy d = (x,y) ⇒ -1 ≤ x ∧ x ≤ 1 ∧ -1 ≤ y ∧ y ≤ 1
+Proof
+  Cases_on `d` \\ simp []
+QED
+
+Theorem blist_simulation_ok_ALL_DISTINCT:
+  blist_simulation_ok w h ins outs init ⇒
+  ALL_DISTINCT (MAP FST ins ++ MAP FST outs)
+Proof
+  REWRITE_TAC [blist_simulation_ok_def]
+  \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
+QED
+
+Theorem blist_simulation_ok_injective:
+  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  MEM (p,d,v) outs ∧ (MEM (p',d,v') ins ∨ MEM (p',d,v') outs) ∧
+  mk_pt p z = mk_pt p' z' ⇒ (p,z) = (p',z') ∧ v = v' ∧ ¬MEM (p',d,v') ins
+Proof
+  strip_tac
+  \\ `∀x y d v. MEM ((x,y),d,v) (ins ++ outs) ⇒
+      -1 ≤ x ∧ x < &^tile2 - 1 ∧ -1 ≤ y ∧ y < &^tile2 - 1` by (
+    simp []
+    \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+    \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
+    \\ disch_then (mp_tac o SRULE [EVERY_MEM] o funpow 7 CONJUNCT2)
+    \\ ntac 5 strip_tac \\ Cases_on `dir_to_xy d`
+    \\ drule_then strip_assume_tac dir_to_xy_bounded
+    \\ strip_tac \\ first_x_assum drule
+    \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+    \\ ARITH_TAC)
+  \\ ONCE_REWRITE_TAC [GSYM MEM_APPEND] \\ strip_tac
+  \\ MAP_EVERY Cases_on [`p`, `p'`, `z`, `z'`] \\ first_assum drule
+  \\ qpat_x_assum `MEM _ _` (fn h =>
+    fs [DISJ_IMP_THM, FORALL_AND_THM, mk_pt_def]
+    \\ first_x_assum drule \\ ntac 2 strip_tac
+    \\ conj_asm1_tac >- ARITH_TAC
+    \\ mp_tac h \\ gvs [])
+  \\ dxrule blist_simulation_ok_ALL_DISTINCT
+  \\ fs [ALL_DISTINCT_APPEND, MEM_MAP, EXISTS_PROD, FORALL_PROD]
+  \\ ntac 2 strip_tac >- `F` by metis_tac []
+  \\ reverse conj_tac >- metis_tac []
+  \\ drule_then assume_tac ALOOKUP_ALL_DISTINCT_MEM \\ res_tac \\ fs []
+QED
+
+Theorem blist_simulation_ok_injective_oo:
+  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  MEM (p,d,v) outs ∧ MEM (p',d,v') outs ∧
+  mk_pt p z = mk_pt p' z' ⇒ (p,z) = (p',z') ∧ v = v'
+Proof
+  metis_tac [blist_simulation_ok_injective, MEM_APPEND]
+QED
+
+Theorem blist_simulation_ok_injective_io:
+  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  MEM (p,d,v) ins ∧ MEM (p',d,v') outs ∧ mk_pt p z = mk_pt p' z' ⇒ F
+Proof
+  metis_tac [blist_simulation_ok_injective]
+QED
+
 Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
   (∀x. db' = SOME x ⇒ x = db) ∧
-  w ≤ ^tile ∧ h ≤ ^tile ∧
+  w < ^tile ∧ h < ^tile ∧
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
   gate w h
@@ -653,8 +713,7 @@ Proof
   \\ qabbrev_tac `env2 = λz (x,n). delay' (var_CASE x da db,ee x z)
     (q (mk_dpt (find_in ins x) z)) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
-  \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
-  >- (
+  \\ `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` by (
     `∀v. admissible_bexpr (da, db') v ⇒
       v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` suffices_by (
       rw [] \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
@@ -687,8 +746,8 @@ Proof
     \\ ntac 2 $ first_x_assum (drule_at Any)
     \\ rw [Abbr`f`, assign_sat_def]
     \\ irule is_exact_unique \\ rpt $ first_assum $ irule_at Any)
-  >- (fs [ALL_DISTINCT_APPEND] \\ dxrule ALOOKUP_ALL_DISTINCT_MEM \\ strip_tac
-    \\ rw [EVERY_MEM, MEM_MAP, EXISTS_PROD] \\ rw [Abbr`f`, assign_sat_def]
+  >- (
+    rw [EVERY_MEM, MEM_MAP, EXISTS_PROD] \\ rw [Abbr`f`, assign_sat_def]
     >- (irule $ REWRITE_RULE [SUBSET_DEF] span_subset
       \\ simp [MEM_MAP, EXISTS_PROD, Abbr`outs'`] \\ metis_tac [])
     \\ res_tac
@@ -698,26 +757,8 @@ Proof
     \\ DEEP_INTRO_TAC optionTheory.some_intro
     \\ simp [FORALL_PROD, Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ Cases_on `x` \\ reverse (rw []) >- `F` by metis_tac []
-    \\ rename [`mk_dpt ((x,y),d) (z1,z2) = mk_dpt ((x',y'),d') (z1',z2')`]
-    \\ MAP_EVERY qabbrev_tac [`p = (x,y)`, `p' = (x',y')`, `z = (z1,z2)`, `z' = (z1',z2')`]
-    \\ ntac 4 (pop_assum kall_tac) \\ gvs [mk_dpt_def]
-    \\ `p = p' ∧ z = z'` by (
-      `∀p d v. MEM (p,d,v) outs ⇒ MEM (sub_pt p (dir_to_xy d)) (make_area w h)` by (
-        rpt strip_tac
-        \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
-        \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
-        \\ disch_then (drule o SRULE [EVERY_MEM] o last o CONJUNCTS) \\ simp [])
-      \\ pop_assum mp_tac \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
-      \\ strip_tac \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
-      \\ MAP_EVERY Cases_on [`p`,`z`,`p'`,`z'`,`dir_to_xy d`] \\ fs [mk_pt_def]
-      \\ ntac 2 $ dxrule_all $ ARITH_PROVE
-        ``∀w x x' p p' z z' d. p + 42i * z = p' + 42 * z' ∧
-          p - d = &(2 * x) ∧ p' - d = &(2 * x') ∧
-          x < w ∧ x' < w ∧ w ≤ ^tile ⇒ p = p' ∧ z = z'``
-      \\ simp [])
-    \\ gvs [MEM_MAP, PULL_EXISTS, FORALL_PROD]
-    \\ Cases_on `p` \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
-    \\ gvs [])
+    \\ gvs [mk_dpt_def]
+    \\ drule_all blist_simulation_ok_injective_oo \\ rw [])
   \\ drule_then (qspec_then `env2 z` assume_tac o
       MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
   \\ simp [MAP_COMPOSE] \\ qmatch_goalsub_abbrev_tac `MAP f'`
@@ -728,25 +769,25 @@ Proof
     suffices_by rw []
   \\ qpat_x_assum `circuit _ _ _ _ _` kall_tac \\ rpt conj_tac
   >- (
-    (* fs [eval_io_def, Abbr`f'`, Abbr`f`] \\ Cases_on `z`
-    \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [] \\ reverse CASE_TAC
+    fs [eval_io_def, Abbr`f'`, Abbr`f`] \\ Cases_on `z`
+    \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [] \\ reverse $ rpt CASE_TAC
     >- (
-      drule_then assume_tac ALOOKUP_MEM
-      \\ fs [Abbr`outs'`, Abbr`ins'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD,
-        ALL_DISTINCT_APPEND] \\ metis_tac [])
+      pop_assum mp_tac \\ simp [out_lookup_def]
+      \\ DEEP_INTRO_TAC optionTheory.some_intro
+      \\ simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`, mk_dpt_def] \\ strip_tac
+      \\ drule_all blist_simulation_ok_injective_io \\ rw [])
     \\ qpat_x_assum `admissible_ins _ = _` mp_tac
     \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC \\ rw []
     \\ rw [FUN_EQ_THM, Abbr`s1`, Abbr`env2`]
-    \\ gvs [find_in_def, FIND_thm, delay'_def] *)
-    cheat)
+    \\ gvs [find_in_def, FIND_thm, delay'_def])
   >- (
     fs [eval_io_def, Abbr`f'`, Abbr`f`]
     \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [FUN_EQ_THM]
-    \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
-      simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
-    \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM
-    \\ impl_tac >- fs [ALL_DISTINCT_APPEND] \\ rw [FUN_EQ_THM]
-    \\ cheat)
+    \\ simp [out_lookup_def]
+    \\ DEEP_INTRO_TAC optionTheory.some_intro
+    \\ simp [Abbr`outs'`, MEM_MAP, FORALL_PROD, EXISTS_PROD, Abbr`g`, mk_dpt_def]
+    \\ reverse (rw []) >- (Cases_on `z` \\ metis_tac [])
+    \\ drule_all blist_simulation_ok_injective_oo \\ rw [])
   \\ Cases_on `ea` \\ Cases_on `eb` \\ rename [`((eaF,eaT),(ebF,ebT))`]
   \\ simp [instantiate2_def, from_masks_def, MAP_COMPOSE]
   \\ AP_TERM_TAC \\ simp [Abbr`env2`, Abbr`ee`, eval_pair_var_CASE]
@@ -775,7 +816,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_1:
   blist_simulation_ok w h [(p1,d1,Var A da)] outs init ⇒
-  w ≤ ^tile ∧ h ≤ ^tile ⇒
+  w < ^tile ∧ h < ^tile ⇒
   classify da a = SOME ea ⇒
   gate w h [((p1,d1),a)]
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(da,a)) v)) outs)
@@ -789,7 +830,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_2:
   blist_simulation_ok w h [(p1,d1,Var A da); (p2,d2,Var B db)] outs init ⇒
-  w ≤ ^tile ∧ h ≤ ^tile ⇒
+  w < ^tile ∧ h < ^tile ⇒
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
   gate w h [((p1,d1),a); ((p2,d2),b)]
