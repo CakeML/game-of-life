@@ -1277,7 +1277,7 @@ Proof
   \\ PairCases_on ‘s2’
   \\ PairCases_on ‘delta’
   \\ gvs [assign_ext_def,assign_tr_def,SUBSET_DEF,span_def]
-  \\ gvs [IN_DEF,FORALL_PROD,neg_pt_def,add_pt_def,EXISTS_PROD,mk_pt_def]
+  \\ gvs [IN_DEF,FORALL_PROD,neg_pt_def,add_pt_def,EXISTS_PROD,mk_dpt_def,mk_pt_def]
   \\ gvs [PULL_EXISTS] \\ rw []
   \\ pop_assum mp_tac
   \\ rename [‘_ ((x,y),z)’] \\ strip_tac
