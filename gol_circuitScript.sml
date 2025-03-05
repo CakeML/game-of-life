@@ -4,7 +4,7 @@
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
-     integerTheory
+     integerTheory intLib
 
 val _ = new_theory "gol_circuit";
 
@@ -878,6 +878,13 @@ Proof
   \\ Cases_on ‘dy’ \\ gvs []
   \\ rpt $ pop_assum $ irule_at Any
   \\ intLib.COOPER_TAC
+QED
+
+Theorem from_rows_translate:
+  ∀a b. (x+a,y+b) ∈ from_rows (i+a,j+b) rows ⇔ (x,y) ∈ from_rows (i,j) rows
+Proof
+  rw [IN_from_rows] \\ ntac 3 (AP_TERM_TAC \\ ABS_TAC)
+  \\ eq_tac \\ rw [] \\ ARITH_TAC
 QED
 
 Theorem io_gate_lenth:
