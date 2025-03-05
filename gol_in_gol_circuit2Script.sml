@@ -237,7 +237,7 @@ Definition mul_pt_def[simp]:
   mul_pt (n:int) (a, b) ⇔ (n * a, n * b)
 End
 
-Definition mk_pt_def:
+Definition mk_pt_def[compute]:
   mk_pt a z ⇔ add_pt a (mul_pt (&^tile2) z)
 End
 
@@ -247,7 +247,7 @@ Proof
   Cases_on `p` \\ simp [mk_pt_def]
 QED
 
-Definition mk_dpt_def:
+Definition mk_dpt_def[compute]:
   mk_dpt (a, d:dir) z ⇔ (mk_pt a z, d)
 End
 

@@ -432,7 +432,8 @@ fun floodfill diag params = let
     val thm' = MATCH_MP floodfill_teleport $ CONJ (!thm) permth
     val (dx, dy) = dirToXY d
     val thm' = SPEC (mk_pair (from_int (~dx), from_int (~dy))) thm'
-    val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV (SCONV [v_teleport_def])) thm'
+    val thm' = CONV_RULE (RATOR_CONV $ LAND_CONV $ LAND_CONV $
+      FORK_CONV (EVAL, SCONV [v_teleport_def])) thm'
     in thm := thm' end
   fun weaken ((ix, iy), _) = let
     val inp = mk_pair $ pair_map from_int (ix, iy)
