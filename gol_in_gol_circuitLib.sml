@@ -322,6 +322,7 @@ fun floodfill diag params = let
           [_] => MATCH_MP blist_simulation_ok_imp_gate_1 thm
         | [_, _] => MATCH_MP blist_simulation_ok_imp_gate_2 thm
         | _ => raise Match
+      val thm = MATCH_MP thm $ EQT_ELIM $ EVAL $ lhand $ concl thm
       val thm = CONV_RULE (PATH_CONV "rl" (BINOP_CONV (EVAL THENC SCONV []))) thm
       val thm = case g0 of
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm

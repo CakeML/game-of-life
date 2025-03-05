@@ -238,17 +238,27 @@ Definition mul_pt_def[simp]:
 End
 
 Definition mk_pt_def:
-  mk_pt (a, d:dir) z ⇔ (add_pt a (mul_pt (&^tile2) z), d)
+  mk_pt a z ⇔ add_pt a (mul_pt (&^tile2) z)
 End
 
 Theorem mk_pt_0[simp]:
   mk_pt p (0,0) = p
 Proof
-  PairCases_on `p` \\ simp [mk_pt_def]
+  Cases_on `p` \\ simp [mk_pt_def]
+QED
+
+Definition mk_dpt_def:
+  mk_dpt (a, d:dir) z ⇔ (mk_pt a z, d)
+End
+
+Theorem mk_dpt_0[simp]:
+  mk_dpt p (0,0) = p
+Proof
+  Cases_on `p` \\ simp [mk_dpt_def]
 QED
 
 Definition span_def:
-  span s = {mk_pt p z | z,p | p ∈ s}
+  span s = {mk_dpt p z | z,p | p ∈ s}
 End
 
 Theorem span_mono[simp]:
@@ -260,14 +270,14 @@ QED
 Theorem span_subset[simp]:
   s ⊆ span s
 Proof
-  simp [span_def, SUBSET_DEF] \\ metis_tac [mk_pt_0]
+  simp [span_def, SUBSET_DEF] \\ metis_tac [mk_dpt_0]
 QED
 
-Theorem mk_pt_in_span[simp]:
-  mk_pt p z ∈ span s ⇔ p ∈ span s
+Theorem mk_dpt_in_span[simp]:
+  mk_dpt p z ∈ span s ⇔ p ∈ span s
 Proof
   PairCases_on `p` \\ PairCases_on `z`
-  \\ simp [span_def, EXISTS_PROD, mk_pt_def] \\ eq_tac \\ strip_tac
+  \\ simp [span_def, EXISTS_PROD, mk_dpt_def, mk_pt_def] \\ eq_tac \\ strip_tac
   \\ first_assum $ irule_at (Pos last) \\ ARITH_TAC
 QED
 
@@ -278,7 +288,7 @@ End
 
 Definition assign_sat_def:
   assign_sat env (s, dom) (p, v) ⇔
-    p ∈ span dom ∧ v_eval env v (s ∘ mk_pt p)
+    p ∈ span dom ∧ v_eval env v (s ∘ mk_dpt p)
 End
 
 Theorem assign_sat_mono:
@@ -398,8 +408,8 @@ Definition gate_def:
         SND s' = SND s ∪ set (MAP FST outs) ∧
         EVERY (assign_sat env s') outs ∧
         ∀z. circuit (make_area width height)
-          (MAP (λ((p,d),_). (p,d,FST s' (mk_pt (p,d) z))) ins)
-          (MAP (λ((p,d),_). (p,d,FST s' (mk_pt (p,d) z))) outs)
+          (MAP (λ((p,d),_). (p,d,FST s' (mk_dpt (p,d) z))) ins)
+          (MAP (λ((p,d),_). (p,d,FST s' (mk_dpt (p,d) z))) outs)
           [] (from_masks (env 0 z) init)
 End
 
@@ -600,7 +610,7 @@ Definition find_in_def:
 End
 
 Definition out_lookup_def:
-  out_lookup outs x = some (z, v). ∃p. MEM (p, v) outs ∧ x = mk_pt p z
+  out_lookup outs x = some (z, v). ∃p. MEM (p, v) outs ∧ x = mk_dpt p z
 End
 
 Definition instantiate2_def:
@@ -619,11 +629,9 @@ Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
   (∀x. db' = SOME x ⇒ x = db) ∧
+  w ≤ ^tile ∧ h ≤ ^tile ∧
   classify da a = SOME ea ∧
-  classify db b = SOME eb
-   (* ∧
-  w ≤ ^tile ∧ h ≤ ^tile  *)
-  ⇒
+  classify db b = SOME eb ⇒
   gate w h
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
@@ -643,7 +651,7 @@ Proof
   \\ gvs [] \\ rpt strip_tac \\ Cases_on `s` \\ fs [EXISTS_PROD, assign_ext_def]
   \\ qabbrev_tac `ee = λx z. eval_pair (env 0 z) (var_CASE x ea eb)`
   \\ qabbrev_tac `env2 = λz (x,n). delay' (var_CASE x da db,ee x z)
-    (q (mk_pt (find_in ins x) z)) n`
+    (q (mk_dpt (find_in ins x) z)) n`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
   \\ sg `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)`
   >- (
@@ -654,8 +662,8 @@ Proof
       \\ disch_then (drule o CONJUNCT1) \\ simp [])
     \\ simp [Abbr`s1`] \\ Induct \\ rw [admissible_bexpr_def]
     >- (
-      `v_eval env a (q ∘ mk_pt (find_in ins A)) ∧
-        (db' = SOME db ⇒ v_eval env b (q ∘ mk_pt (find_in ins B)))` by (
+      `v_eval env a (q ∘ mk_dpt (find_in ins A)) ∧
+        (db' = SOME db ⇒ v_eval env b (q ∘ mk_dpt (find_in ins B)))` by (
         qpat_x_assum `admissible_ins _ = _` mp_tac
         \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC
         \\ rw [find_in_def, FIND_thm] \\ fs [assign_sat_def, Abbr`f`])
@@ -674,12 +682,13 @@ Proof
   >- (rpt CASE_TAC \\ rw []
     \\ pop_assum mp_tac \\ simp [out_lookup_def]
     \\ DEEP_INTRO_TAC optionTheory.some_intro \\ simp [] \\ rw []
-    \\ `q ∘ mk_pt p = s1 r'` suffices_by simp [FUN_EQ_THM]
+    \\ `q ∘ mk_dpt p = s1 r'` suffices_by simp [FUN_EQ_THM]
     \\ gvs [EVERY_MEM, Abbr`outs'`, Abbr`g`, PULL_EXISTS, MEM_MAP, EXISTS_PROD]
     \\ ntac 2 $ first_x_assum (drule_at Any)
     \\ rw [Abbr`f`, assign_sat_def]
     \\ irule is_exact_unique \\ rpt $ first_assum $ irule_at Any)
-  >- (rw [EVERY_MEM, MEM_MAP, EXISTS_PROD] \\ rw [Abbr`f`, assign_sat_def]
+  >- (fs [ALL_DISTINCT_APPEND] \\ dxrule ALOOKUP_ALL_DISTINCT_MEM \\ strip_tac
+    \\ rw [EVERY_MEM, MEM_MAP, EXISTS_PROD] \\ rw [Abbr`f`, assign_sat_def]
     >- (irule $ REWRITE_RULE [SUBSET_DEF] span_subset
       \\ simp [MEM_MAP, EXISTS_PROD, Abbr`outs'`] \\ metis_tac [])
     \\ res_tac
@@ -689,18 +698,26 @@ Proof
     \\ DEEP_INTRO_TAC optionTheory.some_intro
     \\ simp [FORALL_PROD, Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
     \\ Cases_on `x` \\ reverse (rw []) >- `F` by metis_tac []
-    (* \\ rename [`mk_pt ((a,b),d) (z1,z2) = mk_pt ((a',b'),d') (z1',z2')`]
-    \\ `((a,b),d) = ((a',b'),d')` by (
-      gvs [mk_pt_def]
-      \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
-      \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
-
-    ) *)
-    (* \\ `MEM (((p_1,p_2),p_1'),p_2') outs'` by
-      simp [Abbr`outs'`, MEM_MAP, EXISTS_PROD, Abbr`g`]
-    \\ drule_at Any ALOOKUP_ALL_DISTINCT_MEM \\ fs [ALL_DISTINCT_APPEND] *)
-    \\ cheat
-    )
+    \\ rename [`mk_dpt ((x,y),d) (z1,z2) = mk_dpt ((x',y'),d') (z1',z2')`]
+    \\ MAP_EVERY qabbrev_tac [`p = (x,y)`, `p' = (x',y')`, `z = (z1,z2)`, `z' = (z1',z2')`]
+    \\ ntac 4 (pop_assum kall_tac) \\ gvs [mk_dpt_def]
+    \\ `p = p' ∧ z = z'` by (
+      `∀p d v. MEM (p,d,v) outs ⇒ MEM (sub_pt p (dir_to_xy d)) (make_area w h)` by (
+        rpt strip_tac
+        \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+        \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
+        \\ disch_then (drule o SRULE [EVERY_MEM] o last o CONJUNCTS) \\ simp [])
+      \\ pop_assum mp_tac \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+      \\ strip_tac \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
+      \\ MAP_EVERY Cases_on [`p`,`z`,`p'`,`z'`,`dir_to_xy d`] \\ fs [mk_pt_def]
+      \\ ntac 2 $ dxrule_all $ ARITH_PROVE
+        ``∀w x x' p p' z z' d. p + 42i * z = p' + 42 * z' ∧
+          p - d = &(2 * x) ∧ p' - d = &(2 * x') ∧
+          x < w ∧ x' < w ∧ w ≤ ^tile ⇒ p = p' ∧ z = z'``
+      \\ simp [])
+    \\ gvs [MEM_MAP, PULL_EXISTS, FORALL_PROD]
+    \\ Cases_on `p` \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
+    \\ gvs [])
   \\ drule_then (qspec_then `env2 z` assume_tac o
       MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
   \\ simp [MAP_COMPOSE] \\ qmatch_goalsub_abbrev_tac `MAP f'`
@@ -737,7 +754,7 @@ Proof
         MAP from_mask (instantiate (ea,eb) init) =
         MAP (MAP (eval (λ(x,n). delay'
           (var_CASE x da db, var_CASE x ea eb)
-          (q (mk_pt (find_in ins x) z)) n)) ∘ from_blist) init` suffices_by (
+          (q (mk_dpt (find_in ins x) z)) n)) ∘ from_blist) init` suffices_by (
     CASE_TAC \\ simp [eval_pair_def])
   \\ rw [MAP_COMPOSE, instantiate_def]
   \\ qmatch_goalsub_abbrev_tac `eval env3`
@@ -758,6 +775,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_1:
   blist_simulation_ok w h [(p1,d1,Var A da)] outs init ⇒
+  w ≤ ^tile ∧ h ≤ ^tile ⇒
   classify da a = SOME ea ⇒
   gate w h [((p1,d1),a)]
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(da,a)) v)) outs)
@@ -771,6 +789,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_2:
   blist_simulation_ok w h [(p1,d1,Var A da); (p2,d2,Var B db)] outs init ⇒
+  w ≤ ^tile ∧ h ≤ ^tile ⇒
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
   gate w h [((p1,d1),a); ((p2,d2),b)]
@@ -778,7 +797,7 @@ Theorem blist_simulation_ok_imp_gate_2:
     (instantiate2 (ea, eb) init)
 Proof
   rpt strip_tac
-  \\ dxrule_then (dxrule_at_then (Pos (el 4)) $ dxrule_at_then Any $
+  \\ dxrule_then (dxrule_at_then (Pos (el 6)) $ dxrule_at_then Any $
       qspec_then `SOME db` (irule o SRULE [])) blist_simulation_ok_imp_gate
   \\ simp [admissible_ins_def]
 QED
@@ -810,7 +829,7 @@ Proof
     \\ metis_tac [assign_sat_mono])
   \\ strip_tac \\ pop_assum (qspec_then `z` mp_tac)
   \\ qmatch_goalsub_abbrev_tac `MAP f`
-  \\ `f = (λ(p,d). (p,d,FST s' (mk_pt (p,d) z))) ∘ FST` by
+  \\ `f = (λ(p,d). (p,d,FST s' (mk_dpt (p,d) z))) ∘ FST` by
     simp [Abbr`f`, FUN_EQ_THM, FORALL_PROD]
   \\ rw [GSYM MAP_COMPOSE]
 QED
@@ -854,8 +873,8 @@ Definition floodfill_mod_def:
   join_all (UNIV, λz.
     translate_mods (mul_pt (150 * &^tile) z)
       (circ_mod (set area)
-        (set (MAP (λ(p,d). (p,d,FST s (mk_pt (p,d) z))) ins))
-        (set (MAP (λ(p,d). (p,d,FST s (mk_pt (p,d) z))) outs)) {}))
+        (set (MAP (λ(p,d). (p,d,FST s (mk_dpt (p,d) z))) ins))
+        (set (MAP (λ(p,d). (p,d,FST s (mk_dpt (p,d) z))) outs)) {}))
 End
 
 Definition floodfill_def:
@@ -1197,6 +1216,18 @@ Proof
   cheat (* todo, generalization of floodfill_add_small_gate *)
 QED
 
+Theorem assign_ext_sat:
+  assign_ext s3 s2 ∧
+  assign_sat env s3 v ⇒
+  assign_sat env s2 v
+Proof
+  MAP_EVERY PairCases_on [‘s2’, ‘s3’, ‘v’]
+  \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF,o_DEF]
+  \\ strip_tac
+  \\ `∀x. s30 (mk_dpt ((v0,v1),v2) x) = s20 (mk_dpt ((v0,v1),v2) x)` suffices_by gvs []
+  \\ strip_tac \\ first_assum irule \\ simp []
+QED
+
 Theorem assign_ext_tr_IMP:
   assign_ext (assign_tr delta s) s2 ⇒
   assign_ext s (assign_tr (neg_pt delta) s2)
@@ -1269,7 +1300,7 @@ Theorem floodfill_add_crossover_gen:
   floodfill area ins outs crosses init ∧
   PERM outs (((p',d1),P) :: outs') ∧
   (∀Q. classify db Q = SOME (Zeros, Zeros) ⇒
-    gate w h [((p1,d1),P); ((p2,d2),Q)]
+    gate 1 1 [((p1,d1),P); ((p2,d2),Q)]
       [((a',d1),v_delay 5 P); ((b',d2),v_delay 5 Q)]
       init1) ⇒
   ∀p x' y'.
@@ -1303,9 +1334,8 @@ Theorem floodfill_add_crossover_l:
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_x_assum $ irule_at Any
-  \\ dxrule_then (dxrule_then assume_tac) blist_simulation_ok_imp_gate_2
-  \\ qexistsl_tac [`1`,`b`,`a`,`1`,`5`] \\ rw []
-  \\ first_x_assum dxrule \\ simp[]
+  \\ dxrule_then (dxrule_then assume_tac o SRULE []) blist_simulation_ok_imp_gate_2
+  \\ qexistsl_tac [`b`,`a`,`5`] \\ rw []
 QED
 
 Theorem floodfill_add_crossover_r:
@@ -1327,8 +1357,8 @@ Theorem floodfill_add_crossover_r:
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_x_assum $ irule_at Any
-  \\ dxrule_then (dxrule_at_then (Pos (el 2)) assume_tac) blist_simulation_ok_imp_gate_2
-  \\ qexistsl_tac [`1`,`a`,`b`,`1`,`5`] \\ rw []
+  \\ dxrule_then (dxrule_at_then (Pos (el 2)) assume_tac o SRULE []) blist_simulation_ok_imp_gate_2
+  \\ qexistsl_tac [`a`,`b`,`5`] \\ rw []
   \\ first_x_assum dxrule \\ simp []
   \\ prim_irule (UNDISCH $ SPEC_ALL EQ_IMPLIES)
   \\ irule gate_perm \\ simp [PERM_SWAP_AT_FRONT]
