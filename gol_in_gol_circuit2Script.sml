@@ -903,7 +903,19 @@ Theorem floodfill_add_ins:
     (MAP (λ((a',d'),Q). ((add_pt p a',d'),Q)) outs' ++ outs) []
     (gate_at p init1 ∪ init)
 Proof
-  cheat (* todo *)
+  strip_tac
+  \\ gvs [floodfill_def]
+  \\ rpt gen_tac
+  \\ disch_tac
+  \\ conj_tac >- (rw [] \\ res_tac \\ intLib.COOPER_TAC)
+  \\ conj_tac >- (rw [] \\ res_tac \\ intLib.COOPER_TAC)
+  \\ rpt strip_tac
+  \\ gvs [gate_def]
+  \\ first_x_assum drule
+  \\ first_x_assum drule
+  \\ rpt strip_tac
+  \\ simp [SF DNF_ss,MEM_MAP,PULL_EXISTS,SF SFY_ss]
+  \\ cheat (* todo *)
 QED
 
 Theorem floodfill_perm:
@@ -1016,6 +1028,53 @@ Proof
   \\ intLib.COOPER_TAC
 QED
 
+Triviality cv_LENGTH_thm:
+  ∀cv. cv_LENGTH cv = Num (cv_right_depth cv)
+Proof
+  gvs [cv_stdTheory.cv_LENGTH_def]
+  \\ qsuff_tac ‘∀cv k. cv_LEN cv (Num k) = Num (cv_right_depth cv + k)’
+  \\ gvs []
+  \\ Induct \\ simp [cv_stdTheory.cv_right_depth_def,Once cv_stdTheory.cv_LEN_def]
+QED
+
+Theorem nextCell_correct =
+  (let
+    val thm_stmt = “step s (x0,x1) ⇔ r_eval (s ∘ add_pt (x0,x1)) nextCell”
+    val lem = thm_stmt
+                |> SCONV [nextCell_def,gol_rulesTheory.step_def,IN_DEF,LET_THM]
+                |> SRULE [GSYM int_sub,gol_rulesTheory.live_adj_def]
+    val tm = lem |> concl |> rand |> subst
+               [“(s:state) (x0,x1)”     |-> “a00:bool”,
+                “(s:state) (x0,x1-1)”   |-> “a01:bool”,
+                “(s:state) (x0,x1+1)”   |-> “a02:bool”,
+                “(s:state) (x0-1,x1)”   |-> “a10:bool”,
+                “(s:state) (x0-1,x1-1)” |-> “a11:bool”,
+                “(s:state) (x0-1,x1+1)” |-> “a12:bool”,
+                “(s:state) (x0+1,x1)”   |-> “a20:bool”,
+                “(s:state) (x0+1,x1-1)” |-> “a21:bool”,
+                “(s:state) (x0+1,x1+1)” |-> “a22:bool”]
+    val calc_def = Define ‘calc a00 a01 a02 a10 a11 a12 a20 a21 a22 = ^tm’
+    val calc_all_def = tDefine "calc_all" ‘calc_all xs =
+                                  if LENGTH xs < 9 then
+                                    calc_all (F::xs) ∧ calc_all (T::xs)
+                                  else calc (EL 0 xs) (EL 1 xs) (EL 2 xs)
+                                            (EL 3 xs) (EL 4 xs) (EL 5 xs)
+                                            (EL 6 xs) (EL 7 xs) (EL 8 xs)’
+                               (WF_REL_TAC ‘measure (λxs. 9 - LENGTH xs)’ \\ gvs [])
+    val _ = cv_transLib.cv_trans calc_def
+    val _ = cv_transLib.cv_trans_rec calc_all_def
+              (WF_REL_TAC ‘measure (λxs. 9 - cv_right_depth xs)’ \\ rw []
+               \\ gvs [cv_LENGTH_thm,cv_stdTheory.cv_right_depth_def,cvTheory.c2b_def])
+    val lemma = prove(
+      “calc_all (F::xs) ∧ calc_all (T::xs) ⇔  ∀b. calc_all (b::xs)”,
+      eq_tac \\ gvs [] \\ strip_tac \\ Cases \\ gvs [])
+    val calc_all_eq = REWRITE_RULE [lemma] calc_all_def
+    val th = cv_transLib.cv_eval “calc_all []”
+    val th1 = funpow 10 (SRULE [Once calc_all_eq]) th |> SRULE [calc_def]
+  in
+    SRULE [th1] lem
+  end);
+
 Theorem floodfill_finish:
   floodfill area
     [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact (-77) Clock)]
@@ -1027,7 +1086,9 @@ Proof
   \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
   \\ rename [‘FUNPOW step n s_init (x,y) = _’]
   \\ qabbrev_tac ‘env = λn. FUNPOW step n s_init’
-  \\ ‘env_wf env’ by cheat
+  \\ ‘env_wf env’ by
+   (gvs [env_wf_def,Abbr‘env’] \\ gen_tac \\ PairCases
+    \\ simp [GSYM ADD1,FUNPOW_SUC] \\ gvs [nextCell_correct])
   \\ first_x_assum drule \\ strip_tac
   \\ PairCases_on ‘s’ \\ gvs [assign_sat_def]
   \\ gvs [v_eval_def]
@@ -1080,13 +1141,15 @@ Proof
     \\ simp [SF DNF_ss,is_ew_def,io_box_def,box_def]
     \\ disj1_tac \\ intLib.COOPER_TAC)
   \\ gvs [read_mega_cells_def,EXISTS_PROD]
-  \\ disch_then kall_tac \\ rw []
   \\ gvs [translate_mods_def,translate_mod_def]
   \\ simp [IN_DEF]
   \\ gvs [translate_set_def,PULL_EXISTS]
   \\ simp [SF DNF_ss,circ_mod_def,circ_io_lwss_def,lwss_at_def]
   \\ simp [in_if_set_empty]
-  (* \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
+  \\ ‘(3150 * x + 1725 + 1,3150 * y + 600 − 1) =
+      (3150 * x + 1726,3150 * y + 599)’ by (gvs [] \\ intLib.COOPER_TAC)
+  \\ gvs [] \\ disch_then kall_tac
+  \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
   \\ conj_tac
   >- (CCONTR_TAC \\ gvs []
       \\ pop_assum kall_tac
@@ -1104,16 +1167,18 @@ Proof
       \\ intLib.COOPER_TAC)
   \\ rewrite_tac [GSYM INT_MUL_ASSOC]
   \\ once_rewrite_tac [GSYM INT_MUL_COMM]
-  \\ simp []
-  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 1725 + 1 - 3150 * y = 3150 * (x - y) + 1726:int”]
-  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 600 - 1 - 3150 * y = 3150 * (x - y) + 599:int”]
+  \\ simp [e_cell_def]
+  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 1726 - y * 3150 = 3150 * (x - y) + 1726:int”]
+  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 599 - y * 3150 = 3150 * (x - y) + 599:int”]
   \\ rewrite_tac [in_lwss_as_set_E,integerTheory.INT_SUB_0] \\ gvs []
   \\ gvs [IN_DEF,is_ew_def]
-  \\ ‘(^period * 60 * n − 1) DIV 60 = ^period * n - 1’ by gvs [DIV_EQ_X]
-  \\ gvs []
-  \\ ‘Num (&(586 * n + base − 1) + 15) DIV 586 = n’ by cheat
-  \\ gvs [] \\ gvs [Abbr‘env’, e_cell_def] *)
-  \\ cheat
+  \\ AP_THM_TAC \\ AP_TERM_TAC
+  \\ simp [base_def,INT_ADD]
+  \\ once_rewrite_tac [ADD_COMM]
+  \\ ‘0 < 60:num’ by gvs []
+  \\ drule ADD_DIV_ADD_DIV
+  \\ disch_then $ rewrite_tac o single o GSYM
+  \\ gvs [DIV_DIV_DIV_MULT]
 QED
 
 Theorem floodfill_add_gate:
