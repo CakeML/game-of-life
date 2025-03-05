@@ -1417,11 +1417,9 @@ QED
 
 Theorem floodfill_teleport:
   floodfill area ins outs crosses init ∧
-  PERM outs (((a,d),P) :: outs') ⇒
-  ∀p.
-  floodfill area ins
-    (((add_pt (mul_pt (&^tile2) p) a,d),v_teleport p P) :: outs')
-    crosses init
+  PERM outs ((ad,P) :: outs') ⇒
+  ∀z.
+  floodfill area ins ((mk_dpt ad z, v_teleport z P) :: outs') crosses init
 Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm
@@ -1432,8 +1430,24 @@ Proof
   >- (fs [SF DNF_ss]
     \\ qpat_assum `assign_sat _ _ _` mp_tac \\ POP_ASSUM_LIST kall_tac
     \\ PairCases_on `s` \\ rw [assign_sat_def]
-    \\ cheat)
-  \\ cheat
+    \\ fs [v_eval_def] \\ strip_tac
+    \\ pop_assum $ qspec_then `add_pt z x` assume_tac
+    \\ Cases_on `P` \\ fs [v_eval'_def, v_teleport_def]
+    \\ Cases_on `r` \\ fs [v_teleport_def]
+    \\ Cases_on `ad` \\ fs [mk_dpt_def]
+    \\ `∀z x p. add_pt x (add_pt p z) = add_pt (add_pt z x) p ∧
+        mk_pt (mk_pt p z) x = mk_pt p (add_pt z x)` by
+      (simp [FORALL_PROD, add_pt_def, mk_pt_def] \\ ARITH_TAC)
+    \\ simp [])
+  \\ conj_tac >- first_assum ACCEPT_TAC
+  \\ pop_assum (fn h => rpt strip_tac \\ drule_all h)
+  \\ prim_irule (UNDISCH $ SPEC_ALL EQ_IMPLIES)
+  \\ AP_THM_TAC \\ AP_TERM_TAC
+  \\ Cases_on `ad` \\ simp [floodfill_mod_def, mk_dpt_def]
+  \\ rename [`mk_pt a p`] (* workaround for https://hol.zulipchat.com/#narrow/channel/486798-.E2.9D.84.EF.B8.8F-HOL4/topic/Bug.20in.20ABS_TAC *)
+  \\ AP_TERM_TAC \\ AP_TERM_TAC \\ ABS_TAC
+  \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC
+  \\ cheat (* not good *)
 QED
 
 Theorem make_area_2_2 = EVAL ``EVERY (λa. ¬MEM (add_pt (x,y) a) area) (make_area 2 2)``
