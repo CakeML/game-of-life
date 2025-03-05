@@ -1197,15 +1197,37 @@ Proof
   cheat (* todo, generalization of floodfill_add_small_gate *)
 QED
 
-Theorem assign_ext_sat:
-  assign_ext s3 s2 ∧
-  assign_sat env s3 v ⇒
-  assign_sat env s2 v
+Theorem assign_ext_tr_IMP:
+  assign_ext (assign_tr delta s) s2 ⇒
+  assign_ext s (assign_tr (neg_pt delta) s2)
 Proof
-  MAP_EVERY PairCases_on [‘s2’, ‘s3’, ‘v’]
-  \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF,o_DEF]
-  (* \\ metis_tac [mk_pt_in_span] *)
-  \\ cheat
+  PairCases_on ‘s’
+  \\ PairCases_on ‘s2’
+  \\ PairCases_on ‘delta’
+  \\ gvs [assign_ext_def,assign_tr_def,SUBSET_DEF,span_def]
+  \\ gvs [IN_DEF,FORALL_PROD,neg_pt_def,add_pt_def,EXISTS_PROD,mk_pt_def]
+  \\ gvs [PULL_EXISTS] \\ rw []
+  \\ pop_assum mp_tac
+  \\ rename [‘_ ((x,y),z)’] \\ strip_tac
+  \\ ‘s1 ((x - delta0 + delta0, y - delta1 + delta1),z)’ by
+       gvs [integerTheory.INT_SUB_ADD]
+  \\ rpt $ first_x_assum drule \\ rpt strip_tac
+  \\ gvs [intLib.COOPER_PROVE “x − delta0 + y + delta0 = x + y:int”]
+  >-
+   (rename [‘x + 42 * x_a = _ + 42 * _ ∧
+             y + 42 * y_a = _ + 42 * _ ∧ _’]
+    \\ last_x_assum $ qspecl_then [‘x_a’,‘y_a’] mp_tac \\ strip_tac
+    \\ rpt $ qpat_x_assum ‘_ = _’ mp_tac
+    \\ rename [‘_ = x_b + 42 * x_c ⇒ _ = y_b + 42 * y_c ⇒ _’]
+    \\ rpt strip_tac
+    \\ qexists_tac ‘x_c’
+    \\ qexists_tac ‘y_c’
+    \\ qexists_tac ‘x_b + delta0’
+    \\ qexists_tac ‘y_b + delta1’
+    \\ gvs [intLib.COOPER_PROVE “i + j + -j = i:int”]
+    \\ intLib.COOPER_TAC)
+  \\ AP_TERM_TAC \\ gvs []
+  \\ intLib.COOPER_TAC
 QED
 
 Theorem floodfill_add_small_gate:
@@ -1220,8 +1242,7 @@ Theorem floodfill_add_small_gate:
     (MAP (λ((a,d),Q). ((add_pt p a,d),Q)) outs1 ++ outs') crosses
     (gate_at p init1 ∪ init)
 Proof
-  cheat
-  (* rw [] \\ gvs [floodfill_def]
+  rw [] \\ gvs [floodfill_def]
   \\ gvs [SF DNF_ss, SF SFY_ss,gate_def] \\ rw []
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ last_x_assum drule \\ strip_tac
@@ -1232,7 +1253,8 @@ Proof
   \\ rename [‘assign_ext s1' s2'’]
   \\ qabbrev_tac `s2 = assign_tr (neg_pt p) s2'`
   \\ qexists_tac ‘s2’
-  \\ `assign_ext s s2` by cheat
+  \\ `assign_ext s s2` by
+       (unabbrev_all_tac \\ imp_res_tac assign_ext_tr_IMP \\ gvs [])
   \\ conj_tac >- cheat
   \\ conj_tac >- cheat
   \\ rpt strip_tac
@@ -1240,7 +1262,7 @@ Proof
   \\ first_x_assum (drule_at (Pos (el 2)))
   \\ impl_tac >- cheat
   \\ strip_tac
-  \\ cheat *)
+  \\ cheat
 QED
 
 Theorem floodfill_add_crossover_gen:
