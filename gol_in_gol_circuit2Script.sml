@@ -442,19 +442,72 @@ Proof
   \\ metis_tac [ALL_DISTINCT_PERM, PERM_MAP]
 QED
 
-Theorem gate_perm:
-  PERM ins ins' ∧ PERM outs outs' ⇒
-  (gate w h ins outs init ⇔ gate w h ins' outs' init)
+Theorem EVERY2_sym_fwd = SRULE [] $
+  Q.ISPECL [`R:α->β->bool`,`flip R:β->α->bool`] $ Q.GENL [`R1`, `R2`] EVERY2_sym;
+
+Theorem EVERY2_trans':
+  (∀x y z. R1 x y ∧ R2 y z ⇒ R3 x z) ⇒
+  ∀x y z. LIST_REL R1 x y ∧ LIST_REL R2 y z ⇒ LIST_REL R3 x z
 Proof
-  cheat
-  (* rw [gate_def] \\ BINOP_TAC
-  >- simp [ALL_DISTINCT_PERM, PERM_CONG, PERM_MAP]
-  \\ AP_TERM_TAC \\ ABS_TAC \\ AP_TERM_TAC \\ AP_TERM_TAC \\ ABS_TAC \\ BINOP_TAC
-  >- (BINOP_TAC \\ simp [PERM_EVERY])
-  \\ AP_TERM_TAC \\ ABS_TAC \\ AP_TERM_TAC \\ BINOP_TAC
-  >- (AP_TERM_TAC \\ AP_TERM_TAC \\ simp [PERM_LIST_TO_SET, PERM_MAP])
-  \\ BINOP_TAC >- simp [PERM_EVERY]
-  \\ AP_TERM_TAC \\ ABS_TAC \\ irule circuit_perm \\ simp [PERM_MAP] *)
+  strip_tac \\ Induct_on `x` \\ Cases_on `y` \\ Cases_on `z` \\ simp [] \\ metis_tac []
+QED
+
+Theorem PERM_ZIP_R:
+  PERM l1 l2 ∧ LENGTH l2 = LENGTH l3 ⇒
+  ∃l4. LENGTH l3 = LENGTH l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))
+Proof
+  `∀l1 l2. PERM l1 l2 ⇒ LENGTH l1 = LENGTH l2 ∧ ∀l3. LENGTH l3 = LENGTH l2 ⇒
+      ∃l4. LENGTH l3 = LENGTH l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))`
+    suffices_by metis_tac []
+  \\ HO_MATCH_MP_TAC PERM_IND \\ rw []
+  >- (
+    Cases_on `l3` \\ gvs []
+    \\ first_x_assum drule \\ rw []
+    \\ qexists_tac `h::l4` \\ simp [ZIP_def])
+  >- (
+    Cases_on `l3` \\ gvs []
+    \\ Cases_on `t` \\ gvs []
+    \\ first_x_assum drule \\ rw []
+    \\ qexists_tac `h'::h::l4` \\ simp [ZIP_def, PERM_SWAP_AT_FRONT])
+  \\ last_x_assum (qspec_then `l3` mp_tac) \\ rw []
+  \\ first_x_assum (qspec_then `l4` mp_tac) \\ rw []
+  \\ qexists_tac `l4'` \\ metis_tac [PERM_TRANS]
+QED
+
+Theorem PERM_ZIP_R':
+  PERM l1 l2 ∧ LENGTH l2 = LENGTH l3 ⇒
+  ∃l4. PERM l3 l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))
+Proof
+  strip_tac \\ drule_then drule PERM_ZIP_R \\ rw []
+  \\ first_assum $ irule_at Any
+  \\ first_assum $ mp_tac o MATCH_MP (Q.ISPEC `SND` PERM_MAP)
+  \\ imp_res_tac PERM_LENGTH
+  \\ simp [PERM_LENGTH, MAP_ZIP]
+QED
+
+Theorem gate_perm:
+  gate w h ins outs init ∧ PERM ins ins' ∧ PERM outs outs' ⇒
+  gate w h ins' outs' init
+Proof
+  rw [gate_def]
+  \\ rename [`_ ins' sin'`]
+  \\ imp_res_tac PERM_LENGTH
+  \\ imp_res_tac LIST_REL_LENGTH
+  \\ last_assum $ mp_then (Pos hd) (qspec_then `sin'` mp_tac) PERM_ZIP_R'
+    o MATCH_MP (iffLR PERM_SYM)
+  \\ rw [] \\ rename [`PERM _ (ZIP (_, sin))`]
+  \\ imp_res_tac PERM_LENGTH
+  \\ fs [LIST_REL_EVERY_ZIP]
+  \\ first_x_assum $ drule_then $ qspec_then `sin` mp_tac
+  \\ impl_tac >- (simp [] \\ metis_tac [PERM_EVERY])
+  \\ strip_tac \\ rename [`_ (ZIP (_, sout))`]
+  \\ qpat_assum `PERM outs _` $ mp_then (Pos hd) drule PERM_ZIP_R'
+  \\ strip_tac \\ rename [`_ (ZIP (_, sout'))`]
+  \\ imp_res_tac PERM_LENGTH
+  \\ qexists_tac `sout'` \\ conj_tac >- metis_tac [PERM_EVERY]
+  \\ strip_tac \\ first_x_assum $ qspec_then `z` suff_eqr_tac
+  \\ irule circuit_perm \\ simp [ZIP_MAP, MAP2_ZIP]
+  \\ metis_tac [PERM_MAP, PERM_SYM]
 QED
 
 Theorem env_wf_translate:
@@ -743,6 +796,12 @@ Proof
   qspec_tac (`l2`,`l2`) \\ Induct_on `l1` \\ Cases_on `l2` \\ simp [ZIP_def]
 QED
 
+Theorem MAP_ZIP':
+  MAP f (ZIP (l1, l2)) = MAP2 (λx y. f (x, y)) l1 l2
+Proof
+  simp [MAP2_ZIP] \\ cong_tac 2 \\ simp [FUN_EQ_THM, FORALL_PROD]
+QED
+
 Theorem MAP_MAP2:
   MAP f (MAP2 g l1 l2) = MAP2 (λx y. f (g x y)) l1 l2
 Proof
@@ -753,49 +812,6 @@ Theorem MAP2_CONG_LIST_REL:
   LIST_REL (λx y. f x y = g x y) l1 l2 ⇒ MAP2 f l1 l2 = MAP2 g l1 l2
 Proof
   qspec_tac (`l2`,`l2`) \\ Induct_on `l1` \\ Cases_on `l2` \\ simp []
-QED
-
-Theorem PERM_ZIP_R:
-  PERM l1 l2 ∧ LENGTH l2 = LENGTH l3 ⇒
-  ∃l4. LENGTH l3 = LENGTH l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))
-Proof
-  `∀l1 l2. PERM l1 l2 ⇒ LENGTH l1 = LENGTH l2 ∧ ∀l3. LENGTH l3 = LENGTH l2 ⇒
-      ∃l4. LENGTH l3 = LENGTH l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))`
-    suffices_by metis_tac []
-  \\ HO_MATCH_MP_TAC PERM_IND \\ rw []
-  >- (
-    Cases_on `l3` \\ gvs []
-    \\ first_x_assum drule \\ rw []
-    \\ qexists_tac `h::l4` \\ simp [ZIP_def])
-  >- (
-    Cases_on `l3` \\ gvs []
-    \\ Cases_on `t` \\ gvs []
-    \\ first_x_assum drule \\ rw []
-    \\ qexists_tac `h'::h::l4` \\ simp [ZIP_def, PERM_SWAP_AT_FRONT])
-  \\ last_x_assum (qspec_then `l3` mp_tac) \\ rw []
-  \\ first_x_assum (qspec_then `l4` mp_tac) \\ rw []
-  \\ qexists_tac `l4'` \\ metis_tac [PERM_TRANS]
-QED
-
-Theorem PERM_ZIP_R':
-  PERM l1 l2 ∧ LENGTH l2 = LENGTH l3 ⇒
-  ∃l4. PERM l3 l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))
-Proof
-  strip_tac \\ drule_then drule PERM_ZIP_R \\ rw []
-  \\ first_assum $ irule_at Any
-  \\ first_assum $ mp_tac o MATCH_MP (Q.ISPEC `SND` PERM_MAP)
-  \\ imp_res_tac PERM_LENGTH
-  \\ simp [PERM_LENGTH, MAP_ZIP]
-QED
-
-Theorem EVERY2_sym_fwd = SRULE [] $
-  Q.ISPECL [`R:α->β->bool`,`flip R:β->α->bool`] $ Q.GENL [`R1`, `R2`] EVERY2_sym;
-
-Theorem EVERY2_trans':
-  (∀x y z. R1 x y ∧ R2 y z ⇒ R3 x z) ⇒
-  ∀x y z. LIST_REL R1 x y ∧ LIST_REL R2 y z ⇒ LIST_REL R3 x z
-Proof
-  strip_tac \\ Induct_on `x` \\ Cases_on `y` \\ Cases_on `z` \\ simp [] \\ metis_tac []
 QED
 
 Theorem blist_simulation_ok_imp_gate:
@@ -977,12 +993,12 @@ QED
 
 Definition floodfill_mod_def:
   floodfill_mod (area: (int # int) list)
-    (ins: (((int # int) # dir) # (int # int -> num -> bool)) list)
-    (outs: (((int # int) # dir) # (int # int -> num -> bool)) list) =
+    (ins: (((int # int) # dir) # (int # int -> num -> bool)) set)
+    (outs: (((int # int) # dir) # (int # int -> num -> bool)) set) =
   circ_mod
     (iunion (λz. set (MAP (λp. mk_pt p z) area)))
-    (iunion (λz. set (MAP (λ((p,d),v). (mk_pt p z, d, v z)) ins)))
-    (iunion (λz. set (MAP (λ((p,d),v). (mk_pt p z, d, v z)) outs)))
+    (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) ins))
+    (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) outs))
     {}
 End
 
@@ -1010,10 +1026,10 @@ Definition floodfill_def:
           classify 5 v = SOME (Zeros, Zeros) ∧
           v_eval env v s) ⇒
         run (floodfill_mod area
-          (ZIP (MAP FST ins, sin) ++
-            MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross)
-          (ZIP (MAP FST outs, sout) ++
-            MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross))
+          (set (ZIP (MAP FST ins, sin)) ∪
+           set (MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross))
+          (set (ZIP (MAP FST outs, sout)) ∪
+           set (MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross)))
           init
 End
 
@@ -1072,8 +1088,8 @@ Proof
   \\ imp_res_tac PERM_LENGTH
   \\ first_x_assum (qspec_then `scross` mp_tac) \\ impl_tac
   >- (conj_tac >- metis_tac [] \\ metis_tac [MEM_PERM])
-  \\ disch_then suff_eq_tac \\ simp [floodfill_mod_def] \\ cong_tac 7
-  \\ simp [ZIP_MAP, MAP2_ZIP] \\ metis_tac [PERM_LIST_TO_SET, PERM_MAP]
+  \\ simp [ZIP_MAP, MAP2_ZIP]
+  \\ metis_tac [PERM_LIST_TO_SET, PERM_MAP]
 QED
 
 Theorem floodfill_weaken_gen:
@@ -1249,7 +1265,7 @@ Proof
   \\ first_x_assum drule \\ strip_tac
   \\ gvs [v_eval_def]
   \\ qmatch_asmsub_rename_tac `floodfill_mod _
-    [(_,latch);(_,clock)] [(_,latch');(_,clock')]`
+    {(_,latch);(_,clock)} {(_,latch');(_,clock')}`
   \\ `latch = latch' ∧ clock = clock'` by
     (simp [FUN_EQ_THM, e_clock_def] \\ ARITH_TAC)
   \\ gvs []
@@ -1530,9 +1546,8 @@ Proof
   \\ rpt $ last_x_assum $ irule_at Any
   \\ dxrule_then (dxrule_at_then (Pos (el 2)) assume_tac o SRULE []) blist_simulation_ok_imp_gate_2
   \\ qexistsl_tac [`a`,`b`,`5`] \\ rw []
-  \\ first_x_assum dxrule \\ simp []
-  \\ disch_then suff_eq_tac
-  \\ irule gate_perm \\ simp [PERM_SWAP_AT_FRONT]
+  \\ first_x_assum $ dxrule_then assume_tac
+  \\ drule_then irule gate_perm \\ simp [PERM_SWAP_AT_FRONT]
 QED
 
 Theorem floodfill_finish_crossover:
@@ -1542,12 +1557,25 @@ Theorem floodfill_finish_crossover:
   classify 5 P = SOME (Zeros, Zeros) ⇒
   floodfill area ins (((q,d),v_delay 5 P) :: outs') crosses' init
 Proof
-  (* rpt strip_tac \\ dxrule_then (dxrule_then dxrule) floodfill_perm
+  rpt strip_tac \\ dxrule_then (dxrule_then dxrule) floodfill_perm
   \\ simp [floodfill_def]
   \\ rpt strip_tac \\ first_x_assum dxrule \\ strip_tac
-  \\ qexists_tac `s`
-  \\ conj_tac >- first_assum ACCEPT_TAC *)
-  cheat (* todo *)
+  \\ rename [`sout = v::sout'`] \\ gvs []
+  \\ ntac 2 $ first_assum $ irule_at Any \\ simp []
+  \\ qexists_tac `delay 5 ∘ v`
+  \\ conj_tac >- (
+    MAP_EVERY (C qpat_x_assum mp_tac) [`_ v`, `_=_`]
+    \\ POP_ASSUM_LIST kall_tac \\ rw []
+    \\ dxrule_then (dxrule_then $ qspecl_then [`0`] mp_tac) v_eval_v_delay'
+    \\ rw [] \\ pop_assum suff_eq_tac \\ cong_tac 1
+    \\ simp [FUN_EQ_THM, delay_def, delay'_def,
+      eval_pair_def, eval_env_kind_def])
+  \\ conj_tac >- first_assum ACCEPT_TAC
+  \\ rw []
+  \\ first_x_assum (qspec_then `v::scross` mp_tac)
+  \\ simp [SF DNF_ss]
+  \\ disch_then $ drule_then drule
+  \\ cheat (* todo *)
 QED
 
 Theorem floodfill_teleport:
@@ -1572,7 +1600,7 @@ Proof
   \\ rw [] \\ first_x_assum $ drule_all_then suff_eq_tac
   \\ Cases_on `ad` \\ simp [floodfill_mod_def, mk_dpt_def]
   \\ cong_tac 4 \\ simp [Once EXTENSION]
-  \\ simp [SF DNF_ss] \\ strip_tac \\ cong_tac 2
+  \\ simp [SF DNF_ss] \\ strip_tac \\ cong_tac 4
   \\ Cases_on `q` \\ Cases_on `z` \\ simp [EXISTS_PROD, mk_pt_def]
   \\ eq_tac \\ strip_tac \\ gvs []
   THENL (map qexistsl_tac [[`p_1+q`,`p_2+r''`], [`p_1-q`,`p_2-r''`]])
