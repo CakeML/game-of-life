@@ -1102,19 +1102,34 @@ Proof
   rw []
 QED
 
-Triviality in_lwss_as_set_E:
-  (3150 * i + 1726,3150 * j + 599) ∈ lwss_as_set (3150 * p1 + 1720, 3150 * p2 + 595) E ⇔ i = p1 ∧ j = p2
+Triviality in_lwss_lemma:
+  dx < 10 ∧ n < 10 ⇒ (3150 * (k:int) + &n = & dx ⇔ k = 0 ∧ dx = n)
 Proof
-  ONCE_REWRITE_TAC [lwss_as_set_def,
-    GSYM $ SRULE [] $ Q.SPECL [`-i`, `-j`] from_rows_translate]
-  \\ cheat
-  (* reverse eq_tac >- (rw [] \\ EVAL_TAC)
-  \\ strip_tac
-  \\ gvs [oEL_THM,gol_circuitTheory.io_gate_lenth,lwss_as_set_def,IN_from_rows]
-  \\ qspec_then ‘E’ mp_tac (gol_circuitTheory.io_gate_lenth |> GEN_ALL)
-  \\ gvs [MEM_EL,PULL_EXISTS] \\ strip_tac \\ gvs []
-  \\ ntac 3 $ pop_assum kall_tac
-  \\ intLib.COOPER_TAC *)
+  Cases_on ‘k’ \\ gvs []
+  \\ rename [‘m ≠ 0’]
+  \\ Cases_on ‘m’ \\ gvs []
+  \\ gvs [MULT_CLAUSES]
+  \\ rw [] \\ gvs [INT_ADD]
+  \\ gvs [integerTheory.INT_MUL_RNEG]
+  \\ irule $ intLib.COOPER_PROVE “n + k < m ⇒ -& m + & n ≠ (& k):int”
+  \\ gvs []
+QED
+
+Triviality in_lwss_as_set_E:
+  (3150 * i + 1726, 3150 * j + 599) ∈
+    lwss_as_set (1725 + 3150 * p1 - 5, 600 + 3150 * p2 -5) E
+  ⇔
+  i = p1 ∧ j = p2
+Proof
+  rewrite_tac [lwss_as_set_def]
+  \\ once_rewrite_tac [GSYM $ SRULE [] $ Q.SPECL [`-i`, `-j`] from_rows_translate]
+  \\ rewrite_tac [intLib.COOPER_PROVE
+       “3150 * i + a + -(b + 3150 * j - c) = 3150 * (i - j) + (a - b + c):int”]
+  \\ gvs [] \\ simp [IN_from_rows]
+  \\ qspec_then ‘E’ assume_tac (gol_circuitTheory.io_gate_lenth |> GEN_ALL)
+  \\ gvs [MEM_EL,PULL_EXISTS,oEL_THM, SF CONJ_ss]
+  \\ simp [in_lwss_lemma,SF CONJ_ss]
+  \\ eq_tac \\ rw [] \\ EVAL_TAC
 QED
 
 Triviality cv_LENGTH_thm:
@@ -1256,13 +1271,10 @@ Proof
       \\ ntac 4 $ pop_assum mp_tac
       \\ rpt $ pop_assum kall_tac
       \\ intLib.COOPER_TAC)
-  \\ cheat
-  (* \\ rewrite_tac [GSYM INT_MUL_ASSOC]
-  \\ once_rewrite_tac [GSYM INT_MUL_COMM]
+  \\ gvs [integerTheory.INT_LDISTRIB,INT_MUL_ASSOC]
+  \\ rewrite_tac [in_lwss_as_set_E] \\ gvs []
+  \\ gvs [FORALL_PROD,mk_dpt_def,mk_pt_def,base_def]
   \\ simp [e_cell_def]
-  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 1726 - y * 3150 = 3150 * (x - y) + 1726:int”]
-  \\ rewrite_tac [intLib.COOPER_PROVE “x * 3150 + 599 - y * 3150 = 3150 * (x - y) + 599:int”]
-  \\ rewrite_tac [in_lwss_as_set_E,integerTheory.INT_SUB_0] \\ gvs []
   \\ gvs [IN_DEF,is_ew_def]
   \\ AP_THM_TAC \\ AP_TERM_TAC
   \\ simp [base_def,INT_ADD]
@@ -1270,7 +1282,7 @@ Proof
   \\ ‘0 < 60:num’ by gvs []
   \\ drule ADD_DIV_ADD_DIV
   \\ disch_then $ rewrite_tac o single o GSYM
-  \\ gvs [DIV_DIV_DIV_MULT] *)
+  \\ gvs [DIV_DIV_DIV_MULT]
 QED
 
 Theorem assign_ext_sat:
