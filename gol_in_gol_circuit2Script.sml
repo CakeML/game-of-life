@@ -1404,11 +1404,11 @@ Proof
     qunabbrevl_tac [`s2`, `s1'`] \\ drule assign_ext_tr_IMP \\ gvs [])
   \\ conj_tac >- cheat
   \\ conj_tac >- cheat
-  \\ conj_tac >- cheat
+  \\ conj_tac >- simp [SF SFY_ss]
   \\ rpt strip_tac
   \\ rename [‘assign_ext s2 s3’]
   \\ first_x_assum (drule_at (Pos (el 2)))
-  \\ impl_tac >- cheat
+  \\ impl_tac >- simp [SF SFY_ss, assign_ext_trans]
   \\ strip_tac
   \\ cheat
 QED
