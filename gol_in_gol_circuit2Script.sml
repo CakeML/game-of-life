@@ -5,6 +5,8 @@ open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
 
 val _ = new_theory "gol_in_gol_circuit2";
 
+val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
+
 fun suff_eqr_tac th: tactic = fn (g as (asl,w)) =>
  (SUFF_TAC(mk_eq(concl th, w))
   >- (disch_then (irule o iffLR) \\ ACCEPT_TAC th))
@@ -283,12 +285,22 @@ Proof
   simp [span_def, SUBSET_DEF] \\ metis_tac [mk_dpt_0]
 QED
 
+Theorem mem_span_self[simp] = ONCE_REWRITE_RULE [SUBSET_DEF] span_subset;
+
 Theorem mk_dpt_in_span[simp]:
   mk_dpt p z ∈ span s ⇔ p ∈ span s
 Proof
   PairCases_on `p` \\ PairCases_on `z`
   \\ simp [span_def, EXISTS_PROD, mk_dpt_def, mk_pt_def] \\ eq_tac \\ strip_tac
   \\ first_assum $ irule_at (Pos last) \\ ARITH_TAC
+QED
+
+Theorem span_subset_iff:
+  span s ⊆ span t ⇔ s ⊆ span t
+Proof
+  eq_tac >- metis_tac [SUBSET_TRANS, span_subset]
+  \\ CONV_TAC (PATH_CONV "rlr" (SCONV [span_def]))
+  \\ simp [SUBSET_DEF, PULL_EXISTS]
 QED
 
 Definition assign_ext_def:
@@ -1262,15 +1274,20 @@ Proof
 QED
 
 Theorem assign_ext_sat:
-  assign_ext s3 s2 ∧
-  assign_sat env s3 v ⇒
-  assign_sat env s2 v
+  assign_ext s1 s2 ∧ assign_sat env s1 v ⇒ assign_sat env s2 v
 Proof
-  MAP_EVERY PairCases_on [‘s2’, ‘s3’, ‘v’]
+  MAP_EVERY PairCases_on [‘s1’, ‘s2’, ‘v’]
   \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF,o_DEF]
   \\ strip_tac
-  \\ `∀x. s30 (mk_dpt ((v0,v1),v2) x) = s20 (mk_dpt ((v0,v1),v2) x)` suffices_by gvs []
+  \\ `∀x. s10 (mk_dpt ((v0,v1),v2) x) = s20 (mk_dpt ((v0,v1),v2) x)` suffices_by gvs []
   \\ strip_tac \\ first_assum irule \\ simp []
+QED
+
+Theorem assign_ext_trans:
+  assign_ext s1 s2 ∧ assign_ext s2 s3 ⇒ assign_ext s1 s3
+Proof
+  MAP_EVERY PairCases_on [‘s1’, ‘s2’, ‘s3’]
+  \\ gvs [assign_ext_def, SUBSET_DEF]
 QED
 
 Theorem add_pt_simps[simp]:
@@ -1491,29 +1508,33 @@ Proof
   \\ Cases_on `s` \\ rename [`SND (s, dom)`] \\ fs [Once EXISTS_PROD]
   \\ qexists_tac `s` \\ qmatch_goalsub_abbrev_tac `(s, dom')`
   \\ conj_tac >- (
-    strip_tac \\ disch_then assume_tac
-    \\ `FST v ∈ dom'` by (
-      Cases_on `v` \\ simp [Abbr`dom'`, MEM_MAP, Once EXISTS_PROD]
+    Cases \\ disch_then assume_tac \\ rename [`assign_sat _ _ (pd,v)`]
+    \\ `pd ∈ dom'` by (
+      simp [Abbr`dom'`, MEM_MAP, Once EXISTS_PROD]
       \\ CONV_TAC (RAND_CONV $ SCONV [Once EXISTS_PROD])
       \\ fs [] \\ metis_tac [])
-    \\ fs [SF DNF_ss]
-    \\ cheat
-    (* \\ qpat_assum `assign_sat _ _ _` mp_tac
-    \\ POP_ASSUM_LIST kall_tac
-    \\ rw [assign_sat_def]
+    \\ fs [SF DNF_ss] \\ res_tac \\ fs [assign_sat_def]
+    \\ `mk_dpt ad z ∈ span dom'` by (irule mem_span_self \\ simp [Abbr`dom'`])
     \\ fs [v_eval_def] \\ strip_tac
-    \\ pop_assum $ qspec_then `add_pt z x` assume_tac
+    \\ qpat_x_assum `!x. v_eval' _ _ _` $ qspec_then `add_pt z x` assume_tac
     \\ Cases_on `P` \\ fs [v_eval'_def, v_teleport_def]
     \\ Cases_on `r` \\ fs [v_teleport_def]
     \\ Cases_on `ad` \\ fs [mk_dpt_def]
     \\ `∀z x p. add_pt x (add_pt p z) = add_pt (add_pt z x) p ∧
         mk_pt (mk_pt p z) x = mk_pt p (add_pt z x)` by
       (simp [FORALL_PROD, add_pt_def, mk_pt_def] \\ ARITH_TAC)
-    \\ simp [] *)
-  )
+    \\ simp [])
   \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rpt strip_tac
-  (* \\ pop_assum (fn h => rpt strip_tac \\ drule_all h)
+  \\ first_x_assum $ drule_at Any \\ impl_tac
+  >- (
+    irule assign_ext_trans \\ first_x_assum $ irule_at Any
+    \\ simp [assign_ext_def, span_subset_iff]
+    \\ gvs [SUBSET_DEF, MEM_MAP, PULL_EXISTS]
+    \\ rw [] >>> C NTH_GOAL 2 (
+      `mk_dpt ad z ∈ dom'` by simp [Abbr`dom'`]
+      \\ metis_tac [mk_dpt_in_span, mem_span_self])
+    \\ irule mem_span_self \\ simp [Abbr`dom'`, MEM_MAP] \\ metis_tac [])
   \\ disch_then suff_eq_tac \\ AP_THM_TAC \\ AP_TERM_TAC
   \\ Cases_on `ad` \\ simp [floodfill_mod_def, mk_dpt_def]
   \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [Once EXTENSION]
@@ -1522,8 +1543,7 @@ Proof
   \\ eq_tac \\ strip_tac \\ gvs []
   THENL (map qexistsl_tac [[`p_1+q`,`p_2+r''`], [`p_1-q`,`p_2-r''`]])
   \\ (conj_tac >- ARITH_TAC
-    \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [] \\ ARITH_TAC) *)
-  \\ cheat
+    \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [] \\ ARITH_TAC)
 QED
 
 Theorem make_area_2_2 = EVAL ``EVERY (λa. ¬MEM (add_pt (x,y) a) area) (make_area 2 2)``
