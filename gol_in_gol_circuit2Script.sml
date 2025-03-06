@@ -309,7 +309,7 @@ QED
 
 Definition assign_tr_def:
   assign_tr x (s, dom) =
-    ((λ(a,d). s (add_pt a x, d)), λ(a,d). dom (add_pt a x, d))
+    ((λ(a,d). s (sub_pt a x, d)), λ(a,d). dom (sub_pt a x, d))
 End
 
 Definition vb_eval_def[simp,compute]:
@@ -899,14 +899,6 @@ Proof
   \\ irule Reg_mono \\ simp [] \\ metis_tac []
 QED
 
-(* Theorem gate_and_en_e:
-  gate 1 1 [(((-1,0),E),a); (((0,1),N),b)]
-    [(((1,0),E), v_and (v_delay 5 a) (v_delay 5 b))]
-    and_en_e_concrete
-Proof
-  cheat
-QED *)
-
 Definition gate_at'_def:
   gate_at' (x,y) (init:mask list # mask list) =
     from_rows (75*x-85, 75*y-85) ARB
@@ -944,16 +936,21 @@ Definition floodfill_mod_def:
     {}
 End
 
+Definition in_range_def:
+  in_range (x,y) ⇔
+    (x % 2 = 0 ∧ 0 ≤ x ∧ x < &^tile2) ∧
+    (y % 2 = 0 ∧ 0 ≤ y ∧ y < &^tile2)
+End
+
 Definition floodfill_def:
   floodfill (area: (int # int) list)
     (ins: (((int # int) # dir) # value) list)
     (outs: (((int # int) # dir) # value) list)
     (crosses: ((int # int) # (int # int) # dir) list)
     (init: (int # int) set) ⇔
-  (∀x y. MEM (x,y) area ⇒ x % 2 = 0 ∧ 0 ≤ x ∧ x < &^tile2) ∧
-  (∀x y. MEM (x,y) area ⇒ y % 2 = 0 ∧ 0 ≤ y ∧ y < &^tile2) ∧
+  (∀p. MEM p area ⇒ in_range p) ∧
   ∀env. env_wf env ⇒
-  ∃s.
+  ∃s. set (MAP FST ins) ∪ set (MAP FST outs) = SND s ∧
   (∀v. MEM v (ins ++ outs) ⇒ assign_sat env s v) ∧
   (∀pd v. MEM (pd, v) ins ⇒ is_exact v) ∧
   ∀s'. assign_ext s s' ∧
@@ -989,8 +986,7 @@ Proof
   \\ gvs [floodfill_def]
   \\ rpt gen_tac
   \\ disch_tac
-  \\ conj_tac >- (rw [] \\ res_tac \\ intLib.COOPER_TAC)
-  \\ conj_tac >- (rw [] \\ res_tac \\ intLib.COOPER_TAC)
+  \\ conj_tac >- (rw [] \\ res_tac \\ simp [in_range_def])
   \\ rpt strip_tac
   \\ gvs [gate_def]
   \\ first_x_assum drule
@@ -1006,15 +1002,15 @@ Theorem floodfill_perm:
   floodfill area ins outs' crosses' init
 Proof
   simp [floodfill_def] \\ strip_tac
-  \\ conj_tac >- first_assum ACCEPT_TAC
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw [] \\ first_x_assum dxrule \\ rw []
-  \\ qexists_tac `s` \\ rpt strip_tac
+  \\ `set (MAP FST outs') = set (MAP FST outs)` by
+    simp [PERM_LIST_TO_SET, PERM_MAP]
+  \\ qexists_tac `s` \\ simp [] \\ rpt strip_tac
   >- metis_tac []
   >- metis_tac [MEM_PERM]
   >- metis_tac []
   \\ first_x_assum dxrule \\ impl_tac
-  >- (rpt strip_tac \\ first_x_assum irule \\ metis_tac [MEM_PERM])
+  >- (rpt strip_tac \\ first_x_assum irule \\ drule_then (fs o single) MEM_PERM)
   \\ `(∀f. set (MAP f outs: ((int # int) # dir # (num -> bool)) list) = set (MAP f outs')) ∧
       ∀f. set (MAP f crosses: ((int # int) # dir # (num -> bool)) list) = set (MAP f crosses')` by
     simp [PERM_LIST_TO_SET, PERM_MAP]
@@ -1027,20 +1023,16 @@ Theorem floodfill_weaken_gen:
   floodfill area ins outs' crosses init
 Proof
   simp [floodfill_def] \\ strip_tac
-  \\ conj_tac >- first_assum ACCEPT_TAC
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw [] \\ first_x_assum dxrule \\ rw []
-  \\ qexists_tac `s` \\ rpt strip_tac
-  >- metis_tac []
-  >- (
-    drule_then drule LIST_REL_MEM_IMP_R \\ Cases_on `v` \\ rw [EXISTS_PROD]
-    \\ metis_tac [assign_sat_mono])
-  >- metis_tac []
-  \\ first_x_assum (dxrule_then dxrule)
-  \\ `MAP FST outs = MAP FST outs'` suffices_by rw []
-  \\ CONV_TAC $ PATH_CONV "ll" $ REWR_CONV $ SYM LIST_REL_eq
-  \\ simp [EVERY2_MAP] \\ drule_at_then Any irule EVERY2_mono
-  \\ simp [FORALL_PROD]
+  \\ `MAP FST outs = MAP FST outs'` by (
+    CONV_TAC $ PATH_CONV "ll" $ REWR_CONV $ SYM LIST_REL_eq
+    \\ simp [EVERY2_MAP] \\ drule_at_then Any irule EVERY2_mono
+    \\ simp [FORALL_PROD])
+  \\ qexists_tac `s` \\ fs []
+  \\ reverse conj_tac >- first_assum ACCEPT_TAC
+  \\ fs [SF DNF_ss] \\ rw []
+  \\ drule_then drule LIST_REL_MEM_IMP_R \\ Cases_on `v` \\ rw [EXISTS_PROD]
+  \\ metis_tac [assign_sat_mono]
 QED
 
 Theorem floodfill_weaken:
@@ -1269,22 +1261,6 @@ Proof
   \\ gvs [DIV_DIV_DIV_MULT] *)
 QED
 
-Theorem floodfill_add_gate:
-  floodfill area ins outs crosses init ∧
-  gate w h ins1 outs1 init1 ∧
-  PERM outs (del ++ outs') ⇒
-  ∀p x' y'.
-  (p = (&(2 * x'), &(2 * y')) ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
-  LIST_REL (λ((a,d),P) (pd,Q). pd = (add_pt p a, d) ∧ P ⊑ Q) ins1 del) ∧
-  EVERY (λa. ¬MEM (add_pt p a) area) (make_area w h) ⇒
-  floodfill
-    (MAP (add_pt p) (make_area w h) ++ area) ins
-    (MAP (λ((a,d),Q). ((add_pt p a,d),Q)) outs1 ++ outs') crosses
-    (gate_at p init1 ∪ init)
-Proof
-  cheat (* todo, generalization of floodfill_add_small_gate *)
-QED
-
 Theorem assign_ext_sat:
   assign_ext s3 s2 ∧
   assign_sat env s3 v ⇒
@@ -1297,37 +1273,115 @@ Proof
   \\ strip_tac \\ first_assum irule \\ simp []
 QED
 
+Theorem add_pt_simps[simp]:
+  ∀a b.
+    neg_pt (neg_pt a) = a ∧
+    add_pt a (neg_pt b) = sub_pt a b ∧
+    sub_pt a (neg_pt b) = add_pt a b ∧
+    add_pt (sub_pt a b) b = a ∧
+    sub_pt (add_pt a b) b = a ∧
+    add_pt (neg_pt a) (add_pt a b) = b ∧
+    add_pt a (add_pt (neg_pt a) b) = b
+Proof
+  simp [FORALL_PROD, int_sub] \\ ARITH_TAC
+QED
+
+Theorem span_imp_add_pt:
+  (x,d) ∈ span s ⇒ (add_pt x delta, d) ∈ span (λ(a,d). s (sub_pt a delta,d))
+Proof
+  PairCases_on ‘x’ \\ PairCases_on ‘delta’
+  \\ simp [span_def, mk_dpt_def, EXISTS_PROD, mk_pt_def, IN_DEF]
+  \\ strip_tac
+  \\ qexistsl_tac [`p_1`, `p_2`, `p_1'+delta0`,`p_2'+delta1`]
+  \\ gvs [ARITH_PROVE ``a+b-b:int=a``] \\ ARITH_TAC
+QED
+
 Theorem assign_ext_tr_IMP:
   assign_ext (assign_tr delta s) s2 ⇒
   assign_ext s (assign_tr (neg_pt delta) s2)
 Proof
-  PairCases_on ‘s’
-  \\ PairCases_on ‘s2’
-  \\ PairCases_on ‘delta’
-  \\ gvs [assign_ext_def,assign_tr_def,SUBSET_DEF,span_def]
-  \\ gvs [IN_DEF,FORALL_PROD,neg_pt_def,add_pt_def,EXISTS_PROD,mk_dpt_def,mk_pt_def]
-  \\ gvs [PULL_EXISTS] \\ rw []
-  \\ pop_assum mp_tac
-  \\ rename [‘_ ((x,y),z)’] \\ strip_tac
-  \\ ‘s1 ((x - delta0 + delta0, y - delta1 + delta1),z)’ by
-       gvs [integerTheory.INT_SUB_ADD]
-  \\ rpt $ first_x_assum drule \\ rpt strip_tac
-  \\ gvs [intLib.COOPER_PROVE “x − delta0 + y + delta0 = x + y:int”]
-  >-
-   (rename [‘x + 42 * x_a = _ + 42 * _ ∧
-             y + 42 * y_a = _ + 42 * _ ∧ _’]
-    \\ last_x_assum $ qspecl_then [‘x_a’,‘y_a’] mp_tac \\ strip_tac
-    \\ rpt $ qpat_x_assum ‘_ = _’ mp_tac
-    \\ rename [‘_ = x_b + 42 * x_c ⇒ _ = y_b + 42 * y_c ⇒ _’]
-    \\ rpt strip_tac
-    \\ qexists_tac ‘x_c’
-    \\ qexists_tac ‘y_c’
-    \\ qexists_tac ‘x_b + delta0’
-    \\ qexists_tac ‘y_b + delta1’
-    \\ gvs [intLib.COOPER_PROVE “i + j + -j = i:int”]
-    \\ intLib.COOPER_TAC)
-  \\ AP_TERM_TAC \\ gvs []
-  \\ intLib.COOPER_TAC
+  MAP_EVERY PairCases_on [‘s’, ‘s2’]
+  \\ simp [assign_ext_def, assign_tr_def, SUBSET_DEF] \\ strip_tac
+  \\ pop_assum (assume_tac o GSYM)
+  \\ simp [GSYM FORALL_AND_THM, GSYM IMP_CONJ_THM] \\ ntac 2 strip_tac
+  \\ Cases_on `x` \\ DEP_ASM_REWRITE_TAC [] \\ simp []
+  \\ drule_then (qspec_then `delta` assume_tac) span_imp_add_pt \\ rfs []
+  \\ last_x_assum $ drule_then assume_tac
+  \\ drule_then (qspec_then `neg_pt delta` assume_tac) span_imp_add_pt \\ rfs []
+QED
+
+Theorem assign_sat_tr_IMP:
+  assign_sat env s ((p, d), v) ⇒
+  assign_sat env (assign_tr delta s) ((add_pt p delta, d), v)
+Proof
+  PairCases_on ‘s’ \\ simp [assign_sat_def, assign_tr_def]
+  \\ rw [assign_ext_def, assign_tr_def, SUBSET_DEF]
+  >- (irule span_imp_add_pt \\ simp [])
+  \\ pop_assum suff_eq_tac \\ AP_TERM_TAC
+  \\ simp [FUN_EQ_THM, FORALL_PROD, mk_dpt_def, mk_pt_def]
+  \\ Cases_on `p` \\ Cases_on `delta` \\ rw []
+  \\ AP_THM_TAC \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC
+  \\ simp [] \\ ARITH_TAC
+QED
+
+Theorem add_pt_comm:
+  add_pt a b = add_pt b a
+Proof
+  MAP_EVERY Cases_on [`a`,`b`] \\ simp [INT_ADD_SYM]
+QED
+
+Theorem assign_sat_tr_IMP' =
+  ONCE_REWRITE_RULE [add_pt_comm] assign_sat_tr_IMP;
+
+Theorem floodfill_add_gate:
+  floodfill area ins outs crosses init ∧
+  gate w h ins1 outs1 init1 ∧
+  PERM outs (del ++ outs') ⇒
+  ∀p x' y'.
+  (p = (&(2 * x'), &(2 * y')) ∧ x' + w ≤ ^tile ∧ y' + h ≤ ^tile ∧
+  del = MAP (λ((a, d), P). ((add_pt p a, d), P)) ins1) ∧
+  EVERY (λa. ¬MEM (add_pt p a) area) (make_area w h) ⇒
+  floodfill
+    (MAP (add_pt p) (make_area w h) ++ area) ins
+    (MAP (λ((a, d), P). ((add_pt p a, d), P)) outs1 ++ outs') crosses
+    (gate_at p init1 ∪ init)
+Proof
+  rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
+  \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
+  \\ simp [floodfill_def] \\ strip_tac \\ fs [SF DNF_ss, MEM_MAP]
+  \\ conj_tac >- (
+    simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS, in_range_def]
+    \\ ARITH_TAC)
+  \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
+  \\ rpt strip_tac \\ first_x_assum $ drule_then strip_assume_tac
+  \\ rename [`SND s1`] \\ qabbrev_tac `s1' = assign_tr (neg_pt p) s1`
+  \\ fs [gate_def, EVERY_MEM]
+  \\ last_x_assum $ drule_then $ qspec_then `s1'` mp_tac
+  \\ impl_tac >- (
+    rw [] \\ PairCases_on `e` >- (
+      first_x_assum dxrule \\ simp [] \\ strip_tac
+      \\ dxrule_then (qspec_then `neg_pt p` assume_tac) assign_sat_tr_IMP'
+      \\ fs [Abbr`s1'`])
+    \\ simp [] \\ strip_tac
+    \\ `(add_pt (e0,e1) p,e2) ∈ span (SND s1)` by (
+      drule_then (qspec_then `p` suff_eq_tac) span_imp_add_pt
+      \\ AP_TERM_TAC \\ AP_TERM_TAC \\ rw [FUN_EQ_THM, FORALL_PROD]
+      \\ Cases_on `s1` \\ simp [Abbr`s1'`, assign_tr_def])
+    \\ cheat)
+  \\ strip_tac \\ rename [‘assign_ext s1' s2'’]
+  \\ qabbrev_tac `s2 = assign_tr p s2'`
+  \\ qexists_tac ‘s2’
+  \\ `assign_ext s1 s2` by (
+    qunabbrevl_tac [`s2`, `s1'`] \\ drule assign_ext_tr_IMP \\ gvs [])
+  \\ conj_tac >- cheat
+  \\ conj_tac >- cheat
+  \\ conj_tac >- cheat
+  \\ rpt strip_tac
+  \\ rename [‘assign_ext s2 s3’]
+  \\ first_x_assum (drule_at (Pos (el 2)))
+  \\ impl_tac >- cheat
+  \\ strip_tac
+  \\ cheat
 QED
 
 Theorem floodfill_add_small_gate:
@@ -1337,32 +1391,13 @@ Theorem floodfill_add_small_gate:
   ∀p x' y'.
   p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM p area ∧
-  LIST_REL (λ((a,d),P) (pd,Q). pd = (add_pt p a, d) ∧ P ⊑ Q) ins1 del ⇒
+  del = MAP (λ((a,d),P). ((add_pt p a, d), P)) ins1 ⇒
   floodfill (p :: area) ins
     (MAP (λ((a,d),Q). ((add_pt p a,d),Q)) outs1 ++ outs') crosses
     (gate_at p init1 ∪ init)
 Proof
-  rw [] \\ gvs [floodfill_def]
-  \\ gvs [SF DNF_ss, SF SFY_ss,gate_def] \\ rw []
-  \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
-  \\ last_x_assum drule \\ strip_tac
-  \\ qabbrev_tac `s1' = assign_tr p s`
-  \\ first_x_assum $ drule_then $ qspec_then `s1'` mp_tac
-  \\ impl_tac >- cheat
-  \\ strip_tac
-  \\ rename [‘assign_ext s1' s2'’]
-  \\ qabbrev_tac `s2 = assign_tr (neg_pt p) s2'`
-  \\ qexists_tac ‘s2’
-  \\ `assign_ext s s2` by
-       (unabbrev_all_tac \\ imp_res_tac assign_ext_tr_IMP \\ gvs [])
-  \\ conj_tac >- cheat
-  \\ conj_tac >- cheat
-  \\ rpt strip_tac
-  \\ rename [‘assign_ext s2 s3’]
-  \\ first_x_assum (drule_at (Pos (el 2)))
-  \\ impl_tac >- cheat
-  \\ strip_tac
-  \\ cheat
+  rw [] \\ dxrule_then (dxrule_then dxrule) floodfill_add_gate
+  \\ simp [make_area_def]
 QED
 
 Theorem floodfill_add_crossover_gen:
@@ -1452,12 +1487,20 @@ Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm
   \\ simp [floodfill_def] \\ strip_tac
-  \\ ntac 2 (conj_tac >- first_assum ACCEPT_TAC \\ last_x_assum kall_tac)
   \\ rpt strip_tac \\ first_x_assum dxrule \\ strip_tac
-  \\ qexists_tac `s` \\ conj_tac
-  >- (fs [SF DNF_ss]
-    \\ qpat_assum `assign_sat _ _ _` mp_tac \\ POP_ASSUM_LIST kall_tac
-    \\ PairCases_on `s` \\ rw [assign_sat_def]
+  \\ Cases_on `s` \\ rename [`SND (s, dom)`] \\ fs [Once EXISTS_PROD]
+  \\ qexists_tac `s` \\ qmatch_goalsub_abbrev_tac `(s, dom')`
+  \\ conj_tac >- (
+    strip_tac \\ disch_then assume_tac
+    \\ `FST v ∈ dom'` by (
+      Cases_on `v` \\ simp [Abbr`dom'`, MEM_MAP, Once EXISTS_PROD]
+      \\ CONV_TAC (RAND_CONV $ SCONV [Once EXISTS_PROD])
+      \\ fs [] \\ metis_tac [])
+    \\ fs [SF DNF_ss]
+    \\ cheat
+    (* \\ qpat_assum `assign_sat _ _ _` mp_tac
+    \\ POP_ASSUM_LIST kall_tac
+    \\ rw [assign_sat_def]
     \\ fs [v_eval_def] \\ strip_tac
     \\ pop_assum $ qspec_then `add_pt z x` assume_tac
     \\ Cases_on `P` \\ fs [v_eval'_def, v_teleport_def]
@@ -1466,9 +1509,11 @@ Proof
     \\ `∀z x p. add_pt x (add_pt p z) = add_pt (add_pt z x) p ∧
         mk_pt (mk_pt p z) x = mk_pt p (add_pt z x)` by
       (simp [FORALL_PROD, add_pt_def, mk_pt_def] \\ ARITH_TAC)
-    \\ simp [])
+    \\ simp [] *)
+  )
   \\ conj_tac >- first_assum ACCEPT_TAC
-  \\ pop_assum (fn h => rpt strip_tac \\ drule_all h)
+  \\ rpt strip_tac
+  (* \\ pop_assum (fn h => rpt strip_tac \\ drule_all h)
   \\ disch_then suff_eq_tac \\ AP_THM_TAC \\ AP_TERM_TAC
   \\ Cases_on `ad` \\ simp [floodfill_mod_def, mk_dpt_def]
   \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [Once EXTENSION]
@@ -1477,7 +1522,8 @@ Proof
   \\ eq_tac \\ strip_tac \\ gvs []
   THENL (map qexistsl_tac [[`p_1+q`,`p_2+r''`], [`p_1-q`,`p_2-r''`]])
   \\ (conj_tac >- ARITH_TAC
-    \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [] \\ ARITH_TAC)
+    \\ AP_TERM_TAC \\ AP_THM_TAC \\ AP_TERM_TAC \\ simp [] \\ ARITH_TAC) *)
+  \\ cheat
 QED
 
 Theorem make_area_2_2 = EVAL ``EVERY (λa. ¬MEM (add_pt (x,y) a) area) (make_area 2 2)``
