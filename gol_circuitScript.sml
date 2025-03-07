@@ -1098,6 +1098,8 @@ Proof
 QED
 *)
 
+
+
 Theorem circ_area_diff:
   circ_mod_wf area ins outs as ∧
   m ⊆ ins ∧
@@ -1162,6 +1164,48 @@ Proof
   \\ irule_at Any circuit_run_internalise_lemma \\ simp []
   \\ gvs [IN_DISJOINT,SUBSET_DEF]
   \\ metis_tac []
+QED
+
+Definition next_to_def:
+  next_to (x1,y1) (x2,y2) ⇔
+    x1 = x2 ∧ ABS (y1 - y2) = 2 ∨
+    y1 = y2 ∧ ABS (x1 - x2) = 2
+End
+
+Definition mid_point_def:
+  midpoint (x1,y1) (x2,y2) = ((x1+x2) / 2:int, (y1+y2) / 2:int)
+End
+
+Definition ports_of_def:
+  ports_of s = IMAGE (λ(xy,rest). (xy:int # int)) s
+End
+
+Theorem circuit_run_compose_bigunion:
+  ∀all.
+    (* each element of all must be a circuit_run *)
+    (∀a ins outs as init.
+      (a,ins,outs,as,init) ∈ all ⇒ circuit_run a ins outs as init) ∧
+    (* all areas must be disjoint *)
+    (∀x y.
+      x ≠ y ∧ x ∈ all ∧ y ∈ all ⇒ DISJOINT (FST x) (FST y)) ∧
+    (* on a border between to areas, in/out ports must be matching, if they exist *)
+    (∀a1 ins1 outs1 as1 init1 a2 ins2 outs2 as2 init2.
+      (a1,ins1,outs1,as1,init1) ∈ all ∧
+      (a2,ins2,outs2,as2,init2) ∈ all ∧
+      DISJOINT a1 a2 ⇒
+      (∀xy1 xy2.
+        xy1 ∈ a1 ∧ xy2 ∈ a2 ∧ next_to xy1 xy2 ⇒
+        (midpoint xy1 xy2 ∈ ports_of ins1 ⇔ midpoint xy1 xy2 ∈ ports_of outs2) ∧
+        (midpoint xy1 xy2 ∈ ports_of ins2 ⇔ midpoint xy1 xy2 ∈ ports_of outs1)))
+    ⇒
+    circuit_run
+      ( U { a | ∃ins outs as init. (a,ins,outs,as,init) ∈ all } )
+      ( U { ins | ∃a outs as init. (a,ins,outs,as,init) ∈ all } )
+      ( U { outs | ∃a ins as init. (a,ins,outs,as,init) ∈ all } )
+      ( U { as | ∃a ins outs init. (a,ins,outs,as,init) ∈ all } )
+      ( U { init | ∃a ins outs as. (a,ins,outs,as,init) ∈ all } )
+Proof
+  cheat
 QED
 
 Definition translate_set_def:
