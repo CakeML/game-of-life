@@ -1098,6 +1098,72 @@ Proof
 QED
 *)
 
+Theorem circ_area_diff:
+  circ_mod_wf area ins outs as ∧
+  m ⊆ ins ∧
+  m ⊆ outs ⇒
+  circ_area area ins outs x =
+  circ_area area (ins DIFF m) (outs DIFF m) x
+Proof
+  cheat
+QED
+
+Triviality circuit_run_internalise_lemma:
+  ∀m area ins outs as init.
+    circuit_run area ins outs as init ∧ m ⊆ ins ∧ m ⊆ outs ∧
+    (¬ (m ⊆ is_ns) ⇒ m ⊆ is_ew) ⇒
+    circuit_run area (ins DIFF m) (outs DIFF m) as init
+Proof
+  gvs [circuit_run_def] \\ rpt gen_tac \\ strip_tac
+  \\ dxrule to_del_io_run
+  \\ disch_then $ qspec_then ‘circ_io_area m’ mp_tac
+  \\ impl_tac
+  >- cheat
+  \\ qsuff_tac
+     ‘del_io (circ_io_area m) (circ_mod area ins outs as) =
+      circ_mod area (ins DIFF m) (outs DIFF m) as’
+  >- (gvs [] \\ rw [] \\ gvs [circ_mod_wf_def, SF SFY_ss, SF DNF_ss])
+  \\ gvs [FUN_EQ_THM] \\ gvs [del_io_def,del_io_mod_def,circ_mod_def]
+  \\ gen_tac \\ IF_CASES_TAC
+  \\ gvs [fetch "-" "modifier_component_equality"]
+  \\ irule_at Any circ_area_diff
+  \\ first_assum $ irule_at $ Pos hd \\ simp []
+  >-
+   (pop_assum mp_tac
+    \\ simp [Once circ_output_area_def]
+    \\ reverse $ rpt (IF_CASES_TAC \\ gvs [])
+    \\ simp [circ_output_area_def]
+    \\ simp [circ_io_lwss_def]
+    \\ cheat)
+  \\ cheat
+QED
+
+Theorem is_ns_not_is_ew:
+  is_ns x ⇔ ~ is_ew x
+Proof
+  PairCases_on ‘x’ \\ gvs [] \\ Cases_on ‘x2’ \\ gvs [is_ns_def,is_ew_def]
+QED
+
+Theorem circuit_run_internalise:
+  ∀m area ins outs as init.
+    circuit_run area ins outs as init ∧ m ⊆ ins ∧ m ⊆ outs ⇒
+    circuit_run area (ins DIFF m) (outs DIFF m) as init
+Proof
+  rpt strip_tac
+  \\ ‘∃m1 m2. m = m1 ∪ m2 ∧ DISJOINT m1 m2 ∧ m1 ⊆ is_ns ∧ m2 ⊆ is_ew’ by
+    (qexists_tac ‘m ∩ is_ns’
+     \\ qexists_tac ‘m ∩ is_ew’
+     \\ gvs [SUBSET_DEF]
+     \\ gvs [IN_DISJOINT,EXTENSION]
+     \\ gvs [IN_DEF,is_ns_not_is_ew]
+     \\ metis_tac [])
+  \\ gvs [DIFF_UNION]
+  \\ irule circuit_run_internalise_lemma
+  \\ irule_at Any circuit_run_internalise_lemma \\ simp []
+  \\ gvs [IN_DISJOINT,SUBSET_DEF]
+  \\ metis_tac []
+QED
+
 Definition translate_set_def:
   translate_set (x,y) s (a,b) ⇔ (a-x,b-y) ∈ s
 End
@@ -1127,6 +1193,7 @@ Proof
   rw [Once FUN_EQ_THM, translate_mods_def, empty_mod_def, translate_mod_def]
 QED
 
+(*
 Definition circuit_spec_def:
   circuit_spec area ins outs init ⇔
     ∀s1.
@@ -1186,6 +1253,7 @@ Proof
       \\ ‘r = (d,p)’ by metis_tac [] \\ gvs [SF SFY_ss])
   \\ cheat
 QED
+*)
 
 (* --- compose all experiment --- *)
 
@@ -1269,7 +1337,5 @@ QED
        (I made up some of the magic numbers 123 and 45 above.)
 
 *)
-
-
 
 val _ = export_theory();
