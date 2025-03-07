@@ -991,6 +991,12 @@ Definition circuit_run_def:
     circ_mod_wf area ins outs as
 End
 
+Theorem circuit_run_empty:
+  circuit_run ∅ ∅ ∅ ∅ ∅
+Proof
+  simp [circuit_run_def, run_empty_mod, circ_mod_wf_def]
+QED
+
 Definition circuit_def:
   circuit area ins outs as init ⇔
     circuit_run (set area) (set ins) (set outs) (set as) init ∧

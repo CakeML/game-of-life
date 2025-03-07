@@ -991,15 +991,16 @@ Proof
   simp [EXTENSION]
 QED
 
-Definition floodfill_mod_def:
-  floodfill_mod (area: (int # int) list)
+Definition floodfill_run_def:
+  floodfill_run (area: (int # int) list)
     (ins: (((int # int) # dir) # (int # int -> num -> bool)) set)
-    (outs: (((int # int) # dir) # (int # int -> num -> bool)) set) =
-  circ_mod
+    (outs: (((int # int) # dir) # (int # int -> num -> bool)) set)
+    init =
+  circuit_run
     (iunion (λz. set (MAP (λp. mk_pt p z) area)))
     (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) ins))
     (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) outs))
-    {}
+    {} init
 End
 
 Definition in_range_def:
@@ -1025,18 +1026,18 @@ Definition floodfill_def:
         (∀s. MEM s scross ⇒ ∃v.
           classify 5 v = SOME (Zeros, Zeros) ∧
           v_eval env v s) ⇒
-        run (floodfill_mod area
+        floodfill_run area
           (set (ZIP (MAP FST ins, sin)) ∪
            set (MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross))
           (set (ZIP (MAP FST outs, sout)) ∪
-           set (MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross)))
+           set (MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross))
           init
 End
 
 Theorem floodfill_start:
   floodfill [] [] [] [] ∅
 Proof
-  rw [floodfill_def, floodfill_mod_def, run_empty_mod]
+  rw [floodfill_def, floodfill_run_def, circuit_run_empty]
 QED
 
 Theorem floodfill_add_ins:
@@ -1264,16 +1265,15 @@ Proof
     \\ simp [GSYM ADD1,FUNPOW_SUC] \\ gvs [nextCell_correct])
   \\ first_x_assum drule \\ strip_tac
   \\ gvs [v_eval_def]
-  \\ qmatch_asmsub_rename_tac `floodfill_mod _
+  \\ qmatch_asmsub_rename_tac `floodfill_run _
     {(_,latch);(_,clock)} {(_,latch');(_,clock')}`
   \\ `latch = latch' ∧ clock = clock'` by
     (simp [FUN_EQ_THM, e_clock_def] \\ ARITH_TAC)
-  \\ gvs []
+  \\ gvs [floodfill_run_def, circuit_run_def]
   \\ dxrule run_clear_mods
-  \\ gvs [floodfill_mod_def]
   \\ impl_tac
   >-
-   (simp [can_clear_def,join_all_def]
+   (simp [can_clear_def]
     \\ gvs [translate_mods_def,EXTENSION,EXISTS_PROD,translate_mod_def,
             circ_mod_def])
   \\ rw []
@@ -1598,8 +1598,8 @@ Proof
     \\ metis_tac [add_pt_comm, add_pt_assoc])
   \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw [] \\ first_x_assum $ drule_all_then suff_eq_tac
-  \\ Cases_on `ad` \\ simp [floodfill_mod_def, mk_dpt_def]
-  \\ cong_tac 4 \\ simp [Once EXTENSION]
+  \\ Cases_on `ad` \\ simp [floodfill_run_def, mk_dpt_def]
+  \\ cong_tac 3 \\ simp [Once EXTENSION]
   \\ simp [SF DNF_ss] \\ strip_tac \\ cong_tac 4
   \\ Cases_on `q` \\ Cases_on `z` \\ simp [EXISTS_PROD, mk_pt_def]
   \\ eq_tac \\ strip_tac \\ gvs []
