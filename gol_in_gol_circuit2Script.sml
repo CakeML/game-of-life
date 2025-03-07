@@ -1,5 +1,5 @@
 open HolKernel bossLib boolLib Parse;
-open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
+open gol_simTheory listTheory gol_circuitTheory pred_setTheory
      pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
      dep_rewrite intLib combinTheory rich_listTheory quantHeuristicsTheory;
 
@@ -514,6 +514,17 @@ Theorem env_wf_translate:
   env_wf f ⇒ env_wf (λi a. f i (add_pt x a))
 Proof
   rw [env_wf_def, o_DEF, add_pt_assoc]
+QED
+
+Definition delay_def:
+  delay n a i = if i < n then F else a (i - n:num)
+End
+
+Theorem delay_simp:
+  (λn. delay k a (k + n)) = a ∧
+  (λn. delay k a (n + k)) = a
+Proof
+  gvs [FUN_EQ_THM,delay_def]
 QED
 
 Definition delay'_def:
@@ -1281,6 +1292,7 @@ Proof
                   (EL 3 xs) (EL 4 xs) (EL 5 xs)
                   (EL 6 xs) (EL 7 xs) (EL 8 xs)’
       (WF_REL_TAC ‘measure (λxs. 9 - LENGTH xs)’ \\ gvs [])
+    val _ = cv_transLib.cv_auto_trans gol_rulesTheory.b2n_def
     val _ = cv_transLib.cv_trans calc_def
     val _ = cv_transLib.cv_trans_rec calc_all_def (
       WF_REL_TAC ‘measure (λxs. 9 - cv_right_depth xs)’ \\ rw []

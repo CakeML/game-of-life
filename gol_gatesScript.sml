@@ -108,11 +108,7 @@ val _ = translate_gate [0,1,2,3] half_adder_ee_ee;
 val _ = translate_gate [0,1,2,3] slow_wire_e_e;
 (* val _ = translate_gate [2] slower_wire_e_e; *)
 
-Definition delay_def:
-  delay n a i = if i < n then F else a (i - n:num)
-End
-
-Definition conj_def:
+(* Definition conj_def:
   conj a b = (λn. a n ∧ b n)
 End
 
@@ -124,13 +120,6 @@ Definition set_env_def:
   set_env a b (A,n) = a n ∧
   set_env a b (B,n) = b n
 End
-
-Theorem delay_simp:
-  (λn. delay k a (k + n)) = a ∧
-  (λn. delay k a (n + k)) = a
-Proof
-  gvs [FUN_EQ_THM,delay_def]
-QED
 
 Theorem simulation_ok_2:
   simulation_ok w h [((x1,x2),d,Var A a_d); ((x1',x2'),d',Var B b_d)] outs init ⇒
@@ -155,7 +144,7 @@ Theorem and_en_e_circuit =
        (REWRITE_CONV [definition "and_en_e_def"] THENC EVAL
         THENC make_abbrev "and_en_e_concrete"))
   |> SRULE [eval_io_def,set_env_def,GSYM conj_def,GSYM disj_def,
-            SF ETA_ss, make_area_def];
+            SF ETA_ss, make_area_def]; *)
 
 val _ = (max_print_depth := 10); (* avoids blow up in size of Theory.sig file *)
 val _ = export_theory();
