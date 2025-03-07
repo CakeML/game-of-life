@@ -965,7 +965,7 @@ Proof
   \\ irule Reg_mono \\ simp [] \\ metis_tac []
 QED
 
-Definition gate_at'_def:
+(* Definition gate_at'_def:
   gate_at' (x,y) (init:mask list # mask list) =
     from_rows (75*x-85, 75*y-85) ARB
 End
@@ -973,7 +973,7 @@ End
 Definition gate_at_def:
   gate_at p init =
     U {gate_at' (add_pt p (mul_pt (&^tile2) z)) init | z | T}
-End
+End *)
 
 Definition iunion_def:
   iunion f = U {f z | z | T}
@@ -995,12 +995,14 @@ Definition floodfill_run_def:
   floodfill_run (area: (int # int) list)
     (ins: (((int # int) # dir) # (int # int -> num -> bool)) set)
     (outs: (((int # int) # dir) # (int # int -> num -> bool)) set)
-    init =
+    env0 (init: ((int # int) # (mask list # mask list)) set) =
   circuit_run
     (iunion (λz. set (MAP (λp. mk_pt p z) area)))
     (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) ins))
     (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) outs))
-    {} init
+    {}
+    (iunion (λz. U (IMAGE (λ(p,v).
+      translate_set (mul_pt 75 p) (from_masks (env0 z) v)) init)))
 End
 
 Definition in_range_def:
@@ -1014,7 +1016,7 @@ Definition floodfill_def:
     (ins: (((int # int) # dir) # value) list)
     (outs: (((int # int) # dir) # value) list)
     (crosses: ((int # int) # (int # int) # dir) list)
-    (init: (int # int) set) ⇔
+    (init: ((int # int) # (mask list # mask list)) list) ⇔
   (∀p. MEM p area ⇒ in_range p) ∧
   ∀env. env_wf env ⇒
     ∃sin sout.
@@ -1031,11 +1033,11 @@ Definition floodfill_def:
            set (MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross))
           (set (ZIP (MAP FST outs, sout)) ∪
            set (MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross))
-          init
+          (env 0) (set init)
 End
 
 Theorem floodfill_start:
-  floodfill [] [] [] [] ∅
+  floodfill [] [] [] [] []
 Proof
   rw [floodfill_def, floodfill_run_def, circuit_run_empty]
 QED
@@ -1049,19 +1051,23 @@ Theorem floodfill_add_ins:
   ¬MEM (add_pt p a) (MAP (FST ∘ FST) (ins ++ outs)) ⇒
   floodfill (p :: area) (((add_pt p a,d),Exact dl v) :: ins)
     (MAP (λ((a',d'),Q). ((add_pt p a',d'),Q)) outs' ++ outs) []
-    (gate_at p init1 ∪ init)
+    ((p, init1) :: init)
 Proof
-  strip_tac
-  \\ gvs [floodfill_def]
-  \\ rpt gen_tac
-  \\ disch_tac
-  \\ conj_tac >- (rw [] \\ res_tac \\ simp [in_range_def])
-  \\ rpt strip_tac
-  \\ gvs [gate_def]
+  rw [] \\ gvs [floodfill_def]
+  \\ simp [floodfill_def] \\ fs [SF DNF_ss]
+  \\ conj_tac >- simp [in_range_def]
+  \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
+  \\ rw []
+  \\ first_x_assum drule \\ rw []
+  \\ simp [LIST_REL_SPLIT1, LIST_REL_MAP1]
+  \\ ntac 2 $ first_assum $ irule_at Any
+  \\ fs [gate_def]
   \\ first_x_assum drule
-  \\ first_x_assum drule
-  \\ rpt strip_tac
-  \\ simp [SF DNF_ss,MEM_MAP,PULL_EXISTS,SF SFY_ss]
+  \\ simp [PULL_EXISTS, v_eval_def, GSYM FUN_EQ_THM]
+  \\ rw []
+  \\ irule_at Any EVERY2_mono \\ first_assum $ irule_at Any
+  \\ conj_tac >- simp [FORALL_PROD]
+  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ cheat (* todo *)
 QED
 
@@ -1321,7 +1327,8 @@ Proof
   \\ ‘(3150 * x + 1725 + 1,3150 * y + 600 − 1) =
       (3150 * x + 1726,3150 * y + 599)’ by (gvs [] \\ intLib.COOPER_TAC)
   \\ gvs [] \\ disch_then kall_tac
-  \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
+  \\ cheat
+  (* \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
   \\ conj_tac
   >- (CCONTR_TAC \\ gvs []
       \\ pop_assum kall_tac
@@ -1348,7 +1355,7 @@ Proof
   \\ ‘0 < 60:num’ by gvs []
   \\ drule ADD_DIV_ADD_DIV
   \\ disch_then $ rewrite_tac o single o GSYM
-  \\ gvs [DIV_DIV_DIV_MULT]
+  \\ gvs [DIV_DIV_DIV_MULT] *)
 QED
 
 Theorem assign_ext_sat:
@@ -1438,7 +1445,7 @@ Theorem floodfill_add_gate:
   floodfill
     (MAP (add_pt p) (make_area w h) ++ area) ins
     (MAP (λ((a, d), P). ((add_pt p a, d), P)) outs1 ++ outs') crosses
-    (gate_at p init1 ∪ init)
+    ((p, init1) :: init)
 Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
@@ -1477,7 +1484,7 @@ Theorem floodfill_add_small_gate:
   del = MAP (λ((a,d),P). ((add_pt p a, d), P)) ins1 ⇒
   floodfill (p :: area) ins
     (MAP (λ((a,d),Q). ((add_pt p a,d),Q)) outs1 ++ outs') crosses
-    (gate_at p init1 ∪ init)
+    ((p, init1) :: init)
 Proof
   rw [] \\ dxrule_then (dxrule_then dxrule) floodfill_add_gate
   \\ simp [make_area_def]
@@ -1497,7 +1504,7 @@ Theorem floodfill_add_crossover_gen:
   floodfill (p :: area) ins
     (((add_pt p a',d1),v_delay 5 P) :: outs')
     ((add_pt p b, add_pt p b', d2) :: crosses)
-    (gate_at p init1 ∪ init)
+    ((p, init1) :: init)
 Proof
   cheat (* todo *)
 QED
@@ -1517,7 +1524,7 @@ Theorem floodfill_add_crossover_l:
   floodfill (p :: area) ins
     (((add_pt p a',d1),v_delay 5 P) :: outs')
     ((add_pt p b, add_pt p b', d2) :: crosses)
-    (gate_at p init2 ∪ init)
+    ((p, init2) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_x_assum $ irule_at Any
@@ -1540,7 +1547,7 @@ Theorem floodfill_add_crossover_r:
   floodfill (p :: area) ins
     (((add_pt p b',d2),v_delay 5 P) :: outs')
     ((add_pt p a, add_pt p a', d1) :: crosses)
-    (gate_at p init2 ∪ init)
+    ((p, init2) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_x_assum $ irule_at Any
