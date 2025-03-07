@@ -1,7 +1,7 @@
 open HolKernel bossLib boolLib Parse;
 open gol_simTheory listTheory gol_gatesTheory gol_circuitTheory pred_setTheory
      pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
-     dep_rewrite intLib combinTheory rich_listTheory;
+     dep_rewrite intLib combinTheory rich_listTheory quantHeuristicsTheory;
 
 val _ = new_theory "gol_in_gol_circuit2";
 
@@ -520,6 +520,12 @@ Definition delay'_def:
   delay' (n,env) a i = if i < n then eval_env_kind env i else a (i - n:num)
 End
 
+Theorem delay'_eq_delay[simp]:
+  delay' (n,Zeros) = delay n
+Proof
+  rw [FUN_EQ_THM, delay'_def, delay_def, eval_env_kind_def]
+QED
+
 Definition eval_pair_def:
   eval_pair b (rF,rT) = if b then rT else rF
 End
@@ -814,72 +820,71 @@ Proof
   qspec_tac (`l2`,`l2`) \\ Induct_on `l1` \\ Cases_on `l2` \\ simp []
 QED
 
-Theorem blist_simulation_ok_imp_gate:
+Definition mk_output_env_def:
+  mk_output_env env s (da,db) (ea,eb) z = λ(x,n).
+    delay' (var_CASE x da db, eval_pair (env 0n z) (var_CASE x ea eb))
+      (EL (var_CASE x 0 1) s z) n
+End
+
+Theorem v_eval_mk_output_env:
+  admissible_ins ins = SOME (da,db') ∧
+  (∀x. db' = SOME x ⇒ x = db) ∧
+  classify da a = SOME ea ∧
+  classify db b = SOME eb ∧
+  env_wf env ∧
+  LIST_REL (λ(_,_,v). v_eval env (vb_eval ((da,a),db,b) v)) ins s ⇒
+  ∀v. admissible_bexpr (da, db') v ⇒
+    v_eval env (vb_eval ((da,a),(db,b)) v)
+      (λz n. eval (age n (mk_output_env env s (da,db) (ea,eb) z)) v)
+Proof
+  strip_tac \\ Induct \\ rw [admissible_bexpr_def]
+  >- (
+    `v_eval env a (HD s) ∧
+      (db' = SOME db ⇒ v_eval env b (EL 1 s))` by (
+      MAP_EVERY (C qpat_x_assum mp_tac) [`LIST_REL _ _ _`, `admissible_ins _ = _`]
+      \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC \\ rw [] \\ fs [])
+    \\ Cases_on `v`
+    \\ fs [oneline admissible_bexpr_def, mk_output_env_def]
+    THENL [ALL_TAC, Cases_on `db'` \\ gvs []]
+    \\ irule v_eval_v_delay' \\ simp [])
+  >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
+  >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
+  >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw [])
+QED
+
+Theorem blist_simulation_ok_imp_circuit:
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
-  (∀x. db' = SOME x ⇒ x = db) ∧
-  w < ^tile ∧ h < ^tile ∧
-  classify da a = SOME ea ∧
-  classify db b = SOME eb ⇒
-  gate w h
-    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
-    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
-    (instantiate2 (ea, eb) init)
+  LIST_REL (λ(_,_,v). v_eval env (vb_eval ((da,a),db,b) v)) ins sin ∧
+  (∀x. db' = SOME x ⇒ x = db) ⇒
+  circuit (make_area w h)
+    (MAP2 (λ(p,d,_) v. (p,d,v z)) ins sin)
+    (MAP (λ(p,d,v). (p,d, λn.
+      eval (age n (mk_output_env env sin (da,db) (ea,eb) z)) v)) outs) []
+    (from_masks (env 0 z) (instantiate2 (ea,eb) init))
 Proof
-  simp [gate_def] \\ strip_tac
-  \\ qpat_abbrev_tac `f = λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)`
-  \\ gvs [] \\ rpt strip_tac
-  \\ qabbrev_tac `ee = λx z. eval_pair (env 0 z) (var_CASE x ea eb)`
-  \\ qabbrev_tac `env2 = λz (x,n).
-    delay' (var_CASE x da db,ee x z) (EL (var_CASE x 0 1) s z) n`
-  \\ qabbrev_tac `s1 = λv z n. eval (age n (env2 z)) v`
-  \\ `∀p d v. MEM (p,d,v) outs ⇒ v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` by (
-    `∀v. admissible_bexpr (da, db') v ⇒
-      v_eval env (vb_eval ((da,a),(db,b)) v) (s1 v)` suffices_by (
-      rw [] \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
-      \\ disch_then (mp_tac o CONJUNCT1 o CONJUNCT2) \\ simp [EVERY_MEM]
-      \\ disch_then (drule o CONJUNCT1) \\ simp [])
-    \\ simp [Abbr`s1`] \\ Induct \\ rw [admissible_bexpr_def]
-    >- (
-      `v_eval env a (HD s) ∧
-        (db' = SOME db ⇒ v_eval env b (EL 1 s))` by (
-        MAP_EVERY (C qpat_x_assum mp_tac) [`LIST_REL _ _ _`, `admissible_ins _ = _`]
-        \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC
-        \\ rw [] \\ fs [assign_sat_def, Abbr`f`])
-      \\ Cases_on `v`
-      \\ fs [Abbr`env2`, oneline admissible_bexpr_def, Abbr`ee`]
-      THENL [ALL_TAC, Cases_on `db'` \\ gvs []]
-      \\ dxrule_then assume_tac LT_IMP_LE
-      \\ drule_at_then (Pos (el 1))
-        (drule_then $ drule_then $ ACCEPT_TAC o SRULE []) v_eval_v_delay')
-    >- (HO_BACKCHAIN_TAC v_eval_v_not \\ rw [])
-    >- (HO_BACKCHAIN_TAC v_eval_v_and \\ rw [])
-    >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw []))
-  \\ qexists_tac `MAP (λ(_,_,v). s1 v) outs` \\ rw []
-  >- (
-    simp [LIST_REL_MAP1, LIST_REL_MAP2] \\ irule EVERY2_refl
-    \\ simp [FORALL_PROD, Abbr`f`] \\ metis_tac [])
-  \\ drule_then (qspec_then `env2 z` suff_eq_tac o
+  strip_tac
+  \\ qmatch_goalsub_abbrev_tac `age _ env2`
+  \\ drule_then (qspec_then `env2` suff_eq_tac o
       MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
-  \\ simp [MAP2_MAP_L, MAP2_MAP_R, MAP2_self]
   \\ cong_tac 1 THENL [cong_tac 2, all_tac]
   >- (
-    fs [eval_io_def, Abbr`f`, MAP2_MAP_L, LIST_REL_MAP1]
-    \\ MAP_EVERY (C qpat_x_assum mp_tac) [`LIST_REL _ _ _`, `admissible_ins _ = _`]
+    fs [eval_io_def]
+    \\ MAP_EVERY (C qpat_x_assum mp_tac) [`LIST_REL _ ins _`, `admissible_ins _ = _`]
     \\ fs [oneline admissible_ins_def] \\ rpt CASE_TAC
-    \\ rw [] \\ rw [Abbr`s1`] \\ pairarg_tac
-    \\ gvs [FUN_EQ_THM, Abbr`env2`, delay'_def])
+    \\ rw [] \\ rw [] \\ pairarg_tac \\ rw []
+    \\ gvs [FUN_EQ_THM, Abbr`env2`, delay'_def, mk_output_env_def])
   >- (
-    fs [eval_io_def, Abbr`f`, MAP2_MAP_L, MAP2_MAP_R, MAP2_self]
-    \\ irule MAP_CONG \\ simp [FORALL_PROD] \\ rw [FUN_EQ_THM])
+    fs [eval_io_def, MAP2_self] \\ cong_tac 2
+    \\ simp [FUN_EQ_THM, FORALL_PROD])
   \\ Cases_on `ea` \\ Cases_on `eb` \\ rename [`((eaF,eaT),(ebF,ebT))`]
   \\ simp [instantiate2_def, from_masks_def, MAP_COMPOSE]
-  \\ AP_TERM_TAC \\ simp [Abbr`env2`, Abbr`ee`, eval_pair_var_CASE]
+  \\ simp [Abbr`env2`, mk_output_env_def, eval_pair_var_CASE]
   \\ `∀ea eb.
         MAP from_mask (instantiate (ea,eb) init) =
         MAP (MAP (eval (λ(x,n). delay'
           (var_CASE x da db, var_CASE x ea eb)
-          (EL (var_CASE x 0 1) s z) n)) ∘ from_blist) init` suffices_by (
+          (EL (var_CASE x 0 1) sin z) n)) ∘ from_blist) init` suffices_by (
     CASE_TAC \\ simp [eval_pair_def])
   \\ rw [MAP_COMPOSE, instantiate_def]
   \\ qmatch_goalsub_abbrev_tac `eval env3`
@@ -896,6 +901,42 @@ Proof
   \\ Cases \\ simp [admissible_bexpr_def, instantiate_var_def,
     Abbr`env3`, delay'_def]
   \\ Cases_on `db'` \\ rw []
+QED
+
+Theorem blist_simulation_ok_imp_gate:
+  blist_simulation_ok w h ins outs init ∧
+  admissible_ins ins = SOME (da, db') ∧
+  (∀x. db' = SOME x ⇒ x = db) ∧
+  w < ^tile ∧ h < ^tile ∧
+  classify da a = SOME ea ∧
+  classify db b = SOME eb ⇒
+  gate w h
+    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
+    (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
+    (instantiate2 (ea, eb) init)
+Proof
+  rw [gate_def, LIST_REL_MAP1, LIST_REL_MAP2]
+  \\ qpat_abbrev_tac `f = λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)`
+  \\ qabbrev_tac `s1 = λv z n. eval (age n (mk_output_env env s (da,db) (ea,eb) z)) v`
+  \\ qexists_tac `MAP (λ(_,_,v). s1 v) outs` \\ rw [LIST_REL_MAP2]
+  >- (
+    irule EVERY2_refl \\ simp [FORALL_PROD, Abbr`f`, Abbr`s1`] \\ rw []
+    \\ irule v_eval_mk_output_env \\ rpt $ first_assum $ irule_at Any
+    \\ conj_tac >- first_assum ACCEPT_TAC
+    \\ reverse conj_tac >- (
+      qpat_x_assum `_ s` suff_eq_tac \\ cong_tac 3
+      \\ simp [FUN_EQ_THM, FORALL_PROD])
+    \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+    \\ disch_then (mp_tac o CONJUNCT1 o CONJUNCT2) \\ simp [EVERY_MEM]
+    \\ disch_then (drule o CONJUNCT1) \\ simp [])
+  \\ drule_then (drule_at_then Any $ drule_then $
+    qspecl_then [`z`,`s`,`env`,`eb`,`ea`,`b`,`a`] mp_tac) blist_simulation_ok_imp_circuit
+  \\ impl_tac >- (
+    qpat_x_assum `_ s` suff_eq_tac \\ cong_tac 3
+    \\ simp [Abbr`f`, FUN_EQ_THM, FORALL_PROD])
+  \\ simp [Abbr`f`, MAP2_MAP_L, MAP2_MAP_R, MAP2_self]
+  \\ disch_then suff_eq_tac \\ cong_tac 5 >>> HEADGOAL (cong_tac 1)
+  \\ simp [FUN_EQ_THM, FORALL_PROD]
 QED
 
 Theorem blist_simulation_ok_imp_gate_1:
@@ -1471,7 +1512,7 @@ Proof
   \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw []
   \\ first_assum $ drule_all_then assume_tac
-  \\ cheat
+  \\ cheat (* todo *)
 QED
 
 Theorem floodfill_add_small_gate:
@@ -1493,10 +1534,14 @@ QED
 Theorem floodfill_add_crossover_gen:
   floodfill area ins outs crosses init ∧
   PERM outs (((p',d1),P) :: outs') ∧
-  (∀Q. classify db Q = SOME (Zeros, Zeros) ⇒
-    gate 1 1 [((p1,d1),P); ((p2,d2),Q)]
-      [((a',d1),v_delay 5 P); ((b',d2),v_delay 5 Q)]
-      init1) ⇒
+  classify 5 P = SOME ea ∧
+  (∀env v1 Q v2 z. env_wf env ∧
+    classify 5 Q = SOME (Zeros, Zeros) ∧
+    v_eval env P v1 ∧ v_eval env Q v2 ⇒
+    circuit (make_area 1 1) [(a,d1,v1 z); (b,d2,v2 z)]
+      [(a',d1, delay' (5,eval_pair (env 0 z) ea) (v1 z));
+       (b',d2, delay 5 (v2 z))] []
+      (from_masks (env 0 z) init1)) ⇒
   ∀p x' y'.
   p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
   ¬MEM p area ∧
@@ -1506,7 +1551,24 @@ Theorem floodfill_add_crossover_gen:
     ((add_pt p b, add_pt p b', d2) :: crosses)
     ((p, init1) :: init)
 Proof
-  cheat (* todo *)
+  rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
+  \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
+  \\ simp [floodfill_def] \\ strip_tac \\ fs [SF DNF_ss, MEM_MAP]
+  \\ conj_tac >- (
+    simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS, in_range_def]
+    \\ ARITH_TAC)
+  \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
+  \\ rpt strip_tac \\ ntac 2 $ first_x_assum $ drule_then strip_assume_tac
+  \\ rename [`_ outs' sout'`, `v_eval _ P v1`]
+  \\ ntac 2 $ first_x_assum $ irule_at Any
+  \\ dxrule_then (drule_then $ qspecl_then [`0`] mp_tac) v_eval_v_delay'
+  \\ rw [] \\ pop_assum $ irule_at Any
+  \\ conj_tac >- first_assum ACCEPT_TAC
+  \\ simp [LIST_LENGTH_COMPARE_SUC, PULL_EXISTS, SF DNF_ss] \\ rw []
+  \\ rename [`v_eval _ Q v2`]
+  \\ first_x_assum $ dxrule_then $ dxrule_then dxrule
+  \\ first_x_assum $ dxrule_at Any \\ rw [make_area_def]
+  \\ cheat (* todo *)
 QED
 
 Theorem floodfill_add_crossover_l:
@@ -1527,9 +1589,13 @@ Theorem floodfill_add_crossover_l:
     ((p, init2) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
-  \\ rpt $ last_x_assum $ irule_at Any
-  \\ dxrule_then (dxrule_then assume_tac o SRULE []) blist_simulation_ok_imp_gate_2
-  \\ qexistsl_tac [`b`,`a`,`5`] \\ rw []
+  \\ rpt $ last_assum $ irule_at Any \\ rw []
+  \\ dxrule blist_simulation_ok_imp_circuit
+  \\ simp [admissible_ins_def, PULL_EXISTS]
+  \\ disch_then $ rev_drule_then $ drule_then $
+    qspecl_then [`z`,`Zeros,Zeros`,`ea`] suff_eq_tac
+  \\ cong_tac 6 >>> NTH_GOAL (cong_tac 2) 2
+  \\ simp [FUN_EQ_THM, mk_output_env_def, eval_pair_def]
 QED
 
 Theorem floodfill_add_crossover_r:
@@ -1550,11 +1616,15 @@ Theorem floodfill_add_crossover_r:
     ((p, init2) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
-  \\ rpt $ last_x_assum $ irule_at Any
-  \\ dxrule_then (dxrule_at_then (Pos (el 2)) assume_tac o SRULE []) blist_simulation_ok_imp_gate_2
-  \\ qexistsl_tac [`a`,`b`,`5`] \\ rw []
-  \\ first_x_assum $ dxrule_then assume_tac
-  \\ drule_then irule gate_perm \\ simp [PERM_SWAP_AT_FRONT]
+  \\ rpt $ last_assum $ irule_at Any \\ rw []
+  \\ dxrule blist_simulation_ok_imp_circuit
+  \\ simp [admissible_ins_def, PULL_EXISTS]
+  \\ disch_then $ dxrule_then $ drule_then $
+    qspecl_then [`z`,`eb`,`Zeros,Zeros`] suff_eq_tac
+  \\ irule circuit_perm \\ simp [PERM_SWAP_AT_FRONT]
+  \\ irule $ METIS_PROVE [PERM_SWAP_AT_FRONT, PERM_REFL] ``[b;a] = c ⇒ PERM [a;b] c``
+  \\ cong_tac 3 >>> NTH_GOAL (cong_tac 2) 2
+  \\ simp [FUN_EQ_THM, mk_output_env_def, eval_pair_def]
 QED
 
 Theorem floodfill_finish_crossover:
@@ -1571,7 +1641,7 @@ Proof
   \\ ntac 2 $ first_assum $ irule_at Any \\ simp []
   \\ qexists_tac `delay 5 ∘ v`
   \\ conj_tac >- (
-    MAP_EVERY (C qpat_x_assum mp_tac) [`_ v`, `_=_`]
+    MAP_EVERY (C qpat_x_assum mp_tac) [`_ v`, `_ = _`]
     \\ POP_ASSUM_LIST kall_tac \\ rw []
     \\ dxrule_then (dxrule_then $ qspecl_then [`0`] mp_tac) v_eval_v_delay'
     \\ rw [] \\ pop_assum suff_eq_tac \\ cong_tac 1

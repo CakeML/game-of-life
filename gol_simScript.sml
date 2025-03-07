@@ -2833,7 +2833,7 @@ Proof
 QED
 
 Definition admissible_ins_def:
-  admissible_ins [(p1,d1,Var A da)] = SOME (da, NONE) ∧
+  admissible_ins [(p1:int#int,d1:dir,Var A da)] = SOME (da, NONE) ∧
   admissible_ins [(p1,d1,Var A da); (p2,d2,Var B db)] = SOME (da, SOME db) ∧
   admissible_ins _ = NONE
 End
