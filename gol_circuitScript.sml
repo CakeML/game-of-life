@@ -1209,13 +1209,19 @@ Proof
 QED
 
 Definition translate_set_def:
-  translate_set (x,y) s (a,b) ⇔ (a-x,b-y) ∈ s
+  translate_set x s a ⇔ sub_pt a x ∈ s
 End
 
 Theorem translate_set_empty[simp]:
   translate_set p ∅ = ∅
 Proof
-  Cases_on `p` \\ simp [EXTENSION, pairTheory.FORALL_PROD, translate_set_def, IN_DEF]
+  simp [EXTENSION, pairTheory.FORALL_PROD, translate_set_def, IN_DEF]
+QED
+
+Theorem mem_translate_set[simp]:
+  a ∈ translate_set x s ⇔ sub_pt a x ∈ s
+Proof
+  simp [IN_DEF, translate_set_def]
 QED
 
 Definition translate_mod_def:

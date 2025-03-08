@@ -341,13 +341,13 @@ fun floodfill diag params = let
         "instantiate" ^ extract_name (lhand tm) ^ "__" ^ fst (dest_const init)
       val th = make_abbrev name tm
       in cache := Redblackmap.insert (!cache, key, th); th end
-  fun instantiate2_conv t = let
+  fun instantiate_gate_conv t = let
     val (((eaF, eaT), (ebF, ebT)), init) =
       apfst (pair_map dest_pair o dest_pair o rand) $ dest_comb t
     val thm = if term_eq eaF eaT andalso term_eq ebF ebT then
-      MATCH_MP instantiate_twice (instantiate_conv ((eaF, ebF), init))
+      MATCH_MP instantiate_simple (instantiate_conv ((eaF, ebF), init))
     else
-      (PART_MATCH lhs instantiate2_def THENC
+      (PART_MATCH lhs instantiate_gate_def THENC
         FORK_CONV $ pair_map (K o instantiate_conv)
           (((eaF, ebF), init), ((eaT, ebT), init))) t
     in thm end
@@ -356,7 +356,7 @@ fun floodfill diag params = let
       EVAL (mk_comb (rator (lhs eq), v))) (strip_conj $ lhand $ concl gth) vs
     val gth = MATCH_MP gth (LIST_CONJ cths)
     handle e => (PolyML.print (gth, cths); raise e)
-    in CONV_RULE (RAND_CONV instantiate2_conv) gth end
+    in CONV_RULE (RAND_CONV instantiate_gate_conv) gth end
   val thm = ref floodfill_start
   fun newIn ((_, s, g), (x', y'), _, ins) = let
     val gth = case g of Regular g => g | _ => raise Match
@@ -411,7 +411,7 @@ fun floodfill diag params = let
         val mainth = List.nth ([floodfill_add_crossover_l, floodfill_add_crossover_r], i)
         val thm' = MATCH_MP mainth $ CONJ (!thm) $ CONJ gth permth
         val thm' = MATCH_MP thm' $ EVAL $ lhs $ lhand $ concl thm'
-        val thm' = MATCH_MP thm' $ instantiate2_conv $ lhs $ lhand $ concl thm'
+        val thm' = MATCH_MP thm' $ instantiate_gate_conv $ lhs $ lhand $ concl thm'
         val p = mk_pair $ pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [p, x', y'] thm'
