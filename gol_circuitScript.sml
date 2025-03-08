@@ -685,6 +685,8 @@ Definition circ_mod_wf_def:
     (∀p r1 r2. (p,r1) ∈ outs ∪ as ∧ (p,r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
     (∀p d r. (p,d,r) ∈ ins ∪ as ⇒ add_pt p (dir_to_xy d) ∈ area) ∧
     (∀p d r. (p,d,r) ∈ outs ∪ as ⇒ sub_pt p (dir_to_xy d) ∈ area) ∧
+    (∀p d r. (p,d,r) ∈ ins ∧ sub_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ outs) ∧
+    (∀p d r. (p,d,r) ∈ outs ∧ add_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ ins) ∧
     (∀p r. (p,r) ∈ as ⇒ ∀q. (p,q) ∉ ins ∧ (p,q) ∉ outs)
 End
 
@@ -1197,14 +1199,13 @@ QED
 Theorem circuit_run_compose_bigunion:
   (* each element in the family must be a circuit_run *)
   (∀x. circuit_run (area x) (ins x) (outs x) (as x) (init x)) ∧
-  (* all areas must be disjoint *)
-  (∀x1 x2. x1 ≠ x2 ⇒ DISJOINT (area x1) (area x2)) ∧
-  (* on a border between two areas, in/out ports must be matching, if they exist *)
   (∀x1 x2. x1 ≠ x2 ⇒
-    (∀xy1 xy2.
-      xy1 ∈ area x1 ∧ xy2 ∈ area x2 ∧ next_to xy1 xy2 ⇒
-      (midpoint xy1 xy2 ∈ ports_of (ins x1) ⇔ midpoint xy1 xy2 ∈ ports_of (outs x2)) ∧
-      (midpoint xy1 xy2 ∈ ports_of (ins x2) ⇔ midpoint xy1 xy2 ∈ ports_of (outs x1))))
+    (* all areas must be disjoint *)
+    DISJOINT (area x1) (area x2) ∧
+    (* on a border between two areas, in/out ports must be matching, if they exist *)
+    ∀p d r.
+      ((p,d,r) ∈ ins x1 ∧ sub_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ outs x2) ∧
+      ((p,d,r) ∈ outs x1 ∧ add_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ ins x2))
   ⇒
   circuit_run (iunion area) (iunion ins) (iunion outs) (iunion as) (iunion init)
 Proof
