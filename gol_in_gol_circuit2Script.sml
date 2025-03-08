@@ -1284,6 +1284,23 @@ Definition read_mega_cells_def:
     { p | add_pt (mul_pt (150 * 21) p) (23 * 75 + 1, 8 * 75 - 1) ∈ s }
 End
 
+Theorem from_row_lower_bound:
+  (a,b) ∈ from_row (x,y) row ⇒ x ≤ a ∧ y = b
+Proof
+  qid_spec_tac `x` \\ Induct_on `row` \\ simp [from_row_def]
+  \\ `∀x:int. (∀a. x + 1 ≤ a ⇒ x ≤ a) ∧ x ≤ x` by ARITH_TAC
+  \\ Cases_on `h` \\ simp [from_row_def] \\ metis_tac []
+QED
+
+Theorem from_rows_lower_bound:
+  (a,b) ∈ from_rows (x,y) rows ⇒ x ≤ a ∧ y ≤ b
+Proof
+  qid_spec_tac `y` \\ Induct_on `rows` \\ simp [from_rows_def]
+  \\ `∀x:int. (∀a. x + 1 ≤ a ⇒ x ≤ a) ∧ x ≤ x ∧
+    ∀n. x + 1 + &n = x + &SUC n ∧ x < x + &SUC n` by ARITH_TAC
+  \\ metis_tac [from_row_lower_bound]
+QED
+
 Theorem from_rows_rectangle:
   rectangle w h rows ∧ (a,b) ∈ from_rows (x,y) rows ⇒
   x ≤ a ∧ a < x + &(150 * w + 20) ∧ y ≤ b ∧ b < y + &(150 * h + 20)
@@ -1292,9 +1309,9 @@ Proof
   \\ last_x_assum (simp o single o SYM)
   \\ rpt $ pop_assum mp_tac
   \\ qid_spec_tac `y` \\ Induct_on `rows` \\ simp [from_rows_def]
-  \\ reverse (ntac 4 strip_tac)
   \\ `∀x:int. (∀a. x + 1 ≤ a ⇒ x ≤ a) ∧ x ≤ x ∧
     ∀n. x + 1 + &n = x + &SUC n ∧ x < x + &SUC n` by ARITH_TAC
+  \\ reverse (ntac 4 strip_tac)
   >- metis_tac []
   \\ last_x_assum (simp o single o SYM)
   \\ qpat_x_assum `_∈_` mp_tac
@@ -1307,6 +1324,48 @@ Definition test_mask_def:
   test_mask i (Allow n m) = (i < n ∨ test_mask (i - n) m) ∧
   test_mask i (Forbid n m) = (n ≤ i ∧ test_mask (i - n) m)
 End
+
+Definition test_masks_def:
+  test_masks (row,col) ls = case oEL col ls of
+    | NONE => F
+    | SOME l => test_mask row l
+End
+
+Definition test_masks'_def:
+  test_masks' (x,y) ls =
+    if 0 ≤ x ∧ 0 ≤ y then test_masks (Num x, Num y) ls else F
+End
+
+Theorem from_row_iff_test_mask:
+  (q0 + &i,q1) ∈ from_row (q0,q1) (from_mask m) ⇔ test_mask i m
+Proof
+  MAP_EVERY qid_spec_tac [`i`,`q0`]
+  \\ Induct_on `m` \\ rw [from_row_def, from_mask_def, test_mask_def]
+  \\ MAP_EVERY qid_spec_tac [`i`,`q0`]
+  \\ Induct_on `n` \\ rw [REPLICATE, from_row_def]
+  \\ Cases_on `i` \\ rw [ARITH_PROVE ``(q:int) + &(SUC n) = q + 1 + &n``]
+  \\ pop_assum $ qspecl_then [`q0 + 1`, `n'`] (rw o single o SYM)
+  \\ metis_tac [from_row_lower_bound, ARITH_PROVE ``¬((q:int) + 1 ≤ q)``]
+QED
+
+Theorem from_rows_iff_test_masks':
+  p ∈ from_rows q (MAP from_mask ls) ⇔ test_masks' (sub_pt p q) ls
+Proof
+  MAP_EVERY PairCases_on [`p`,`q`]
+  \\ simp [test_masks'_def]
+  \\ irule $ METIS_PROVE [] ``(a ⇒ b) ∧ (b ⇒ (a ⇔ c)) ⇒ (a ⇔ b ∧ c)``
+  \\ ntac 2 strip_tac
+  >- (drule from_rows_lower_bound \\ ARITH_TAC)
+  \\ imp_res_tac $ ARITH_PROVE ``0 ≤ p - q ⇒ ∃x. p = q + &x ∧ Num (p - q) = x``
+  \\ gvs [test_masks_def]
+  \\ MAP_EVERY qid_spec_tac [`q1`,`x`]
+  \\ Induct_on `ls` \\ reverse (rw [from_rows_def, oEL_def])
+  >- metis_tac [from_row_lower_bound,
+    ARITH_PROVE ``x ≠ 0 ⇒ (q:int) + 1 + &(x-1) = q + &x ∧ q + &x ≠ q``]
+  \\ irule $ METIS_PROVE [] ``¬b ∧ (a ⇔ c) ⇒ (a ∨ b ⇔ c)`` \\ conj_tac
+  >- metis_tac [from_rows_lower_bound, ARITH_PROVE ``¬((q:int) + 1 ≤ q)``]
+  \\ irule from_row_iff_test_mask
+QED
 
 Definition majority_def:
   majority a b c = if a then b ∨ c else b ∧ c
@@ -1339,12 +1398,21 @@ Definition test_pt_def:
       let masks = if s (q1d, q2d) then g.hi else g.lo in
       let row = Num (p1 - (150 * (q1d * &^tile + q1) - 85)) in
       let col = Num (p2 - (150 * (q2d * &^tile + q2) - 85)) in
-      test_mask col (EL row masks)
+      test_masks (row,col) masks
+    ) gates
+End
+
+Definition test_pt_slow_def:
+  test_pt_slow b gates p =
+    EXISTS (λ(q,g).
+      test_masks' (sub_pt (sub_pt p (mul_pt 75 q)) (-85,-85))
+        (if b then g.hi else g.lo)
     ) gates
 End
 
 Theorem read_mega_cells_build_mega_cells_thm:
-  EVERY (gate_at_wf area) gates ∧ EVERY in_range area ⇒
+  EVERY (gate_at_wf area) gates ∧ EVERY in_range area ∧
+  test_pt_slow T gates (1726,599) ∧ ¬test_pt_slow F gates (1726,599) ⇒
   read_mega_cells (mega_cell_builder gates s) = s
 Proof
   simp [EVERY_MEM, gate_at_wf_def, gate_wf_def, Once FORALL_PROD]
@@ -1372,8 +1440,10 @@ Proof
   \\ `∀q. sub_pt y (mul_pt 75 (mk_pt q x)) = sub_pt (1726,599) (mul_pt 75 q)` by
     (rw [Abbr`y`] \\ MAP_EVERY PairCases_on [`x`,`q`] \\ fs [mk_pt_def] \\ ARITH_TAC)
   \\ pop_assum (rw o single)
-  \\ CASE_TAC \\ simp []
-  \\ cheat (* todo *)
+  \\ fs [from_rows_iff_test_masks', test_pt_slow_def, EXISTS_MEM, EVERY_MEM,
+    Q.INST_TYPE [`:β`|->`:gate`] EXISTS_PROD,
+    Q.INST_TYPE [`:β`|->`:gate`] FORALL_PROD]
+  \\ CASE_TAC \\ fs [] \\ metis_tac []
 QED
 
 Triviality in_if_set_empty:
@@ -1466,8 +1536,8 @@ QED
 Theorem floodfill_finish:
   floodfill area
     [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact (-77) Clock)]
-    [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact 509 Clock)] [] gates
-  ⇒
+    [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact 509 Clock)] [] gates ∧
+  test_pt_slow T gates (1726,599) ∧ ¬test_pt_slow F gates (1726,599) ⇒
   gol_in_gol (mega_cell_builder gates) (^period * 60) read_mega_cells
 Proof
   rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
@@ -1483,6 +1553,7 @@ Proof
     {(_,latch);(_,clock)} {(_,latch');(_,clock')}`
   \\ `latch = latch' ∧ clock = clock'` by
     (simp [FUN_EQ_THM, e_clock_def] \\ ARITH_TAC)
+  \\ `env 0 = init` by simp [Abbr`env`] \\ pop_assum $ fs o single
   \\ gvs [floodfill_run_def, circuit_run_def]
   \\ dxrule run_clear_mods
   \\ impl_tac
@@ -1493,8 +1564,7 @@ Proof
   \\ rw []
   \\ gvs [run_def]
   \\ pop_assum $ qspec_then ‘^period * 60 * n’ mp_tac
-  \\ strip_tac
-  \\ gvs []
+  \\ rw []
   \\ dxrule run_to_clear_mods
   \\ strip_tac
   \\ Cases_on ‘n = 0’
@@ -1535,8 +1605,7 @@ Proof
   \\ ‘(3150 * x + 1725 + 1,3150 * y + 600 − 1) =
       (3150 * x + 1726,3150 * y + 599)’ by (gvs [] \\ intLib.COOPER_TAC)
   \\ gvs [] \\ disch_then kall_tac
-  \\ cheat
-  (* \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
+  \\ irule (METIS_PROVE [] “~y2 ∧ (x = y1) ⇒ (x ⇔ y1 ∨ y2)”)
   \\ conj_tac
   >- (CCONTR_TAC \\ gvs []
       \\ pop_assum kall_tac
@@ -1563,7 +1632,7 @@ Proof
   \\ ‘0 < 60:num’ by gvs []
   \\ drule ADD_DIV_ADD_DIV
   \\ disch_then $ rewrite_tac o single o GSYM
-  \\ gvs [DIV_DIV_DIV_MULT] *)
+  \\ gvs [DIV_DIV_DIV_MULT]
 QED
 
 Theorem assign_ext_sat:
@@ -1659,9 +1728,10 @@ Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
   \\ simp [floodfill_def] \\ strip_tac \\ fs [SF DNF_ss, MEM_MAP]
-  \\ conj_tac >- cheat
-  \\ conj_tac >- (
-    fs [EVERY_MEM, MEM_MAP, PULL_EXISTS, make_area_def, MEM_FLAT,
+  \\ rpt conj_tac
+  >- (fs [gate_at_wf_def, is_gate_def, EVERY_MEM, MEM_MAP] \\ metis_tac [])
+  >- (irule every_gate_at_wf_mono \\ first_assum $ irule_at Any \\ simp [])
+  >- (fs [EVERY_MEM, MEM_MAP, PULL_EXISTS, make_area_def, MEM_FLAT,
       MEM_GENLIST, in_range_def]
     \\ ARITH_TAC)
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
@@ -1703,6 +1773,7 @@ QED
 
 Theorem floodfill_add_crossover_gen:
   floodfill area ins outs crosses init ∧
+  gate_wf g ∧
   PERM outs (((p',d1),P) :: outs') ∧
   classify 5 P = SOME ea ∧
   g.width = 1 ∧ g.height = 1 ∧
@@ -1725,9 +1796,10 @@ Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
   \\ simp [floodfill_def] \\ strip_tac \\ fs [SF DNF_ss, MEM_MAP]
-  \\ conj_tac >- cheat
-  \\ conj_tac >- (
-    simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS, in_range_def]
+  \\ rpt conj_tac
+  >- fs [gate_at_wf_def, make_area_def]
+  >- (irule every_gate_at_wf_mono \\ first_assum $ irule_at Any \\ simp [])
+  >- (simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS, in_range_def]
     \\ ARITH_TAC)
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ rpt strip_tac \\ ntac 2 $ first_x_assum $ drule_then strip_assume_tac
@@ -1762,6 +1834,7 @@ Theorem floodfill_add_crossover_l:
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_assum $ irule_at Any \\ rw []
+  >- drule_then irule blist_simulation_ok_gate_wf
   \\ dxrule blist_simulation_ok_imp_circuit
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ rev_drule_then $ drule_then $
@@ -1789,6 +1862,7 @@ Theorem floodfill_add_crossover_r:
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_assum $ irule_at Any \\ rw []
+  >- drule_then irule blist_simulation_ok_gate_wf
   \\ dxrule blist_simulation_ok_imp_circuit
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ dxrule_then $ drule_then $

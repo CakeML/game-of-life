@@ -61,4 +61,21 @@ Theorem floodfill_result = floodfill diag {
   weaken = [((14, 4), E), ((14, 4), N)]
 };
 
+val _ = cv_transLib.cv_auto_trans test_pt_slow_def
+val _ = cv_transLib.cv_auto_trans $ definition "main_circuit_def"
+
+val period = ``586:num``
+
+Definition build_mega_cells_def:
+  build_mega_cells = mega_cell_builder main_circuit
+End
+
+Theorem gol_in_gol_thm:
+  gol_in_gol build_mega_cells (^period * 60) read_mega_cells
+Proof
+  REWRITE_TAC [build_mega_cells_def]
+  \\ irule floodfill_finish \\ simp [floodfill_result]
+  \\ CONV_TAC cv_eval
+QED
+
 val _ = export_theory();
