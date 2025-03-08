@@ -681,18 +681,16 @@ End
 Definition circ_mod_wf_def:
   circ_mod_wf area ins outs as ⇔
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
-    (∀x y r. ((x,y),r) ∈ ins ∪ outs ∪ as ⇒ ((x % 2 = 0) ≠ (y % 2 = 0))) ∧
-    (∀x y r1 r2. ((x,y),r1) ∈ ins ∧ ((x,y),r2) ∈ ins ⇒ r1 = r2) ∧
-    (∀x y r1 r2. ((x,y),r1) ∈ outs ∪ as ∧ ((x,y),r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
+    (∀p r1 r2. (p,r1) ∈ ins ∧ (p,r2) ∈ ins ⇒ r1 = r2) ∧
+    (∀p r1 r2. (p,r1) ∈ outs ∪ as ∧ (p,r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
     (∀p d r. (p,d,r) ∈ ins ∪ as ⇒ add_pt p (dir_to_xy d) ∈ area) ∧
     (∀p d r. (p,d,r) ∈ outs ∪ as ⇒ sub_pt p (dir_to_xy d) ∈ area) ∧
-    (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉ outs)
+    (∀p r. (p,r) ∈ as ⇒ ∀q. (p,q) ∉ ins ∧ (p,q) ∉ outs)
 End
 
 Theorem circ_mod_wf_def_old:
   circ_mod_wf area ins outs as ⇔
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
-    (∀x y r. ((x,y),r) ∈ ins ∪ outs ∪ as ⇒ ((x % 2 = 0) ≠ (y % 2 = 0))) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ ins ∧ ((x,y),r2) ∈ ins ⇒ r1 = r2) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ outs ∪ as ∧ ((x,y),r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
     (∀x y r. ((x,y),N,r) ∈ ins ∪ as ⇒ (x,y-1) ∈ area) ∧
@@ -1180,30 +1178,35 @@ Definition ports_of_def:
   ports_of s = IMAGE (λ(xy,rest). (xy:int # int)) s
 End
 
+Definition iunion_def:
+  iunion f = U {f z | z | T}
+End
+
+Theorem mem_iunion[simp]:
+  x ∈ iunion f ⇔ ∃a. x ∈ f a
+Proof
+  simp [iunion_def, PULL_EXISTS]
+QED
+
+Theorem iunion_empty[simp]:
+  iunion (λ_. ∅) = ∅
+Proof
+  simp [EXTENSION]
+QED
+
 Theorem circuit_run_compose_bigunion:
-  ∀all.
-    (* each element of all must be a circuit_run *)
-    (∀a ins outs as init.
-      (a,ins,outs,as,init) ∈ all ⇒ circuit_run a ins outs as init) ∧
-    (* all areas must be disjoint *)
-    (∀x y.
-      x ≠ y ∧ x ∈ all ∧ y ∈ all ⇒ DISJOINT (FST x) (FST y)) ∧
-    (* on a border between to areas, in/out ports must be matching, if they exist *)
-    (∀a1 ins1 outs1 as1 init1 a2 ins2 outs2 as2 init2.
-      (a1,ins1,outs1,as1,init1) ∈ all ∧
-      (a2,ins2,outs2,as2,init2) ∈ all ∧
-      DISJOINT a1 a2 ⇒
-      (∀xy1 xy2.
-        xy1 ∈ a1 ∧ xy2 ∈ a2 ∧ next_to xy1 xy2 ⇒
-        (midpoint xy1 xy2 ∈ ports_of ins1 ⇔ midpoint xy1 xy2 ∈ ports_of outs2) ∧
-        (midpoint xy1 xy2 ∈ ports_of ins2 ⇔ midpoint xy1 xy2 ∈ ports_of outs1)))
-    ⇒
-    circuit_run
-      ( U { a | ∃ins outs as init. (a,ins,outs,as,init) ∈ all } )
-      ( U { ins | ∃a outs as init. (a,ins,outs,as,init) ∈ all } )
-      ( U { outs | ∃a ins as init. (a,ins,outs,as,init) ∈ all } )
-      ( U { as | ∃a ins outs init. (a,ins,outs,as,init) ∈ all } )
-      ( U { init | ∃a ins outs as. (a,ins,outs,as,init) ∈ all } )
+  (* each element in the family must be a circuit_run *)
+  (∀x. circuit_run (area x) (ins x) (outs x) (as x) (init x)) ∧
+  (* all areas must be disjoint *)
+  (∀x1 x2. x1 ≠ x2 ⇒ DISJOINT (area x1) (area x2)) ∧
+  (* on a border between two areas, in/out ports must be matching, if they exist *)
+  (∀x1 x2. x1 ≠ x2 ⇒
+    (∀xy1 xy2.
+      xy1 ∈ area x1 ∧ xy2 ∈ area x2 ∧ next_to xy1 xy2 ⇒
+      (midpoint xy1 xy2 ∈ ports_of (ins x1) ⇔ midpoint xy1 xy2 ∈ ports_of (outs x2)) ∧
+      (midpoint xy1 xy2 ∈ ports_of (ins x2) ⇔ midpoint xy1 xy2 ∈ ports_of (outs x1))))
+  ⇒
+  circuit_run (iunion area) (iunion ins) (iunion outs) (iunion as) (iunion init)
 Proof
   cheat
 QED

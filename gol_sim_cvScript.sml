@@ -31,9 +31,6 @@ Theorem blist_simple_checks_eq:
   LENGTH rows = 150 * h + 20 ∧
   EVERY (λrow. blist_length row = 150 * w + 20) rows ∧ h ≠ 0 ∧ w ≠ 0 ∧
   ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
-  EVERY (λ((x,y),r).
-           (x % 2 = 0 ⇎ y % 2 = 0) ∧ -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w − 1 ∧
-           y ≤ 2 * &h − 1) (ins ++ outs) ∧
   let
      area = make_area w h
   in

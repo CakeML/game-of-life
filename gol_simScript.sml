@@ -517,10 +517,6 @@ Definition simple_checks_def:
   simple_checks w h ins outs rows ⇔
     rectangle w h rows ∧ h ≠ 0 ∧ w ≠ 0 ∧
     ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
-    EVERY (λ((x,y),r).
-             (x % 2 = 0 ⇎ y % 2 = 0) ∧
-             -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1)
-          (ins ++ outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
       EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area) ins ∧
@@ -1405,6 +1401,23 @@ Proof
   \\ gvs [MAP_EQ_ID] \\ rw [] \\ rw []
 QED
 
+Theorem dir_to_xy_bounded:
+  dir_to_xy d = (x,y) ⇒ -1 ≤ x ∧ x ≤ 1 ∧ -1 ≤ y ∧ y ≤ 1
+Proof
+  Cases_on `d` \\ simp []
+QED
+
+Theorem simple_checks_io_bounded:
+  simple_checks w h ins1 outs1 rows ∧
+  (MEM ((x,y),d,r) ins1 ∨ MEM ((x,y),d,r) outs1) ⇒
+  -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1
+Proof
+  strip_tac \\ gvs [EVERY_MEM,simple_checks_def] \\ res_tac \\ fs []
+  \\ Cases_on `dir_to_xy d` \\ drule dir_to_xy_bounded
+  \\ fs [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+  \\ intLib.ARITH_TAC
+QED
+
 Theorem or_lwss_imp:
   or_lwss xs ins = SOME ys ∧ rectangle w h xs ∧
   simple_checks w h ins1 outs1 (rows:bexp list list) ∧
@@ -1424,8 +1437,7 @@ Proof
   \\ simp [GSYM AND_IMP_INTRO,or_lwss_def,CaseEq"option"]
   \\ Cases_on ‘set ins ⊆ set ins1 ∪ set outs1’ \\ gvs []
   \\ disch_then assume_tac
-  \\ ‘-1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1’ by
-       (gvs [EVERY_MEM,simple_checks_def] \\ res_tac \\ fs [])
+  \\ drule_all simple_checks_io_bounded
   \\ qpat_x_assum ‘_ ∨ _’ kall_tac
   \\ rw [] \\ gvs []
   \\ DEP_REWRITE_TAC [from_rows_or_at]
@@ -1549,8 +1561,9 @@ Proof
   \\ PairCases_on ‘h'’
   \\ rename [‘(((x,y),d,r)::outs)’]
   \\ ‘-1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1 ∧
-      set outs ⊆ set ins1 ∪ set outs1’ by
-       (gvs [EVERY_MEM,simple_checks_def] \\ res_tac \\ fs [])
+      set outs ⊆ set ins1 ∪ set outs1’ by (
+    simp [] \\ pop_assum (assume_tac o CONJUNCT1)
+    \\ drule_all simple_checks_io_bounded \\ fs [])
   \\ qpat_x_assum ‘(_ ∨ _) ∧ _’ kall_tac
   \\ irule EQ_TRANS
   \\ qexists_tac ‘
@@ -2080,10 +2093,6 @@ Definition blist_simple_checks_def:
     EVERY (λrow. blist_length row = 150 * w + 20) rows ∧
     h ≠ 0 ∧ w ≠ 0 ∧
     ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
-    EVERY (λ((x,y),r).
-             (x % 2 = 0 ⇎ y % 2 = 0) ∧
-             -1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1)
-          (ins ++ outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
       EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area) ins ∧

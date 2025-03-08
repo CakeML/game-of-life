@@ -747,12 +747,6 @@ Proof
   simp [instantiate_gate_def, simple_gate_def]
 QED
 
-Theorem dir_to_xy_bounded:
-  dir_to_xy d = (x,y) ⇒ -1 ≤ x ∧ x ≤ 1 ∧ -1 ≤ y ∧ y ≤ 1
-Proof
-  Cases_on `d` \\ simp []
-QED
-
 Theorem blist_simulation_ok_ALL_DISTINCT:
   blist_simulation_ok w h ins outs init ⇒
   ALL_DISTINCT (MAP FST ins ++ MAP FST outs)
@@ -770,14 +764,11 @@ Proof
   \\ `∀x y d v. MEM ((x,y),d,v) (ins ++ outs) ⇒
       -1 ≤ x ∧ x < &^tile2 - 1 ∧ -1 ≤ y ∧ y < &^tile2 - 1` by (
     simp []
-    \\ last_x_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
-    \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
-    \\ disch_then (mp_tac o SRULE [EVERY_MEM] o funpow 7 CONJUNCT2)
-    \\ ntac 5 strip_tac \\ Cases_on `dir_to_xy d`
-    \\ drule_then strip_assume_tac dir_to_xy_bounded
-    \\ strip_tac \\ first_x_assum drule
-    \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
-    \\ ARITH_TAC)
+    \\ last_x_assum (assume_tac o CONJUNCT1
+      o REWRITE_RULE [simulation_ok_def]
+      o MATCH_MP blist_simulation_ok_thm)
+    \\ rpt gen_tac \\ disch_then assume_tac
+    \\ drule_all simple_checks_io_bounded \\ ARITH_TAC)
   \\ ONCE_REWRITE_TAC [GSYM MEM_APPEND] \\ strip_tac
   \\ MAP_EVERY Cases_on [`p`, `p'`, `z`, `z'`] \\ first_assum drule
   \\ qpat_x_assum `MEM _ _` (fn h =>
@@ -1076,22 +1067,6 @@ Definition gate_at_def:
   gate_at p init =
     U {gate_at' (add_pt p (mul_pt (&^tile2) z)) init | z | T}
 End *)
-
-Definition iunion_def:
-  iunion f = U {f z | z | T}
-End
-
-Theorem mem_iunion[simp]:
-  x ∈ iunion f ⇔ ∃a. x ∈ f a
-Proof
-  simp [iunion_def, PULL_EXISTS]
-QED
-
-Theorem iunion_empty[simp]:
-  iunion (λ_. ∅) = ∅
-Proof
-  simp [EXTENSION]
-QED
 
 Definition mega_cell_builder_def:
   mega_cell_builder (gates: ((int # int) # gate) list) env0 =
