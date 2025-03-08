@@ -717,9 +717,7 @@ End
 
 Definition instantiate_gate_def:
   instantiate_gate w h ((eaF, eaT), (ebF, ebT)) init =
-    <|width := w; height := h;
-      lo := instantiate (eaF, ebF) init;
-      hi := instantiate (eaT, ebT) init|>
+    gate w h (instantiate (eaF, ebF) init) (instantiate (eaT, ebT) init)
 End
 
 Theorem instantiate_gate_simps[simp]:
@@ -730,8 +728,7 @@ Proof
 QED
 
 Definition simple_gate_def:
-  simple_gate w h init =
-    <|width := w; height := h; lo := init; hi := init|>
+  simple_gate w h init = gate w h init init
 End
 
 Theorem simple_gate_simps[simp]:

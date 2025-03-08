@@ -323,7 +323,7 @@ fun floodfill diag params = let
         | [_, _] => MATCH_MP blist_simulation_ok_imp_gate_2 thm
         | _ => raise Match
       val thm = MATCH_MP thm $ EQT_ELIM $ EVAL $ lhand $ concl thm
-      val thm = CONV_RULE (PATH_CONV "rl" (BINOP_CONV (EVAL THENC SCONV []))) thm
+      val thm = CONV_RULE (RAND_CONV (BINOP_CONV (EVAL THENC SCONV []))) thm
       val thm = case g0 of
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
         | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
@@ -342,10 +342,11 @@ fun floodfill diag params = let
       val th = make_abbrev name tm
       in cache := Redblackmap.insert (!cache, key, th); th end
   fun instantiate_gate_conv t = let
-    val (((eaF, eaT), (ebF, ebT)), init) =
-      apfst (pair_map dest_pair o dest_pair o rand) $ dest_comb t
-    val thm = if term_eq eaF eaT andalso term_eq ebF ebT then
-      MATCH_MP instantiate_simple (instantiate_conv ((eaF, ebF), init))
+    val ((f, ((eaF, eaT), (ebF, ebT))), init) =
+      apfst (apsnd (pair_map dest_pair o dest_pair) o dest_comb) $ dest_comb t
+    val thm = if term_eq eaF eaT andalso term_eq ebF ebT then let
+      val thm = MATCH_MP instantiate_simple (instantiate_conv ((eaF, ebF), init))
+      in PART_MATCH (rator o rator o lhs) thm f end
     else
       (PART_MATCH lhs instantiate_gate_def THENC
         FORK_CONV $ pair_map (K o instantiate_conv)
@@ -356,7 +357,7 @@ fun floodfill diag params = let
       EVAL (mk_comb (rator (lhs eq), v))) (strip_conj $ lhand $ concl gth) vs
     val gth = MATCH_MP gth (LIST_CONJ cths)
     handle e => (PolyML.print (gth, cths); raise e)
-    in CONV_RULE (RAND_CONV instantiate_gate_conv) gth end
+    in CONV_RULE (PATH_CONV "llr" instantiate_gate_conv) gth end
   val thm = ref floodfill_start
   fun newIn ((_, s, g), (x', y'), _, ins) = let
     val gth = case g of Regular g => g | _ => raise Match
@@ -391,7 +392,8 @@ fun floodfill diag params = let
         val p = mk_pair $ pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [p, x', y'] thm'
-        val conv = RAND_CONV (REWR_CONV make_area_2_2) THENC SCONV []
+        val conv = RAND_CONV (RAND_CONV $ BINOP_CONV $ SCONV [] THENC
+          REWR_CONV make_area_2_2) THENC SCONV []
         val thm' = MATCH_MP thm' $ EQT_ELIM $ conv $ lhand $ concl thm'
         fun conv c = LAND_CONV c THENC append_conv
         val thm' = CONV_RULE (RATOR_CONV $ RATOR_CONV $

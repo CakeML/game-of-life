@@ -54,12 +54,11 @@ Quote diag = gol_diagramLib.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
 End
 
-(* will restore tomorrow *)
-(* Theorem floodfill_result = floodfill diag {
+Theorem floodfill_result = floodfill diag {
   period = 586,
   pulse = 22,
   asserts = [((6, 0), E, Exact (~77, Clock)), ((11, 4), E, Exact (~15, ThisCell))],
   weaken = [((14, 4), E), ((14, 4), N)]
-}; *)
+};
 
 val _ = export_theory();
