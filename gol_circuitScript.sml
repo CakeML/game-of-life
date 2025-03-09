@@ -741,6 +741,18 @@ Definition circ_output_area_def:
                   if n MOD 60 = 59 then outs ∩ is_ew else {})
 End
 
+Theorem circ_area_eq:
+  circ_area area ins outs n =
+    let (d1,d2) = if n MOD 60 < 30 then (is_ns,is_ew) else (is_ew,is_ns) in
+      base_area area
+      DIFF (circ_io_area (ins ∩ d1) ∪ circ_io_area (outs ∩ d2))
+      ∪ (circ_io_area (ins ∩ d2) ∪ circ_io_area (outs ∩ d1))
+Proof
+  rw [] \\ gvs [circ_area_def]
+  \\ gvs [circ_io_area_def,EXISTS_PROD]
+  \\ simp [IN_DEF,is_ns_def,is_ew_def]
+QED
+
 Definition io_gate_def:
   io_gate E =
    [[F;F;F;F;F;F;F;F;F;F];
@@ -1211,7 +1223,29 @@ Theorem circuit_run_compose_bigunion:
   ⇒
   circuit_run (iunion area) (iunion ins) (iunion outs) (iunion as) (iunion init)
 Proof
-  cheat
+  rw [] \\ gvs [circuit_run_def]
+  \\ reverse conj_tac
+  >- cheat (* circ_mod_wf*)
+     (* gvs [circ_mod_wf_def, SF DNF_ss, SF SFY_ss] *)
+  \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) (as x)’,
+                  ‘init’] mp_tac run_compose_bigunion
+  \\ simp []
+  \\ reverse $ impl_tac
+  >-
+   (match_mp_tac (METIS_PROVE [] “(x = x1 ∧ y = y1) ⇒ (f x y ⇒ f x1 y1)”)
+    \\ reverse conj_tac >- simp [iunion_def]
+    \\ gvs [join_all_def,circ_mod_def]
+    \\ simp [Once FUN_EQ_THM] \\ rw []
+    \\ gvs [circ_mod_def]
+    \\ simp [GSYM iunion_def]
+    \\ cheat)
+  \\ reverse conj_tac >- simp [SF SFY_ss, mods_wf_circ_mod]
+  \\ simp [disjoint_mods_def,disjoint_mod_def,circ_mod_def]
+  \\ simp [IN_DISJOINT]
+  \\ rpt strip_tac \\ CCONTR_TAC \\ gvs []
+  \\ rename [‘z ∈ circ_area (area y) (ins y) (outs y) n’]
+  \\ PairCases_on ‘z’
+  \\ cheat (* circ_area_def, sigh *)
 QED
 
 Definition translate_set_def:
