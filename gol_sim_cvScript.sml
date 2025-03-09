@@ -35,8 +35,10 @@ Theorem blist_simple_checks_eq:
      area = make_area w h
   in
     ALL_DISTINCT area ∧
-    EVERY (λ(p,d,r). member (add_pt p (dir_to_xy d)) area) ins ∧
-    EVERY (λ(p,d,r). member (sub_pt p (dir_to_xy d)) area) outs
+    EVERY (λ(p,d,r). member (add_pt p (dir_to_xy d)) area ∧
+                    ¬member (sub_pt p (dir_to_xy d)) area) ins ∧
+    EVERY (λ(p,d,r). member (sub_pt p (dir_to_xy d)) area ∧
+                    ¬member (add_pt p (dir_to_xy d)) area) outs
 Proof
   gvs [blist_simple_checks_def, member_thm]
 QED

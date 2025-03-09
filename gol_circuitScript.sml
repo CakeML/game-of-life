@@ -703,6 +703,8 @@ Theorem circ_mod_wf_def_old:
     (∀x y r. ((x,y),S,r) ∈ outs ∪ as ⇒ (x,y-1) ∈ area) ∧
     (∀x y r. ((x,y),E,r) ∈ outs ∪ as ⇒ (x-1,y) ∈ area) ∧
     (∀x y r. ((x,y),W,r) ∈ outs ∪ as ⇒ (x+1,y) ∈ area) ∧
+    (∀p d r. (p,d,r) ∈ ins ∧ sub_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ outs) ∧
+    (∀p d r. (p,d,r) ∈ outs ∧ add_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ ins) ∧
     (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉outs)
 Proof
   simp [circ_mod_wf_def] \\ rpt AP_TERM_TAC

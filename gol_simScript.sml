@@ -519,8 +519,10 @@ Definition simple_checks_def:
     ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
-      EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area) ins ∧
-      EVERY (λ(p,d,r). MEM (sub_pt p (dir_to_xy d)) area) outs
+      EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area ∧
+                      ¬MEM (sub_pt p (dir_to_xy d)) area) ins ∧
+      EVERY (λ(p,d,r). MEM (sub_pt p (dir_to_xy d)) area ∧
+                      ¬MEM (add_pt p (dir_to_xy d)) area) outs
 End
 
 Definition simulation_ok_def:
@@ -2095,8 +2097,10 @@ Definition blist_simple_checks_def:
     ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧
     let area = make_area w h in
       ALL_DISTINCT area ∧
-      EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area) ins ∧
-      EVERY (λ(p,d,r). MEM (sub_pt p (dir_to_xy d)) area) outs
+      EVERY (λ(p,d,r). MEM (add_pt p (dir_to_xy d)) area ∧
+                      ¬MEM (sub_pt p (dir_to_xy d)) area) ins ∧
+      EVERY (λ(p,d,r). MEM (sub_pt p (dir_to_xy d)) area ∧
+                      ¬MEM (add_pt p (dir_to_xy d)) area) outs
 End
 
 Theorem from_mask_o_to_mask:
