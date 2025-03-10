@@ -647,6 +647,12 @@ Definition is_ew_def:
   is_ew ((x,y),d,r) = (d = E ∨ d = W)
 End
 
+Theorem is_ns_not_is_ew:
+  is_ns x ⇔ ~ is_ew x
+Proof
+  PairCases_on ‘x’ \\ gvs [] \\ Cases_on ‘x2’ \\ gvs [is_ns_def,is_ew_def]
+QED
+
 Definition add_pt_def[simp]:
   add_pt (a:int,b:int) (c,d) = (a+c,b+d)
 End
@@ -741,15 +747,25 @@ Definition circ_output_area_def:
                   if n MOD 60 = 59 then outs ∩ is_ew else {})
 End
 
+Definition dir_test_def:
+  dir_test use_ns = if use_ns then is_ns else is_ew
+End
+
+Definition io_cutout_def:
+  io_cutout ins outs early_phase =
+    circ_io_area (ins ∩ dir_test early_phase) ∪
+    circ_io_area (outs ∩ dir_test (¬early_phase))
+End
+
 Theorem circ_area_eq:
   circ_area area ins outs n =
-    let (d1,d2) = if n MOD 60 < 30 then (is_ns,is_ew) else (is_ew,is_ns) in
-      base_area area
-      DIFF (circ_io_area (ins ∩ d1) ∪ circ_io_area (outs ∩ d2))
-      ∪ (circ_io_area (ins ∩ d2) ∪ circ_io_area (outs ∩ d1))
+    base_area area
+    DIFF (io_cutout ins outs (n MOD 60 < 30))
+    ∪ (io_cutout ins outs (¬ (n MOD 60 < 30)))
 Proof
-  rw [] \\ gvs [circ_area_def]
-  \\ gvs [circ_io_area_def,EXISTS_PROD]
+  Cases_on ‘n MOD 60 < 30’ \\ gvs []
+  \\ gvs [circ_area_def]
+  \\ gvs [circ_io_area_def,EXISTS_PROD,io_cutout_def,dir_test_def]
   \\ simp [IN_DEF,is_ns_def,is_ew_def]
 QED
 
@@ -1152,12 +1168,6 @@ Proof
     \\ simp [circ_io_lwss_def]
     \\ cheat)
   \\ cheat
-QED
-
-Theorem is_ns_not_is_ew:
-  is_ns x ⇔ ~ is_ew x
-Proof
-  PairCases_on ‘x’ \\ gvs [] \\ Cases_on ‘x2’ \\ gvs [is_ns_def,is_ew_def]
 QED
 
 Theorem circuit_run_internalise:
