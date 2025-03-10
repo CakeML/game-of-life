@@ -1136,8 +1136,30 @@ Proof
   \\ Cases_on `e` \\ fs [gate_at_wf_def, SUBSET_DEF]
 QED
 
+Theorem floodfill_run_add_gate:
+  ∀ins1 outs1 ins outs init.
+  (∀z. circuit (make_area g.width g.height)
+    (MAP (λ((p,d),v). (p,d,v z)) ins1)
+    (MAP (λ((p,d),v). (p,d,v z)) outs1) []
+    (from_masks (init z) (g.lo,g.hi))) ∧
+  floodfill_run area (mega_cell_builder gates init) ins outs ⇒
+  floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
+    (mega_cell_builder ((p,g)::gates) init)
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ ins)
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
+Proof
+  cheat (* todo *)
+QED
+
+Theorem floodfill_run_cancel:
+  floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
+  floodfill_run area init ins outs
+Proof
+  cheat (* todo *)
+QED
+
 Theorem floodfill_add_ins:
-  floodfill area ins outs [] init ∧
+  floodfill area ins outs [] gates ∧
   is_gate g [((a,d),Exact dl v)] outs' ⇒
   ∀p x' y'.
   p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
@@ -1145,7 +1167,7 @@ Theorem floodfill_add_ins:
   ¬MEM (add_pt p a) (MAP (FST ∘ FST) (ins ++ outs)) ⇒
   floodfill (p :: area) (((add_pt p a,d),Exact dl v) :: ins)
     (MAP (λ((a',d'),Q). ((add_pt p a',d'),Q)) outs' ++ outs) []
-    ((p, g) :: init)
+    ((p, g) :: gates)
 Proof
   rw [] \\ gvs [floodfill_def]
   \\ simp [floodfill_def] \\ fs [SF DNF_ss]
@@ -1165,7 +1187,15 @@ Proof
   \\ irule_at Any EVERY2_mono \\ first_assum $ irule_at Any
   \\ conj_tac >- simp [FORALL_PROD]
   \\ conj_tac >- first_assum ACCEPT_TAC
-  \\ cheat (* todo *)
+  \\ imp_res_tac LIST_REL_LENGTH
+  \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND]
+  \\ qspecl_then [
+      `[((a,d),(λz n. e_eval (λi. env i z) v (&(n + base) − dl)))]`,
+      `ZIP (MAP FST outs',s')`
+    ] mp_tac floodfill_run_add_gate
+  \\ PairCases_on `p`
+  \\ fs [GSYM INSERT_SING_UNION, ZIP_MAP, MAP2_ZIP, MAP_COMPOSE,
+    o_DEF, LAMBDA_PROD, make_area_def]
 QED
 
 Theorem floodfill_perm:
@@ -1687,7 +1717,7 @@ Theorem assign_sat_tr_IMP' =
   ONCE_REWRITE_RULE [add_pt_comm] assign_sat_tr_IMP;
 
 Theorem floodfill_add_gate:
-  floodfill area ins outs crosses init ∧
+  floodfill area ins outs crosses gates ∧
   is_gate g ins1 outs1 ∧
   PERM outs (del ++ outs') ⇒
   ∀p x' y'.
@@ -1698,7 +1728,7 @@ Theorem floodfill_add_gate:
   floodfill
     (MAP (add_pt p) (make_area g.width g.height) ++ area) ins
     (MAP (λ((a, d), P). ((add_pt p a, d), P)) outs1 ++ outs') crosses
-    ((p, g) :: init)
+    ((p, g) :: gates)
 Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
@@ -1715,19 +1745,29 @@ Proof
   \\ rename [`_ outs' sout'`, `_ (_ ∘ _) ins1 sin1`]
   \\ first_x_assum $ irule_at Any
   \\ irule_at Any EVERY2_APPEND_suff \\ rw [LIST_REL_MAP1]
-  \\ first_x_assum $ irule_at Any
+  \\ first_assum $ irule_at Any
   \\ fs [is_gate_def]
   \\ last_x_assum $ drule_then $ qspec_then `sin1` mp_tac
   \\ impl_tac >- (
-    irule EVERY2_mono \\ pop_assum $ irule_at Any
+    irule EVERY2_mono \\ first_x_assum $ irule_at Any
     \\ simp [FORALL_PROD])
   \\ rw [] \\ rename [`_ outs1 sout1`]
-  \\ irule_at Any EVERY2_mono \\ first_x_assum $ irule_at Any
+  \\ irule_at Any EVERY2_mono \\ first_assum $ irule_at Any
   \\ conj_tac >- simp [FORALL_PROD]
   \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw []
-  \\ first_assum $ drule_all_then assume_tac
-  \\ cheat (* todo *)
+  \\ first_assum $ drule_all_then mp_tac
+  \\ imp_res_tac LIST_REL_LENGTH
+  \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND] \\ rw []
+  \\ drule_at_then Any (qspecl_then [
+    `p`,`g`,`ZIP (MAP FST ins1,sin1)`,`ZIP (MAP FST outs1,sout1)`
+    ] mp_tac) floodfill_run_add_gate
+  \\ impl_tac >- fs [ZIP_MAP, MAP2_ZIP, MAP_COMPOSE, o_DEF, LAMBDA_PROD]
+  \\ disch_then assume_tac
+  \\ irule floodfill_run_cancel
+  \\ qexists_tac `set (MAP (λ((a,d),v). ((add_pt p a,d),v)) (ZIP (MAP FST ins1,sin1)))`
+  \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ PairCases_on `p`
+  \\ simp [ZIP_MAP, MAP_COMPOSE, o_DEF, LAMBDA_PROD, AC UNION_ASSOC UNION_COMM]
 QED
 
 Theorem floodfill_add_small_gate:
@@ -1747,7 +1787,7 @@ Proof
 QED
 
 Theorem floodfill_add_crossover_gen:
-  floodfill area ins outs crosses init ∧
+  floodfill area ins outs crosses gates ∧
   gate_wf g ∧
   PERM outs (((p',d1),P) :: outs') ∧
   classify 5 P = SOME ea ∧
@@ -1766,7 +1806,7 @@ Theorem floodfill_add_crossover_gen:
   floodfill (p :: area) ins
     (((add_pt p a',d1),v_delay 5 P) :: outs')
     ((add_pt p b, add_pt p b', d2) :: crosses)
-    ((p, g) :: init)
+    ((p, g) :: gates)
 Proof
   rpt strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ dxrule_then (dxrule_then dxrule) floodfill_perm \\ gvs []
@@ -1779,7 +1819,7 @@ Proof
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ rpt strip_tac \\ ntac 2 $ first_x_assum $ drule_then strip_assume_tac
   \\ rename [`_ outs' sout'`, `v_eval _ P v1`]
-  \\ ntac 2 $ first_x_assum $ irule_at Any
+  \\ ntac 2 $ first_assum $ irule_at Any
   \\ dxrule_then (drule_then $ qspecl_then [`0`] mp_tac) v_eval_v_delay'
   \\ rw [] \\ pop_assum $ irule_at Any
   \\ conj_tac >- first_assum ACCEPT_TAC
@@ -1787,7 +1827,17 @@ Proof
   \\ rename [`v_eval _ Q v2`]
   \\ first_x_assum $ dxrule_then $ dxrule_then dxrule
   \\ first_x_assum $ dxrule_at Any \\ rw [make_area_def]
-  \\ cheat (* todo *)
+  \\ imp_res_tac LIST_REL_LENGTH
+  \\ qspecl_then [
+      `[((a,d1),v1); ((b,d2),v2)]`,
+      `[((a',d1),λz. delay' (5,eval_pair (env 0 z) ea) (v1 z)); ((b',d2),delay 5 ∘ v2)]`
+    ] mp_tac floodfill_run_add_gate
+  \\ simp [make_area_def]
+  \\ disch_then $ drule_all_then assume_tac
+  \\ irule floodfill_run_cancel
+  \\ qexists_tac `{((add_pt p a,d1),v1)}`
+  \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [Once EXTENSION]
+  \\ CONV_TAC $ DEPTH_CONV ETA_CONV \\ metis_tac []
 QED
 
 Theorem floodfill_add_crossover_l:
@@ -1872,8 +1922,11 @@ Proof
   \\ rw []
   \\ first_x_assum (qspec_then `v::scross` mp_tac)
   \\ simp [SF DNF_ss]
-  \\ disch_then $ drule_then drule
-  \\ cheat (* todo *)
+  \\ disch_then $ drule_then $ drule_then assume_tac
+  \\ irule floodfill_run_cancel
+  \\ qexists_tac `{((p,d),v)}`
+  \\ pop_assum suff_eq_tac \\ cong_tac 1
+  \\ simp [Once EXTENSION] \\ metis_tac []
 QED
 
 Theorem floodfill_teleport:
