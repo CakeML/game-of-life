@@ -730,8 +730,8 @@ Definition circ_area_def:
   circ_area area ins outs n =
     if n MOD 60 < 30 then
       base_area area DIFF
-      (U { io_box (x,y) | ∃d r. ((x,y),d,r) ∈ ins ∧ d ∈ {N;S} } ∪
-       U { io_box (x,y) | ∃d r. ((x,y),d,r) ∈ outs ∧ d ∈ {E;W} }) ∪
+      (U { io_box (x,y) | ∃d r:α. ((x,y),d,r) ∈ ins ∧ d ∈ {N;S} } ∪
+       U { io_box (x,y) | ∃d r:α. ((x,y),d,r) ∈ outs ∧ d ∈ {E;W} }) ∪
       (U { io_box (x,y) | ∃d r. ((x,y),d,r) ∈ ins ∧ d ∈ {E;W} } ∪
        U { io_box (x,y) | ∃d r. ((x,y),d,r) ∈ outs ∧ d ∈ {N;S} })
     else
@@ -1594,12 +1594,26 @@ Proof
     75 * x − 75 + 75 * p = 75 * (x + p) - 75``]
 QED
 
+Theorem translate_port_dir_test[simp]:
+  translate_port p (dir_test phase) = dir_test phase
+Proof
+  rw [dir_test_def]
+QED
+
+Theorem io_cutout_translate:
+  translate_set (mul_pt 75 p) (io_cutout ins outs phase) =
+    io_cutout (translate_port p ins) (translate_port p outs) phase
+Proof
+  rw [io_cutout_def, circ_io_area_translate]
+QED
+
 Theorem circ_area_translate:
   translate_set (mul_pt 75 p) (circ_area area ins outs n) =
     circ_area (translate_set p area)
       (translate_port p ins) (translate_port p outs) n
 Proof
-  cheat
+  rw [circ_area_eq, translate_set_union, translate_set_diff,
+    base_area_translate, io_cutout_translate]
 QED
 
 Theorem translate_circ_mod:
