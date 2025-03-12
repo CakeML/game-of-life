@@ -11,6 +11,8 @@ val _ = new_theory "gol_circuit";
 Overload LLOOKUP = “λl n. oEL n l”;
 Overload "U" = “BIGUNION”;
 
+fun cong_tac n = ntac n $ FIRST [AP_THM_TAC, AP_TERM_TAC, ABS_TAC, BINOP_TAC, MK_COMB_TAC]
+
 (* consequences *)
 
 Theorem IN_step:
@@ -640,17 +642,17 @@ Datatype:
 End
 
 Definition is_ns_def:
-  is_ns ((x,y),d,r) = (d = N ∨ d = S)
+  is_ns (p,d,r) = (d = N ∨ d = S)
 End
 
 Definition is_ew_def:
-  is_ew ((x,y),d,r) = (d = E ∨ d = W)
+  is_ew (p,d,r) = (d = E ∨ d = W)
 End
 
 Theorem is_ns_not_is_ew:
   is_ns x ⇔ ~ is_ew x
 Proof
-  PairCases_on ‘x’ \\ gvs [] \\ Cases_on ‘x2’ \\ gvs [is_ns_def,is_ew_def]
+  PairCases_on ‘x’ \\ gvs [is_ns_def, is_ew_def] \\ Cases_on ‘x1’ \\ simp []
 QED
 
 Definition add_pt_def[simp]:
@@ -663,6 +665,10 @@ End
 
 Definition neg_pt_def[simp]:
   neg_pt (a:int,b:int) = (-a,-b)
+End
+
+Definition mul_pt_def[simp]:
+  mul_pt (n:int) (a, b) ⇔ (n * a, n * b)
 End
 
 Theorem add_pt_0[simp]:
@@ -1295,16 +1301,16 @@ Definition translate_set_def:
   translate_set x s a ⇔ sub_pt a x ∈ s
 End
 
-Theorem translate_set_empty[simp]:
-  translate_set p ∅ = ∅
-Proof
-  simp [EXTENSION, pairTheory.FORALL_PROD, translate_set_def, IN_DEF]
-QED
-
 Theorem mem_translate_set[simp]:
   a ∈ translate_set x s ⇔ sub_pt a x ∈ s
 Proof
   simp [IN_DEF, translate_set_def]
+QED
+
+Theorem translate_set_empty[simp]:
+  translate_set p ∅ = ∅
+Proof
+  simp [EXTENSION]
 QED
 
 Definition translate_mod_def:
@@ -1324,6 +1330,226 @@ Theorem translate_mods_empty[simp]:
   translate_mods p empty_mod = empty_mod
 Proof
   rw [Once FUN_EQ_THM, translate_mods_def, empty_mod_def, translate_mod_def]
+QED
+
+Definition translate_port_def:
+  translate_port x s (a,d:dir,r) ⇔ (sub_pt a x,d,r) ∈ s
+End
+
+Theorem mem_translate_port[simp]:
+  (a,d,r) ∈ translate_port x s ⇔ (sub_pt a x,d,r) ∈ s
+Proof
+  simp [IN_DEF, translate_port_def]
+QED
+
+Theorem live_adj_translate:
+  live_adj (translate_set (p0,p1) s) x0 x1 = live_adj s (x0-p0) (x1-p1)
+Proof
+  REWRITE_TAC [live_adj_def, translate_set_def, IN_DEF, sub_pt_def]
+  \\ rpt (reverse (cong_tac 1)
+    >- (simp [] \\ cong_tac 2 \\ simp [] \\ ARITH_TAC))
+QED
+
+Theorem infl_translate[simp]:
+  infl (translate_set p s) = translate_set p (infl s)
+Proof
+  PairCases_on `p`
+  \\ simp [Once EXTENSION, FORALL_PROD, infl_def, IN_DEF, translate_set_def,
+    live_adj_translate]
+QED
+
+Theorem translate_subset[simp]:
+  translate_set p s ⊆ translate_set p t ⇔ s ⊆ t
+Proof
+  `∀x p. x + p - p = x ∧ x - p + p = x` by ARITH_TAC
+  \\ PairCases_on `p` \\ simp [SUBSET_DEF, FORALL_PROD] \\ metis_tac []
+QED
+
+Theorem step_translate[simp]:
+  step (translate_set p s) = translate_set p (step s)
+Proof
+  PairCases_on `p`
+  \\ rw [Once EXTENSION, FORALL_PROD, IN_DEF, step_def, live_adj_translate]
+QED
+
+Theorem translate_set_inter:
+  translate_set p (a ∩ b) = translate_set p a ∩ translate_set p b
+Proof
+  simp [EXTENSION, FORALL_PROD]
+QED
+
+Theorem translate_set_union:
+  translate_set p (a ∪ b) = translate_set p a ∪ translate_set p b
+Proof
+  simp [EXTENSION, FORALL_PROD]
+QED
+
+Theorem translate_set_diff:
+  translate_set p (a DIFF b) = translate_set p a DIFF translate_set p b
+Proof
+  simp [EXTENSION, FORALL_PROD]
+QED
+
+Theorem mod_step_translate_mod:
+  mod_step mod s t ⇒
+  mod_step (translate_mod p mod) (translate_set p s) (translate_set p t)
+Proof
+  simp [mod_step_def, translate_mod_def, GSYM translate_set_inter,
+    GSYM translate_set_union, GSYM translate_set_diff]
+QED
+
+Theorem mod_steps_translate_mods:
+  mod_steps k mod n s t ⇒
+  mod_steps k (translate_mods p mod) n (translate_set p s) (translate_set p t)
+Proof
+  MAP_EVERY qid_spec_tac [`n`,`s`] \\ Induct_on `k`
+  \\ simp [mod_steps_def, translate_mods_def]
+  \\ metis_tac [mod_step_translate_mod]
+QED
+
+Theorem run_to_translate_mods:
+  run_to k mod s t ⇒
+  run_to k (translate_mods p mod) (translate_set p s) (translate_set p t)
+Proof
+  rw [run_to_def, mod_steps_translate_mods]
+QED
+
+Theorem run_translate_mods:
+  run mod init ⇒
+  run (translate_mods p mod) (translate_set p init)
+Proof
+  rw [run_def] \\ metis_tac [run_to_translate_mods]
+QED
+
+Theorem translate_port_empty[simp]:
+  translate_port p ∅ = ∅
+Proof
+  simp [EXTENSION, FORALL_PROD]
+QED
+
+Theorem translate_port_union[simp]:
+  translate_port p (a ∪ b) = translate_port p a ∪ translate_port p b
+Proof
+  simp [EXTENSION, FORALL_PROD]
+QED
+
+Theorem translate_port_inter[simp]:
+  translate_port p (a ∩ b) = translate_port p a ∩ translate_port p b
+Proof
+  simp [EXTENSION, FORALL_PROD]
+QED
+
+Theorem translate_port_is_ns[simp]:
+  translate_port p is_ns = is_ns
+Proof
+  simp [EXTENSION, FORALL_PROD, is_ns_def, IN_DEF]
+QED
+
+Theorem translate_port_is_ew[simp]:
+  translate_port p is_ew = is_ew
+Proof
+  simp [EXTENSION, FORALL_PROD, is_ew_def, IN_DEF]
+QED
+
+Theorem image_lwss_translate:
+  U (IMAGE (lwss_at n) (translate_port p ins)) =
+    translate_set (mul_pt 75 p) (U (IMAGE (lwss_at n) ins))
+Proof
+  PairCases_on `p`
+  \\ `∀x0 x1 y0 y1 d r. (x0-75*p0,x1-75*p1) ∈ lwss_at n ((y0,y1),d,r) ⇔
+      (x0,x1) ∈ lwss_at n ((y0+p0,y1+p1),d,r)` suffices_by (
+    `∀x p. x + p - p = x ∧ x - p + p = x` by ARITH_TAC
+    \\ simp [Once EXTENSION, FORALL_PROD, EXISTS_PROD] \\ metis_tac [])
+  \\ rw [lwss_at_def, lwss_as_set_def]
+  \\ CONV_TAC $ LHS_CONV $ REWR_CONV $
+    GSYM $ Q.SPECL [`75*p0`,`75*p1`] from_rows_translate
+  \\ cong_tac 2 >>> NTH_GOAL (cong_tac 2) 3 \\ ARITH_TAC
+QED
+
+Theorem circ_io_lwss_translate:
+  translate_set (mul_pt 75 p) (circ_io_lwss ins n) =
+    circ_io_lwss (translate_port p ins) n
+Proof
+  rw [circ_io_lwss_def, GSYM image_lwss_translate]
+QED
+
+Theorem box_translate:
+  translate_set p (box x sz) = box (add_pt x p) sz
+Proof
+  MAP_EVERY PairCases_on [`p`,`x`,`sz`]
+  \\ rw [Once EXTENSION, FORALL_PROD, box_def]
+  \\ cong_tac 6 \\ ARITH_TAC
+QED
+
+Theorem io_box_translate:
+  translate_set (mul_pt 75 p) (io_box x) = io_box (add_pt x p)
+Proof
+  PairCases_on `p` \\ PairCases_on `x`
+  \\ rw [io_box_def, box_translate]
+  \\ cong_tac 3 \\ ARITH_TAC
+QED
+
+Theorem circ_io_area_translate:
+  translate_set (mul_pt 75 p) (circ_io_area outs) =
+    circ_io_area (translate_port p outs)
+Proof
+  rw [Once EXTENSION, PULL_EXISTS, EXISTS_PROD, circ_io_area_def]
+  \\ PairCases_on `p`
+  \\ REWRITE_TAC [GSYM mem_translate_set, io_box_translate] \\ simp []
+  \\ metis_tac [ARITH_PROVE ``∀x p:int. x + p - p = x ∧ x - p + p = x``]
+QED
+
+Theorem circ_output_area_translate:
+  translate_set (mul_pt 75 p) (circ_output_area outs n) =
+    circ_output_area (translate_port p outs) n
+Proof
+  rw [circ_output_area_def, circ_io_lwss_translate, circ_io_area_translate]
+QED
+
+Theorem base_area_translate:
+  translate_set (mul_pt 75 p) (base_area area) =
+    base_area (translate_set p area)
+Proof
+  rw [Once EXTENSION, PULL_EXISTS, base_area_def]
+  \\ PairCases_on `p`
+  \\ REWRITE_TAC [GSYM mem_translate_set, box_translate] \\ simp []
+  \\ metis_tac [ARITH_PROVE ``∀x p:int. x + p - p = x ∧ x - p + p = x ∧
+    75 * x − 75 + 75 * p = 75 * (x + p) - 75``]
+QED
+
+Theorem circ_area_translate:
+  translate_set (mul_pt 75 p) (circ_area area ins outs n) =
+    circ_area (translate_set p area)
+      (translate_port p ins) (translate_port p outs) n
+Proof
+  cheat
+QED
+
+Theorem translate_circ_mod:
+  translate_mods (mul_pt 75 p) (circ_mod area ins outs as) =
+  circ_mod (translate_set p area) (translate_port p ins)
+    (translate_port p outs) (translate_port p as)
+Proof
+  rw [FUN_EQ_THM, circ_mod_def, translate_mods_def, translate_mod_def,
+    circ_io_lwss_translate, circ_output_area_translate, circ_area_translate]
+QED
+
+Theorem circuit_run_translate:
+  FST p % 2 = 0 ∧ SND p % 2 = 0 ∧
+  circuit_run area ins outs as init ⇒
+  circuit_run (translate_set p area)
+    (translate_port p ins) (translate_port p outs) (translate_port p as)
+    (translate_set (mul_pt 75 p) init)
+Proof
+  rw [circuit_run_def]
+  >- simp [FORALL_BOOL, iffLR DISJOINT_SYM, iunion_if,
+    GSYM translate_circ_mod, run_translate_mods]
+  \\ PairCases_on `p` \\ fs [circ_mod_wf_def, FORALL_PROD]
+  \\ conj_tac >- (ntac 3 strip_tac \\ last_x_assum drule \\ ARITH_TAC)
+  \\ `∀x0 x1 d. add_pt (x0-p0,x1-p1) d = sub_pt (add_pt (x0,x1) d) (p0,p1) ∧
+      sub_pt (x0-p0,x1-p1) d = sub_pt (sub_pt (x0,x1) d) (p0,p1)` by (
+    simp [FORALL_PROD] \\ ARITH_TAC)
+  \\ metis_tac []
 QED
 
 (*

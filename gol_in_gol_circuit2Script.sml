@@ -247,10 +247,6 @@ End
 val tile = ``21:num``;
 val tile2 = ``42:num``;
 
-Definition mul_pt_def[simp]:
-  mul_pt (n:int) (a, b) ⇔ (n * a, n * b)
-End
-
 Definition mk_pt_def[compute]:
   mk_pt a z ⇔ add_pt a (mul_pt (&^tile2) z)
 End
