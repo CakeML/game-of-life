@@ -1348,7 +1348,7 @@ Proof
   \\ cheat (* true *)
 QED
 
-Theorem circuit_run_compose:
+Theorem circuit_run_compose_union:
   ∀a1 a2 ins1 ins2 outs1 outs2 as1 as2 init1 init2.
   (* each element in the family must be a circuit_run *)
   circuit_run a1 ins1 outs1 as1 init1 ∧
@@ -1372,33 +1372,6 @@ Proof
   \\ impl_tac
   >- (rw [] \\ gvs [IN_DISJOINT] \\ metis_tac [])
   \\ gvs [iunion_if]
-QED
-
-Theorem circuit_run_compose_union:
-  (* each element in the family must be a circuit_run *)
-  circuit_run area1 ins1 outs1 as1 init1 ∧
-  circuit_run area2 ins2 outs2 as2 init2 ∧
-  (* areas must be disjoint *)
-  DISJOINT area1 area2 ∧
-  (* on a border between two areas, in/out ports must be matching, if they exist *)
-  (∀p d r.
-    ((p,d,r) ∈ ins1 ∧ sub_pt p (dir_to_xy d) ∈ area2 ⇒ (p,d,r) ∈ outs2) ∧
-    ((p,d,r) ∈ outs1 ∧ add_pt p (dir_to_xy d) ∈ area2 ⇒ (p,d,r) ∈ ins2) ∧
-    ((p,d,r) ∈ ins2 ∧ sub_pt p (dir_to_xy d) ∈ area1 ⇒ (p,d,r) ∈ outs1) ∧
-    ((p,d,r) ∈ outs2 ∧ add_pt p (dir_to_xy d) ∈ area1 ⇒ (p,d,r) ∈ ins1))
-  ⇒
-  circuit_run (area1 ∪ area2) (ins1 ∪ ins2)
-    (outs1 ∪ outs2) (as1 ∪ as2) (init1 ∪ init2)
-Proof
-  strip_tac
-  \\ qspecl_then [
-    `λb. if b then outs1 else outs2`,
-    `λb. if b then ins1 else ins2`,
-    `λb. if b then init1 else init2`,
-    `λb. if b then as1 else as2`,
-    `λb. if b then area1 else area2`
-  ] mp_tac $ GEN_ALL circuit_run_compose_bigunion
-  \\ simp [FORALL_BOOL, iffLR DISJOINT_SYM, iunion_if]
 QED
 
 Definition translate_set_def:
