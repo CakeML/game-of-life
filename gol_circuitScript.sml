@@ -759,9 +759,18 @@ End
 
 Definition io_cutout_def:
   io_cutout ins outs early_phase =
+    circ_io_area (ins ∩ dir_test early_phase
+                  ∪ outs ∩ dir_test (¬early_phase))
+End
+
+Theorem io_cutout_eq:
+  io_cutout ins outs early_phase =
     circ_io_area (ins ∩ dir_test early_phase) ∪
     circ_io_area (outs ∩ dir_test (¬early_phase))
-End
+Proof
+  gvs [io_cutout_def,EXTENSION,circ_io_area_def]
+  \\ metis_tac []
+QED
 
 Theorem circ_area_eq:
   circ_area area ins outs n =
@@ -771,7 +780,7 @@ Theorem circ_area_eq:
 Proof
   Cases_on ‘n MOD 60 < 30’ \\ gvs []
   \\ gvs [circ_area_def]
-  \\ gvs [circ_io_area_def,EXISTS_PROD,io_cutout_def,dir_test_def]
+  \\ gvs [circ_io_area_def,EXISTS_PROD,io_cutout_eq,dir_test_def]
   \\ simp [IN_DEF,is_ns_def,is_ew_def]
 QED
 
@@ -1232,7 +1241,61 @@ Proof
   simp [EXTENSION] \\ metis_tac []
 QED
 
+Theorem base_area_disjoint:
+  (z0,z1) ∈ base_area (area x) ∧
+  (z0,z1) ∈ base_area (area y) ∧
+  DISJOINT (area x) (area y) ∧
+  (∀x y a. (x,y) ∈ area a ⇒ x % 2 = 0 ∧ y % 2 = 0) ⇒
+  F
+Proof
+  cheat
+QED
+
+Theorem IN_circ_io_areas:
+  (z0,z1) ∈ circ_io_area s ∧ (z0,z1) ∈ circ_io_area t ⇒
+  ∃xy r1 r2. (xy,r1) ∈ s ∧ (xy,r2) ∈ t
+Proof
+  cheat
+QED
+
+Theorem in_io_cutout_lemma:
+  DISJOINT (area x) (area y) ∧
+  circ_mod_wf (area x) (ins x) (outs x) (as x) ∧
+  circ_mod_wf (area y) (ins y) (outs y) (as y) ∧
+  (∀p d r. (p,d,r) ∈ ins x ∧ sub_pt p (dir_to_xy d) ∈ area y ⇒ (p,d,r) ∈ outs y) ∧
+  (∀p d r. (p,d,r) ∈ outs x ∧ add_pt p (dir_to_xy d) ∈ area y ⇒ (p,d,r) ∈ ins y) ∧
+  (∀p d r. (p,d,r) ∈ ins y ∧ sub_pt p (dir_to_xy d) ∈ area x ⇒ (p,d,r) ∈ outs x) ∧
+  (∀p d r. (p,d,r) ∈ outs y ∧ add_pt p (dir_to_xy d) ∈ area x ⇒ (p,d,r) ∈ ins x) ∧
+  (z0,z1) ∈ base_area (area x) ∧
+  (z0,z1) ∈ io_cutout (ins y) (outs y) b ⇒
+  (z0,z1) ∈ io_cutout (ins x) (outs x) (~b)
+Proof
+  gvs [io_cutout_def,circ_io_area_def,PULL_EXISTS] \\ rw []
+  \\ first_assum $ irule_at $ Pos hd
+  \\ PairCases_on ‘r’
+  \\ first_x_assum drule
+  >-
+   (reverse impl_tac
+    >- (rw [] \\ gvs [SF DNF_ss]
+        \\ disj2_tac \\ pop_assum $ irule_at Any \\ gvs [])
+    \\ rename [‘((x1,y1),d,rest) ∈ dir_test _’]
+    \\ ‘add_pt (x1,y1) (dir_to_xy d) ∈ area y’ by
+      (gvs [] \\ gvs [circ_mod_wf_def]
+       \\ res_tac \\ fs [] \\ gvs [])
+    \\ cheat)
+  >-
+   (reverse impl_tac
+    >- (rw [] \\ gvs [SF DNF_ss]
+        \\ disj1_tac \\ pop_assum $ irule_at Any \\ gvs [])
+    \\ rename [‘((x1,y1),d,rest) ∈ dir_test _’]
+    \\ ‘sub_pt (x1,y1) (dir_to_xy d) ∈ area y’ by
+      (gvs [] \\ gvs [circ_mod_wf_def]
+       \\ res_tac \\ fs [] \\ gvs [])
+    \\ cheat)
+QED
+
 Theorem circuit_run_compose_bigunion:
+  ∀area ins outs as init.
   (* each element in the family must be a circuit_run *)
   (∀x. circuit_run (area x) (ins x) (outs x) (as x) (init x)) ∧
   (∀x1 x2. x1 ≠ x2 ⇒
@@ -1246,7 +1309,7 @@ Theorem circuit_run_compose_bigunion:
   circuit_run (iunion area) (iunion ins) (iunion outs) (iunion as) (iunion init)
 Proof
   rw [] \\ gvs [circuit_run_def]
-  \\ reverse conj_tac
+  \\ reverse conj_asm2_tac
   >- cheat (* circ_mod_wf*)
      (* gvs [circ_mod_wf_def, SF DNF_ss, SF SFY_ss] *)
   \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) (as x)’,
@@ -1267,7 +1330,48 @@ Proof
   \\ rpt strip_tac \\ CCONTR_TAC \\ gvs []
   \\ rename [‘z ∈ circ_area (area y) (ins y) (outs y) n’]
   \\ PairCases_on ‘z’
-  \\ cheat (* circ_area_def, sigh *)
+  \\ qabbrev_tac ‘b = (n MOD 60 < 30)’
+  \\ first_x_assum (fn th => drule th \\ drule (GSYM th))
+  \\ rpt strip_tac
+  \\ fs [circ_area_eq]
+  >-
+   (‘∀x y a. (x,y) ∈ area a ⇒ x % 2 = 0 ∧ y % 2 = 0’ by
+          metis_tac [circ_mod_wf_def,PULL_EXISTS]
+    \\ metis_tac [base_area_disjoint])
+  \\ last_assum $ qspec_then ‘x’ strip_assume_tac
+  \\ last_x_assum $ qspec_then ‘y’ strip_assume_tac
+  >- (gvs [SF DNF_ss] \\ drule_all in_io_cutout_lemma \\ gvs [])
+  >- (gvs [SF DNF_ss] \\ drule_all in_io_cutout_lemma \\ gvs [])
+  \\ gvs [io_cutout_def]
+  \\ dxrule_then dxrule IN_circ_io_areas
+  \\ strip_tac \\ gvs []
+  \\ cheat (* true *)
+QED
+
+Theorem circuit_run_compose:
+  ∀a1 a2 ins1 ins2 outs1 outs2 as1 as2 init1 init2.
+  (* each element in the family must be a circuit_run *)
+  circuit_run a1 ins1 outs1 as1 init1 ∧
+  circuit_run a2 ins2 outs2 as2 init2 ∧
+  DISJOINT a1 a2 ∧
+  (∀p d r.
+     ((p,d,r) ∈ ins1  ∧ sub_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ outs2) ∧
+     ((p,d,r) ∈ outs1 ∧ add_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ ins2) ∧
+     ((p,d,r) ∈ ins2  ∧ sub_pt p (dir_to_xy d) ∈ a1 ⇒ (p,d,r) ∈ outs1) ∧
+     ((p,d,r) ∈ outs2 ∧ add_pt p (dir_to_xy d) ∈ a1 ⇒ (p,d,r) ∈ ins1))
+  ⇒
+  circuit_run (a1 ∪ a2) (ins1 ∪ ins2) (outs1 ∪ outs2) (as1 ∪ as2) (init1 ∪ init2)
+Proof
+  rpt gen_tac \\ strip_tac
+  \\ qspecl_then [‘λb. if b then a1 else a2’,
+                  ‘λb. if b then ins1 else ins2’,
+                  ‘λb. if b then outs1 else outs2’,
+                  ‘λb. if b then as1 else as2’,
+                  ‘λb. if b then init1 else init2’]
+       mp_tac circuit_run_compose_bigunion
+  \\ impl_tac
+  >- (rw [] \\ gvs [IN_DISJOINT] \\ metis_tac [])
+  \\ gvs [iunion_if]
 QED
 
 Theorem circuit_run_compose_union:
