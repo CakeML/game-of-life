@@ -466,7 +466,7 @@ Proof
   `∀l1 l2. PERM l1 l2 ⇒ LENGTH l1 = LENGTH l2 ∧ ∀l3. LENGTH l3 = LENGTH l2 ⇒
       ∃l4. LENGTH l3 = LENGTH l4 ∧ PERM (ZIP (l1, l3)) (ZIP (l2, l4))`
     suffices_by metis_tac []
-  \\ HO_MATCH_MP_TAC PERM_IND \\ rw []
+  \\ ho_match_mp_tac PERM_IND \\ rw []
   >- (
     Cases_on `l3` \\ gvs []
     \\ first_x_assum drule \\ rw []
@@ -1132,6 +1132,109 @@ Proof
   \\ Cases_on `e` \\ fs [gate_at_wf_def, SUBSET_DEF]
 QED
 
+Theorem floodfill_run_add_gate_new:
+  ∀ins1 outs1 ins outs init.
+  g.width < &^tile-1 ∧ g.height < &^tile-1 ∧
+  p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile ∧
+  (∀a d v. MEM ((a,d),v) ins1 ⇒
+    MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
+  (∀a d v. MEM ((a,d),v) outs1 ⇒
+    MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
+  EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
+  EVERY in_range area ∧
+  (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
+  (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
+  (* (∀a d v. MEM ((a,d),v) ins1 ⇒
+    ¬MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
+  (∀a d v. MEM ((a,d),v) outs1 ⇒
+    ¬MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧ *)
+  (∀z. circuit (make_area g.width g.height)
+    (MAP (λ((a,d),v). (a,d,v z)) ins1)
+    (MAP (λ((a,d),v). (a,d,v z)) outs1) []
+    (from_masks (init z) (g.lo,g.hi))) ∧
+  floodfill_run area (mega_cell_builder gates init) ins outs
+  ⇒
+  floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
+    (mega_cell_builder ((p,g)::gates) init)
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ ins)
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
+Proof
+  rw [floodfill_run_def, circuit_def, mk_pt_def]
+  \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
+  \\ pop_assum (fn h => POP_ASSUM_LIST (fn hs => MAP_EVERY assume_tac (h::rev hs)))
+  \\ pop_assum mp_tac
+  \\ `∀z. circuit_run (translate_set (mk_pt p z) (set (make_area g.width g.height)))
+      (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v (mk_pt p z))) ins1)))
+      (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v (mk_pt p z))) outs1))) ∅
+      (translate_set (mul_pt 75 (mk_pt p z)) (from_masks (init (mk_pt p z)) (g.lo,g.hi)))` by (
+    gen_tac
+    \\ pop_assum $ qspec_then `mk_pt p z` strip_assume_tac
+    \\ `FST (mk_pt p z) % 2 = 0 ∧ SND (mk_pt p z) % 2 = 0` by (
+      PairCases_on `z` \\ fs [mk_pt_def, Abbr`p`] \\ ARITH_TAC)
+    \\ drule_all circuit_run_translate \\ simp [])
+  \\ pop_assum (fn h => mp_tac $ SRULE [h] $ PolyML.print $
+    HO_PART_MATCH (dest_path "lrlr") circuit_run_compose_bigunion (concl h))
+  \\ pop_assum kall_tac \\ impl_tac
+  >- (rw []
+    >- (MAP_EVERY PairCases_on [`p`,`z`,`z'`] \\ fs [mk_pt_def]
+      \\ simp [DISJOINT_DEF, Once EXTENSION, make_area_def, MEM_FLAT,
+        MEM_GENLIST, PULL_EXISTS, FORALL_PROD] \\ ARITH_TAC)
+    \\ `F` suffices_by rw []
+    \\ qpat_x_assum `z ≠ z'` mp_tac \\ rw []
+    \\ fs [MEM_MAP]
+    \\ MAP_EVERY PairCases_on [`y'`,`p'`,`z`,`z'`] \\ gvs [mk_pt_def,Abbr`p`]
+    \\ last_assum drule \\ pop_assum mp_tac
+    \\ Cases_on `dir_to_xy d` \\ drule dir_to_xy_bounded
+    \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+    \\ rpt strip_tac \\ ARITH_TAC)
+  \\ rw [] \\ dxrule_then dxrule circuit_run_compose_union \\ impl_tac
+  >- (
+    conj_tac >- (
+      fs [DISJOINT_ALT, MEM_MAP, PULL_EXISTS, EVERY_MEM]
+      \\ rpt strip_tac
+      \\ first_x_assum $ drule_then assume_tac
+      \\ first_x_assum drule \\ rw []
+      \\ reverse (sg `z = z'`) >- (
+        gvs [] \\ ntac 2 $ pop_assum kall_tac
+        \\ pop_assum suff_eq_tac \\ cong_tac 2
+        \\ MAP_EVERY PairCases_on [`p`,`p'`,`z`] \\ gvs [mk_pt_def]
+        \\ ARITH_TAC)
+      \\ MAP_EVERY PairCases_on [`p'`,`z`,`z'`]
+      \\ fs [mk_pt_def, Abbr`p`, make_area_def, MEM_FLAT,
+        MEM_GENLIST, PULL_EXISTS, in_range_def]
+      \\ ARITH_TAC)
+    \\ simp [FORALL_AND_THM, PULL_EXISTS, MEM_MAP,
+      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+    \\ fs [EVERY_MEM] \\ rw []
+    >- (
+      ntac 2 $ first_x_assum $ dxrule_then assume_tac
+      \\ sg `z = z'` >- (
+        MAP_EVERY PairCases_on [`p_1`,`z`,`z'`]
+        \\ Cases_on `dir_to_xy d` \\ drule dir_to_xy_bounded
+        \\ fs [mk_pt_def, Abbr`p`, make_area_def, MEM_FLAT,
+          MEM_GENLIST, PULL_EXISTS, in_range_def]
+        \\ cheat)
+      \\ cheat)
+    \\ cheat)
+  \\ simp []
+  \\ disch_then suff_eq_tac
+  \\ reverse (cong_tac 1) >- (
+    simp [mega_cell_builder_def, Once EXTENSION, MEM_MAP, PULL_EXISTS,
+      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+    \\ rw [IN_DEF] \\ eq_tac \\ rw []
+    \\ TRY (metis_tac [])
+    \\ cheat)
+  \\ reverse (cong_tac 2) >- (
+    simp [Once EXTENSION, MEM_MAP, PULL_EXISTS, translate_port_def,
+      Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+      Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD,
+      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+    \\ rw [] \\ eq_tac \\ rw []
+    \\ TRY (metis_tac [])
+    \\ cheat)
+  \\ cong_tac 1 \\ cheat
+QED
+
 Theorem floodfill_run_add_gate:
   ∀ins1 outs1 ins outs init.
   (∀z. circuit (make_area g.width g.height)
@@ -1651,19 +1754,6 @@ Theorem assign_ext_trans:
 Proof
   MAP_EVERY PairCases_on [‘s1’, ‘s2’, ‘s3’]
   \\ gvs [assign_ext_def, SUBSET_DEF]
-QED
-
-Theorem add_pt_simps[simp]:
-  ∀a b.
-    neg_pt (neg_pt a) = a ∧
-    add_pt a (neg_pt b) = sub_pt a b ∧
-    sub_pt a (neg_pt b) = add_pt a b ∧
-    add_pt (sub_pt a b) b = a ∧
-    sub_pt (add_pt a b) b = a ∧
-    add_pt (neg_pt a) (add_pt a b) = b ∧
-    add_pt a (add_pt (neg_pt a) b) = b
-Proof
-  simp [FORALL_PROD, int_sub] \\ ARITH_TAC
 QED
 
 Theorem span_imp_add_pt:

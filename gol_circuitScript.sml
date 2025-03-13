@@ -677,6 +677,19 @@ Proof
   Cases_on `x` \\ simp []
 QED
 
+Theorem add_pt_simps[simp]:
+  ∀a b.
+    neg_pt (neg_pt a) = a ∧
+    add_pt a (neg_pt b) = sub_pt a b ∧
+    sub_pt a (neg_pt b) = add_pt a b ∧
+    add_pt (sub_pt a b) b = a ∧
+    sub_pt (add_pt a b) b = a ∧
+    add_pt (neg_pt a) (add_pt a b) = b ∧
+    add_pt a (add_pt (neg_pt a) b) = b
+Proof
+  simp [FORALL_PROD, int_sub] \\ ARITH_TAC
+QED
+
 Theorem add_pt_assoc:
   add_pt a (add_pt b c) = add_pt (add_pt a b) c
 Proof
