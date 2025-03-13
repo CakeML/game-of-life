@@ -1130,34 +1130,6 @@ Definition no_overlap_def:
       io_compatible area outs ins
 End
 
-(*
-Theorem circuit_compose:
-  circuit area1 ins1 outs1 as1 init1 ∧
-  circuit area2 ins2 outs2 as2 init2
-  ⇒
-  no_overlap area1 ins1 outs1 as1
-             area2 ins2 outs2 as2
-  ⇒
-  circuit (area1 ++ area2)
-          (ins1  ++  ins2)
-          (outs1 ++ outs2)
-          (as1   ++   as2)
-          (init1 ∪  init2)
-Proof
-  cheat
-QED
-
-Theorem circuit_internalise:
-  ∀ins1 ins2 x outs1 outs2.
-    circuit area (ins1 ++ x ++ ins2) (outs1 ++ x ++ outs2) as init ⇒
-    circuit area (ins1 ++      ins2) (outs1 ++      outs2) as init
-Proof
-  cheat
-QED
-*)
-
-
-
 Theorem circ_area_diff:
   circ_mod_wf area ins outs as ∧
   m ⊆ ins ∧
@@ -1261,17 +1233,130 @@ Theorem base_area_disjoint:
   (∀x y a. (x,y) ∈ area a ⇒ x % 2 = 0 ∧ y % 2 = 0) ⇒
   F
 Proof
-  cheat
+  strip_tac
+  \\ gvs [base_area_def,PULL_EXISTS,PULL_FORALL,METIS_PROVE [] “~b ∨ c ⇔ b ⇒ c”,IN_DISJOINT]
+  \\ res_tac \\ gvs []
+  \\ rpt $ qpat_x_assum ‘_ ∈ area _’ mp_tac
+  \\ rename [‘(x1,y1) ∈ area x ⇒ (x2,y2) ∈ area y ⇒ _’]
+  \\ rpt strip_tac
+  \\ ‘x1 = x2 ⇒ y1 ≠ y2’ by metis_tac []
+  \\ gvs [box_def]
+  \\ intLib.COOPER_TAC
 QED
 
 Theorem IN_circ_io_areas:
   (z0,z1) ∈ circ_io_area s ∧ (z0,z1) ∈ circ_io_area t ⇒
   ∃xy r1 r2. (xy,r1) ∈ s ∧ (xy,r2) ∈ t
 Proof
-  cheat
+  rw [circ_io_area_def,PULL_EXISTS]
+  \\ CCONTR_TAC \\ gvs []
+  \\ rename [‘((x1,y1),r1) ∈ t’]
+  \\ first_x_assum $ qspecl_then [‘(x,y)’,‘r’] assume_tac \\ gvs []
+  \\ ‘x = x1 ⇒  y ≠ y1’ by metis_tac []
+  \\ gvs [io_box_def,box_def]
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem circ_mod_wf_imp_even:
+  circ_mod_wf a ins outs as ∧ (x,y) ∈ a ⇒ ∃i j. x = 2 * i ∧ y = 2 * j
+Proof
+  rw [circ_mod_wf_def, SF SFY_ss]
+  \\ res_tac \\ COOPER_TAC
+QED
+
+Theorem in_io_box_base_area_y:
+  (z0,z1) ∈ base_area a1 ∧
+  circ_mod_wf a1 ins1 outs as1 ∧
+  (z0,z1) ∈ io_box (2 * i,2 * m + 1) ⇒
+  (2 * i, 2 * m) ∈ a1 ∨
+  (2 * i, 2 * m + 2) ∈ a1
+Proof
+  gvs [io_box_def,box_def,INT_MUL_ASSOC]
+  \\ rw [] \\ gvs [base_area_def,box_def]
+  \\ drule_all circ_mod_wf_imp_even
+  \\ strip_tac \\ gvs []
+  \\ CCONTR_TAC \\ gvs []
+  \\ imp_res_tac (METIS_PROVE [] “(x,y) ∈ s ∧ (a,b) ∉ s ⇒  a = x ⇒ y ≠ b”)
+  \\ COOPER_TAC
+QED
+
+Theorem in_io_box_base_area_x:
+  (z0,z1) ∈ base_area a1 ∧
+  circ_mod_wf a1 ins1 outs as1 ∧
+  (z0,z1) ∈ io_box (2 * i + 1,2 * m) ⇒
+  (2 * i, 2 * m) ∈ a1 ∨
+  (2 * i + 2, 2 * m) ∈ a1
+Proof
+  gvs [io_box_def,box_def,INT_MUL_ASSOC]
+  \\ rw [] \\ gvs [base_area_def,box_def]
+  \\ drule_all circ_mod_wf_imp_even
+  \\ strip_tac \\ gvs []
+  \\ CCONTR_TAC \\ gvs []
+  \\ imp_res_tac (METIS_PROVE [] “(x,y) ∈ s ∧ (a,b) ∉ s ⇒  a = x ⇒ y ≠ b”)
+  \\ COOPER_TAC
+QED
+
+Theorem sub_pt_in_area:
+  (z0,z1) ∈ base_area a1 ∧
+  (z0,z1) ∈ io_box (x1,y1) ∧
+  DISJOINT a1 a2 ∧
+  (d = N ∨ d = S ⇒ ∃n m. x1 = 2 * n ∧ y1 = 2 * m + 1) ∧
+  (d = E ∨ d = W ⇒ ∃n m. x1 = 2 * n + 1 ∧ y1 = 2 * m) ∧
+  circ_mod_wf a1 ins1 (outs1:(int # int) # dir # β -> bool) as1 ∧
+  circ_mod_wf a2 ins2 (outs2:(int # int) # dir # β -> bool) as2 ∧
+  add_pt (x1,y1) (dir_to_xy d) ∈ a2 ⇒
+  sub_pt (x1,y1) (dir_to_xy d) ∈ a1
+Proof
+  strip_tac
+  \\ Cases_on ‘d’ \\ gvs [sub_pt_def,add_pt_def]
+  \\ gvs [GSYM int_sub,int_arithTheory.elim_minus_ones]
+  \\ gvs [GSYM INT_ADD_ASSOC]
+  \\ rpt $ dxrule_all in_io_box_base_area_x
+  \\ rpt $ dxrule_all in_io_box_base_area_y
+  \\ strip_tac \\ gvs []
+  \\ metis_tac [IN_DISJOINT]
+QED
+
+Definition opposite_def[simp]:
+  opposite N = S ∧
+  opposite S = N ∧
+  opposite E = W ∧
+  opposite w = E
+End
+
+Theorem dir_to_xy_opposite:
+  add_pt (x,y) (dir_to_xy d) = sub_pt (x,y) (dir_to_xy (opposite d)) ∧
+  sub_pt (x,y) (dir_to_xy d) = add_pt (x,y) (dir_to_xy (opposite d))
+Proof
+  Cases_on ‘d’ \\ gvs [add_pt_def,sub_pt_def,int_sub]
+QED
+
+Theorem circ_mod_wf_imp:
+  circ_mod_wf a ins outs as ⇒
+  (∀p d r. (p,d,r) ∈ ins ⇒ add_pt p (dir_to_xy d) ∈ a) ∧
+  (∀p d r. (p,d,r) ∈ outs ⇒ sub_pt p (dir_to_xy d) ∈ a)
+Proof
+  gvs [circ_mod_wf_def, SF SFY_ss]
+QED
+
+Theorem port_locations:
+  circ_mod_wf area ins outs a ⇒
+  ((x1,y1),d,rest) ∈ ins ∪ outs ⇒
+  (d = E ∨ d = W ⇒ ∃n m. x1 = 2 * n + 1 ∧ y1 = 2 * m) ∧
+  (d = N ∨ d = S ⇒ ∃n m. x1 = 2 * n ∧ y1 = 2 * m + 1)
+Proof
+  simp [] \\ ntac 2 strip_tac
+  \\ drule circ_mod_wf_imp
+  \\ strip_tac
+  \\ first_x_assum drule
+  \\ rpt strip_tac \\ gvs []
+  \\ dxrule_all circ_mod_wf_imp_even
+  \\ rpt strip_tac \\ gvs []
+  \\ COOPER_TAC
 QED
 
 Theorem in_io_cutout_lemma:
+  DISJOINT (base_area (area x)) (base_area (area y)) ∧
   DISJOINT (area x) (area y) ∧
   circ_mod_wf (area x) (ins x) (outs x) (as x) ∧
   circ_mod_wf (area y) (ins y) (outs y) (as y) ∧
@@ -1295,7 +1380,13 @@ Proof
     \\ ‘add_pt (x1,y1) (dir_to_xy d) ∈ area y’ by
       (gvs [] \\ gvs [circ_mod_wf_def]
        \\ res_tac \\ fs [] \\ gvs [])
-    \\ cheat)
+    \\ drule_then drule sub_pt_in_area
+    \\ disch_then irule
+    \\ pop_assum $ irule_at Any
+    \\ rpt $ first_assum $ irule_at Any
+    \\ drule port_locations
+    \\ disch_then match_mp_tac
+    \\ gvs [] \\ metis_tac [])
   >-
    (reverse impl_tac
     >- (rw [] \\ gvs [SF DNF_ss]
@@ -1304,7 +1395,41 @@ Proof
     \\ ‘sub_pt (x1,y1) (dir_to_xy d) ∈ area y’ by
       (gvs [] \\ gvs [circ_mod_wf_def]
        \\ res_tac \\ fs [] \\ gvs [])
-    \\ cheat)
+    \\ pop_assum mp_tac
+    \\ once_rewrite_tac [dir_to_xy_opposite]
+    \\ strip_tac
+    \\ drule_then drule sub_pt_in_area
+    \\ disch_then irule
+    \\ pop_assum $ irule_at Any
+    \\ rpt $ first_assum $ irule_at Any
+    \\ drule port_locations
+    \\ ‘opposite d = E ∨ opposite d = W ⇔ d = E ∨ d = W’ by (Cases_on ‘d’ \\ gvs [])
+    \\ ‘opposite d = N ∨ opposite d = S ⇔ d = N ∨ d = S’ by (Cases_on ‘d’ \\ gvs [])
+    \\ simp [] \\ disch_then match_mp_tac
+    \\ simp [] \\ gvs [] \\ metis_tac [])
+QED
+
+Theorem circ_mod_wf_imp_dir_test:
+  circ_mod_wf a ins outs as ⇒
+  (∀p d r. (p,d,r) ∈ ins ⇒  (p,d,r) ∈ dir_test (FST p % 2 = 0)) ∧
+  (∀p d r. (p,d,r) ∈ outs ⇒  (p,d,r) ∈ dir_test (FST p % 2 = 0))
+Proof
+  rw [circ_mod_wf_def, SF DNF_ss]
+  \\ PairCases_on ‘p’ \\ gvs []
+  \\ rpt $ first_x_assum $ drule
+  \\ Cases_on ‘d’ \\ simp [dir_to_xy_def]
+  \\ rpt strip_tac
+  \\ last_x_assum drule
+  \\ simp [dir_test_def,IN_DEF,is_ns_def,is_ew_def]
+  \\ rw [] \\ gvs [is_ns_def,is_ew_def]
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem IN_dir_test:
+  (xy,d,r) ∈ dir_test b1 ∧ (xy,d,r) ∈ dir_test b2 ⇒ b1 = b2
+Proof
+  Cases_on ‘b1’ \\ Cases_on ‘b2’ \\ Cases_on ‘d’
+  \\ gvs [IN_DEF,is_ns_def,is_ew_def,dir_test_def]
 QED
 
 Theorem circuit_run_compose_bigunion:
@@ -1323,8 +1448,26 @@ Theorem circuit_run_compose_bigunion:
 Proof
   rw [] \\ gvs [circuit_run_def]
   \\ reverse conj_asm2_tac
-  >- cheat (* circ_mod_wf*)
-     (* gvs [circ_mod_wf_def, SF DNF_ss, SF SFY_ss] *)
+  >-
+   (simp [circ_mod_wf_def,PULL_EXISTS,SF DNF_ss]
+    \\ last_x_assum mp_tac
+    \\ CONV_TAC (RATOR_CONV (SCONV [circ_mod_wf_def,PULL_EXISTS,SF DNF_ss]))
+    \\ strip_tac
+    \\ rpt strip_tac
+    \\ simp [SF SFY_ss]
+    >- cheat
+    >- cheat
+    >- cheat
+    >- cheat
+    >- cheat
+    >- metis_tac []
+    >- metis_tac []
+    >- metis_tac []
+    >- metis_tac []
+    >- metis_tac []
+    >- metis_tac []
+    >- cheat
+    >- cheat)
   \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) (as x)’,
                   ‘init’] mp_tac run_compose_bigunion
   \\ simp []
@@ -1336,7 +1479,11 @@ Proof
     \\ simp [Once FUN_EQ_THM] \\ rw []
     \\ gvs [circ_mod_def]
     \\ simp [GSYM iunion_def]
-    \\ cheat)
+    \\ conj_tac >- cheat (* ugh, circ_area_eq *)
+    \\ simp [EXTENSION]
+    \\ gvs [circ_io_area_def,circ_output_area_def,PULL_EXISTS,circ_io_lwss_def]
+    \\ rpt (IF_CASES_TAC \\ gvs [])
+    \\ metis_tac [])
   \\ reverse conj_tac >- simp [SF SFY_ss, mods_wf_circ_mod]
   \\ simp [disjoint_mods_def,disjoint_mod_def,circ_mod_def]
   \\ simp [IN_DISJOINT]
@@ -1346,19 +1493,42 @@ Proof
   \\ qabbrev_tac ‘b = (n MOD 60 < 30)’
   \\ first_x_assum (fn th => drule th \\ drule (GSYM th))
   \\ rpt strip_tac
+  \\ ‘DISJOINT (base_area (area x)) (base_area (area y))’ by
+    (simp [IN_DISJOINT,FORALL_PROD]
+     \\ CCONTR_TAC \\ gvs []
+     \\ ‘∀x y a. (x,y) ∈ area a ⇒ x % 2 = 0 ∧ y % 2 = 0’ by
+       metis_tac [circ_mod_wf_def,PULL_EXISTS]
+     \\ metis_tac [base_area_disjoint])
   \\ fs [circ_area_eq]
-  >-
-   (‘∀x y a. (x,y) ∈ area a ⇒ x % 2 = 0 ∧ y % 2 = 0’ by
-          metis_tac [circ_mod_wf_def,PULL_EXISTS]
-    \\ metis_tac [base_area_disjoint])
+  >- (gvs [IN_DISJOINT] \\ metis_tac [])
   \\ last_assum $ qspec_then ‘x’ strip_assume_tac
   \\ last_x_assum $ qspec_then ‘y’ strip_assume_tac
   >- (gvs [SF DNF_ss] \\ drule_all in_io_cutout_lemma \\ gvs [])
-  >- (gvs [SF DNF_ss] \\ drule_all in_io_cutout_lemma \\ gvs [])
+  >- (gvs [SF DNF_ss]
+      \\ drule_all (SRULE [Once DISJOINT_SYM] in_io_cutout_lemma) \\ gvs [])
   \\ gvs [io_cutout_def]
   \\ dxrule_then dxrule IN_circ_io_areas
   \\ strip_tac \\ gvs []
-  \\ cheat (* true *)
+  >-
+   (gvs [IN_DISJOINT]
+    \\ ‘r1 = r2’ by (fs [circ_mod_wf_def] \\ metis_tac []) \\ BasicProvers.var_eq_tac
+    \\ ntac 2 $ dxrule circ_mod_wf_imp \\ metis_tac [PAIR])
+  >-
+   (rpt $ dxrule circ_mod_wf_imp_dir_test
+    \\ PairCases_on ‘r1’ \\ PairCases_on ‘r2’
+    \\ rpt strip_tac \\ res_tac
+    \\ imp_res_tac IN_dir_test
+    \\ Cases_on ‘b’ \\ gvs [])
+  >-
+   (rpt $ dxrule circ_mod_wf_imp_dir_test
+    \\ PairCases_on ‘r1’ \\ PairCases_on ‘r2’
+    \\ rpt strip_tac \\ res_tac
+    \\ imp_res_tac IN_dir_test
+    \\ Cases_on ‘b’ \\ gvs [])
+  >-
+   (gvs [IN_DISJOINT]
+    \\ ‘r1 = r2’ by (fs [circ_mod_wf_def] \\ metis_tac []) \\ BasicProvers.var_eq_tac
+    \\ ntac 2 $ dxrule circ_mod_wf_imp \\ metis_tac [PAIR])
 QED
 
 Theorem circuit_run_compose_union:
@@ -1655,68 +1825,6 @@ Proof
     simp [FORALL_PROD] \\ ARITH_TAC)
   \\ metis_tac []
 QED
-
-(*
-Definition circuit_spec_def:
-  circuit_spec area ins outs init ⇔
-    ∀s1.
-      (∀xy d p. (xy,d,p) ∈ ins ⇒ p (s1 xy)) ⇒
-      ∃s2.
-        (∀xy d p. (xy,d,p) ∈ ins ⇒ s1 xy = s2 xy) ∧
-        (∀xy. xy ∉ IMAGE FST outs ⇒ s1 xy = s2 xy) ∧
-        (∀xy d p. (xy,d,p) ∈ outs ⇒ p (s2 xy)) ∧
-        circuit_run area
-          { (xy,d,s2 xy) | ∃p. (xy,d,p) ∈ ins }
-          { (xy,d,s2 xy) | ∃p. (xy,d,p) ∈ outs } {}
-          init
-End
-
-Theorem circuit_spec_compose:
-  circuit_spec area1 ins1 (outs1 ∪ m) init1 ∧
-  circuit_spec area2 (ins2 ∪ m) outs2 init2 ∧
-  DISJOINT area1 area2 ∧
-  DISJOINT (IMAGE FST ins1) (IMAGE FST m) ∧
-  DISJOINT (IMAGE FST ins2) (IMAGE FST m) ∧
-  DISJOINT (IMAGE FST ins1) (IMAGE FST ins2) ∧
-  DISJOINT (IMAGE FST outs1) (IMAGE FST outs2) ∧
-  (∀xy r1 r2. (xy,r1) ∈ ins2 ∧ (xy,r2) ∈ outs1 ⇒ r1 = r2)
-  ⇒
-  circuit_spec (area1 ∪ area2) (ins1 ∪ ins2) (outs1 ∪ outs2) (init1 ∪ init2)
-Proof
-  gvs [circuit_spec_def]
-  \\ rpt strip_tac
-  \\ gvs [SF DNF_ss, GSYM CONJ_ASSOC]
-  \\ last_x_assum drule
-  \\ strip_tac
-  \\ qabbrev_tac ‘s12 = λxy. if xy ∈ IMAGE FST ins2 then s1 xy else s2 xy’
-  \\ last_x_assum $ qspec_then ‘s12’ mp_tac
-  \\ impl_tac >-
-   (gvs [Abbr‘s12’,EXISTS_PROD,FORALL_PROD, SF SFY_ss]
-    \\ rw [] \\ gvs [] \\ res_tac \\ gvs []
-    \\ gvs [IN_DISJOINT,FORALL_PROD] \\ metis_tac [])
-  \\ strip_tac
-  \\ rename [‘∀xy d p. (xy,d,p) ∈ outs2 ⇒ p (sN xy)’]
-  \\ qexists_tac ‘sN’
-  \\ gvs [SF SFY_ss]
-  \\ conj_tac
-  >- (rpt strip_tac \\ cheat)
-  \\ conj_tac
-  >- (rpt strip_tac
-      \\ first_x_assum drule \\ gvs [Abbr‘s12’]
-      \\ rw [] \\ gvs [EXISTS_PROD] \\ gvs [])
-  \\ conj_tac
-  >- (rpt strip_tac \\ cheat)
-  \\ conj_tac
-  >- (rpt strip_tac
-      \\ first_x_assum drule \\ strip_tac
-      \\ ‘s12 xy = sN xy’ by cheat
-      \\ pop_assum $ rewrite_tac o single o GSYM
-      \\ rw [Abbr‘s12’]
-      \\ Cases_on ‘x’ \\ gvs []
-      \\ ‘r = (d,p)’ by metis_tac [] \\ gvs [SF SFY_ss])
-  \\ cheat
-QED
-*)
 
 (* --- compose all experiment --- *)
 
