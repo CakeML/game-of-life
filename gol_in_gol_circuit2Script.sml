@@ -5,9 +5,9 @@ open gol_simTheory listTheory gol_circuitTheory pred_setTheory
 
 val _ = new_theory "gol_in_gol_circuit2";
 
-val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
+(* val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
 val fs = Timeout.apply (Time.fromMilliseconds 2000) o fs
-val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp
+val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp *)
 
 fun suff_eqr_tac th: tactic = fn (g as (asl,w)) =>
  (SUFF_TAC(mk_eq(concl th, w))
@@ -1230,7 +1230,7 @@ Definition floodfill_gate_wf_def:
     (from_masks (init z) (g.lo,g.hi)))
 End
 
-Theorem floodfill_run_add_gate_new:
+Theorem floodfill_run_add_gate:
   ∀ins1 outs1 ins outs init.
   floodfill_gate_wf g ins1 outs1 init ∧
   (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
@@ -1472,21 +1472,6 @@ Proof
   \\ metis_tac []
 QED
 
-Theorem floodfill_run_add_gate:
-  ∀ins1 outs1 ins outs init.
-  (∀z. circuit (make_area g.width g.height)
-    (MAP (λ((p,d),v). (p,d,v z)) ins1)
-    (MAP (λ((p,d),v). (p,d,v z)) outs1) []
-    (from_masks (init z) (g.lo,g.hi))) ∧
-  floodfill_run area (mega_cell_builder gates init) ins outs ⇒
-  floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
-    (mega_cell_builder ((p,g)::gates) init)
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ ins)
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
-Proof
-  cheat (* todo *)
-QED
-
 Theorem floodfill_io_wf_union:
   (∀a z d v d' v'. (((a,d),v) ∈ s ∨ ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs)
     ∧ ((mk_pt a z,d'),v') ∈ s ⇒ hide_eq z (0,0) ∧ d = d' ∧ v = v') ∧
@@ -1543,6 +1528,40 @@ Theorem floodfill_run_cancel:
   floodfill_run area init ins outs
 Proof
   cheat (* todo *)
+QED
+
+Theorem floodfill_run_add_gate_cancel:
+  ∀ins1 ins2 outs1 ins outs init.
+  floodfill_gate_wf g (ins1 ++ ins2) outs1 init ∧
+  (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
+  EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
+  floodfill_run area (mega_cell_builder gates init) ins
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ outs)
+  ⇒
+  floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
+    (mega_cell_builder ((p,g)::gates) init)
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins2) ∪ ins)
+    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
+Proof
+  rw []
+  \\ irule floodfill_run_cancel_new
+  \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
+  \\ `∀a. MEM a (make_area g.width g.height) ⇒ in_range (add_pt p a)` by (
+    simp [Abbr`p`, FORALL_PROD, make_area_def, MEM_FLAT, MEM_GENLIST,
+      PULL_EXISTS, in_range_def] \\ ARITH_TAC)
+  \\ qexists_tac `set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1)`
+  \\ drule_then (drule_at_then Any $ drule_at Any) floodfill_run_add_gate
+  \\ impl_tac >- simp [Abbr`p`] \\ strip_tac
+  \\ rpt conj_tac >>> C NTH_GOAL 3 (
+    pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [AC UNION_ASSOC UNION_COMM])
+  \\ simp [MEM_MAP, PULL_EXISTS, DISJ_IMP_THM, FORALL_AND_THM,
+    hide_eq_def, Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD]
+  \\ rpt conj_tac \\ rpt (gen_tac \\ rpt gen_tac \\ strip_tac)
+  >- (
+    fs [floodfill_gate_wf_def, SF DNF_ss] \\ res_tac
+    \\ cheat
+  )
+  \\ cheat
 QED
 
 Definition floodfill_def:
@@ -1609,7 +1628,7 @@ Proof
   \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND]
   \\ drule_at_then Any (qspecl_then [`p`,`g`,
       `[((a,d),(λz n. e_eval (λi. env i z) v (&(n + base) − dl)))]`,
-      `ZIP (MAP FST outs',s')`] mp_tac) floodfill_run_add_gate_new
+      `ZIP (MAP FST outs',s')`] mp_tac) floodfill_run_add_gate
   \\ impl_tac >- (
     rw [make_area_def]
     >- cheat
@@ -2169,7 +2188,7 @@ Proof
   \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND] \\ rw []
   \\ drule_at_then Any (qspecl_then [
     `p`,`g`,`ZIP (MAP FST ins1,sin1)`,`ZIP (MAP FST outs1,sout1)`
-    ] mp_tac) floodfill_run_add_gate_new
+    ] mp_tac) floodfill_run_add_gate
   \\ impl_tac >- (
     simp [Abbr`p`]
     \\ cheat)
@@ -2238,13 +2257,15 @@ Proof
   \\ first_x_assum $ dxrule_then $ dxrule_then dxrule
   \\ first_x_assum $ dxrule_at Any \\ rw [make_area_def]
   \\ imp_res_tac LIST_REL_LENGTH
-  \\ qspecl_then [
+  \\ drule_at_then Any (qspecl_then [`p`,`g`,
       `[((a,d1),v1); ((b,d2),v2)]`,
       `[((a',d1),λz. delay' (5,eval_pair (env 0 z) ea) (v1 z)); ((b',d2),delay 5 ∘ v2)]`
-    ] mp_tac floodfill_run_add_gate
+    ] mp_tac) floodfill_run_add_gate
   \\ simp [make_area_def]
-  \\ disch_then $ drule_all_then assume_tac
-  \\ irule floodfill_run_cancel
+  \\ impl_tac >- (
+    simp [Abbr`p`]
+    \\ cheat)
+  \\ strip_tac \\ irule floodfill_run_cancel
   \\ qexists_tac `{((add_pt p a,d1),v1)}`
   \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [Once EXTENSION]
   \\ CONV_TAC $ DEPTH_CONV ETA_CONV \\ metis_tac []
