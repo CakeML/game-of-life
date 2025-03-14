@@ -1197,10 +1197,10 @@ Theorem floodfill_run_add_gate_new:
   EVERY in_range area ∧
   (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
   (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
-  (* (∀a d v. MEM ((a,d),v) ins1 ⇒
+  (∀a d v. MEM ((a,d),v) ins1 ⇒
     ¬MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
   (∀a d v. MEM ((a,d),v) outs1 ⇒
-    ¬MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧ *)
+    ¬MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
   (∀z. circuit (make_area g.width g.height)
     (MAP (λ((a,d),v). (a,d,v z)) ins1)
     (MAP (λ((a,d),v). (a,d,v z)) outs1) []
@@ -1307,18 +1307,44 @@ Proof
       \\ pop_assum suff_eq_tac \\ cong_tac 6
       \\ pop_assum mp_tac \\ pt_arith_tac)
     >- (
-      res_tac \\ res_tac
-      (*
-      p'-(p+[z]) ∈ ins1
-      p'-d-[z'] = p''
-      p'-d-[z'] ∈ area
-      in_range p'-d-[z']
-      p'-(p+[z])+d ∈ s
-      in_range p+p'-(p+[z])+d
-      p+p'-(p+[z])+d ∉ area
-      *)
-      \\ cheat)
-    >- cheat)
+      `∃z'. ((mk_pt p' (sub_pt z' z),d),(λi. p_2' (add_pt i z'))) ∈ outs ∨
+          ∃a. mk_pt p' (sub_pt z' z) = add_pt p a ∧ MEM ((a,d),(λi. p_2' (add_pt i z'))) outs1` by (
+        `mk_pt (add_pt p (sub_pt p' (mk_pt p z))) (sub_pt z z') = mk_pt p' (neg_pt z')` by pt_arith_tac
+        \\ `sub_pt (mk_pt p' (neg_pt z')) (dir_to_xy d) = p''` by (simp [sub_mk_pt_assoc] \\ pt_arith_tac)
+        \\ `∀z'. mk_pt (add_pt p (sub_pt p' (mk_pt p z))) z' = mk_pt p' (sub_pt z' z)` by pt_arith_tac
+        \\ fs [floodfill_io_wf_def, MEM_MAP, Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+        \\ metis_tac [])
+      >- (first_assum $ irule_at Any
+        \\ qexists_tac `sub_pt z z''` \\ simp [] \\ pt_arith_tac)
+      \\ fs [sub_mk_pt_eq_add_neg]
+      \\ `mk_pt (sub_pt p' (dir_to_xy d)) (neg_pt z') = p''` by (simp [] \\ pt_arith_tac)
+      \\ qpat_x_assum `_ = mk_pt _ _` kall_tac \\ gvs []
+      \\ `sub_pt (mk_pt p' (sub_pt z'' z)) p = a` by (simp [] \\ pt_arith_tac)
+      \\ qpat_x_assum `_ = add_pt _ _` kall_tac \\ gvs [sub_mk_pt_assoc]
+      \\ res_tac \\ res_tac
+      \\ `∀d. add_pt p (sub_pt (sub_pt p' p) d) = sub_pt p' d` by pt_arith_tac
+      \\ fs [add_mk_pt_assoc_l, add_mk_pt_assoc_r, sub_mk_pt_assoc]
+      \\ dxrule_all in_range_unique \\ disch_then (fs o single))
+    >- (
+      `∃z'. ((mk_pt p' (sub_pt z' z),d),(λi. p_2' (add_pt i z'))) ∈ ins ∨
+          ∃a. mk_pt p' (sub_pt z' z) = add_pt p a ∧ MEM ((a,d),(λi. p_2' (add_pt i z'))) ins1` by (
+        `mk_pt (add_pt p (sub_pt p' (mk_pt p z))) (sub_pt z z') = mk_pt p' (neg_pt z')` by pt_arith_tac
+        \\ `add_pt (mk_pt p' (neg_pt z')) (dir_to_xy d) = p''` by (simp [add_mk_pt_assoc_l] \\ pt_arith_tac)
+        \\ `∀z'. mk_pt (add_pt p (sub_pt p' (mk_pt p z))) z' = mk_pt p' (sub_pt z' z)` by pt_arith_tac
+        \\ fs [floodfill_io_wf_def, MEM_MAP, Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+        \\ fs [LEFT_AND_OVER_OR, RIGHT_AND_OVER_OR, DISJ_IMP_THM, FORALL_AND_THM, PULL_EXISTS]
+        \\ metis_tac [])
+      >- (first_assum $ irule_at Any
+        \\ qexists_tac `sub_pt z z''` \\ simp [] \\ pt_arith_tac)
+      \\ fs [sub_mk_pt_eq_add_neg]
+      \\ `mk_pt (add_pt p' (dir_to_xy d)) (neg_pt z') = p''` by (simp [] \\ pt_arith_tac)
+      \\ qpat_x_assum `_ = mk_pt _ _` kall_tac \\ gvs []
+      \\ `sub_pt (mk_pt p' (sub_pt z'' z)) p = a` by (simp [] \\ pt_arith_tac)
+      \\ qpat_x_assum `_ = add_pt _ _` kall_tac \\ gvs [sub_mk_pt_assoc]
+      \\ res_tac \\ res_tac
+      \\ `∀d. add_pt p (add_pt (sub_pt p' p) d) = add_pt p' d` by pt_arith_tac
+      \\ fs [add_mk_pt_assoc_l, add_mk_pt_assoc_r, sub_mk_pt_assoc]
+      \\ dxrule_all in_range_unique \\ disch_then (fs o single)))
   \\ simp []
   \\ disch_then suff_eq_tac
   \\ reverse (cong_tac 1) >- (
