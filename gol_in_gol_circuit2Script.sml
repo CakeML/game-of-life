@@ -5,9 +5,9 @@ open gol_simTheory listTheory gol_circuitTheory pred_setTheory
 
 val _ = new_theory "gol_in_gol_circuit2";
 
-(* val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
+val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
 val fs = Timeout.apply (Time.fromMilliseconds 2000) o fs
-val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp *)
+val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp
 
 fun suff_eqr_tac th: tactic = fn (g as (asl,w)) =>
  (SUFF_TAC(mk_eq(concl th, w))
@@ -468,6 +468,23 @@ Theorem EVERY2_trans':
   ∀x y z. LIST_REL R1 x y ∧ LIST_REL R2 y z ⇒ LIST_REL R3 x z
 Proof
   strip_tac \\ Induct_on `x` \\ Cases_on `y` \\ Cases_on `z` \\ simp [] \\ metis_tac []
+QED
+
+Theorem ZIP_ind:
+  !P.
+  (!l. P ([],l)) ∧ (!v2 v3. P (v2::v3,[])) ∧
+  (!x xs y ys. P (xs,ys) ⇒ P (x::xs,y::ys)) ⇒
+  !v v1. P (v,v1)
+Proof
+  ntac 2 strip_tac
+  \\ Induct \\ ASM_REWRITE_TAC []
+  \\ gen_tac \\ Cases \\ ASM_SIMP_TAC bool_ss []
+QED
+
+Theorem MEM_ZIP_IMP:
+ !l1 l2 a b. MEM (a,b) (ZIP (l1,l2)) ⇒ MEM a l1 ∧ MEM b l2
+Proof
+  recInduct ZIP_ind \\ RW_TAC list_ss [listTheory.ZIP_def] \\ METIS_TAC []
 QED
 
 Theorem PERM_ZIP_R:
@@ -1187,12 +1204,15 @@ Definition floodfill_run_def:
   floodfill_run (area: (int # int) list) (init: state)
     (ins: (((int # int) # dir) # (int # int -> num -> bool)) set)
     (outs: (((int # int) # dir) # (int # int -> num -> bool)) set) ⇔
-  floodfill_io_wf area ins outs ⇒
+  EVERY in_range area ∧
+  (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
+  (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
+  (floodfill_io_wf area ins outs ⇒
   circuit_run
     (iunion (λz. set (MAP (λp. mk_pt p z) area)))
     (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) ins))
     (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) outs))
-    ∅ init
+    ∅ init)
 End
 
 Definition floodfill_gate_wf_def:
@@ -1215,9 +1235,6 @@ Theorem floodfill_run_add_gate_new:
   floodfill_gate_wf g ins1 outs1 init ∧
   (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
   EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
-  EVERY in_range area ∧
-  (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
-  (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
   floodfill_run area (mega_cell_builder gates init) ins outs
   ⇒
   floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
@@ -1225,18 +1242,26 @@ Theorem floodfill_run_add_gate_new:
     (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ ins)
     (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
 Proof
-  rw [floodfill_run_def, floodfill_gate_wf_def, circuit_def] \\ fs [EVERY_MEM]
-  \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
+  simp [floodfill_run_def, floodfill_gate_wf_def, circuit_def]
+  \\ rpt gen_tac \\ strip_tac
+  \\ gvs [] \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
   \\ pop_assum (fn h => POP_ASSUM_LIST (fn hs => MAP_EVERY assume_tac (h::rev hs)))
   \\ `∀a. MEM a (make_area g.width g.height) ⇒ in_range (add_pt p a)` by (
     simp [Abbr`p`, FORALL_PROD, make_area_def, MEM_FLAT, MEM_GENLIST,
       PULL_EXISTS, in_range_def] \\ ARITH_TAC)
   \\ qabbrev_tac `s = make_area g.width g.height`
+  \\ fs [EVERY_MEM, MEM_MAP, PULL_EXISTS, DISJ_IMP_THM, IMP_CONJ_THM, FORALL_AND_THM,
+      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
   \\ `∀a z z'. MEM (mk_pt a z) s ⇒ ¬MEM (mk_pt (add_pt p a) z') area` by (
     rpt strip_tac \\ res_tac
     \\ `add_pt p (mk_pt a z) = mk_pt (add_pt p a) z` by pt_arith_tac
     \\ pop_assum (fs o single)
     \\ dxrule_then drule in_range_unique \\ strip_tac \\ gvs [])
+  \\ rw []
+  >- metis_tac [add_pt_assoc]
+  >- metis_tac [add_pt_assoc]
+  >- metis_tac [add_sub_pt_comm]
+  >- metis_tac [add_sub_pt_comm]
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
   >- (simp [floodfill_io_wf_def] \\ rpt conj_tac
     >- (fs [floodfill_io_wf_def] \\ metis_tac [])
@@ -1256,13 +1281,13 @@ Proof
       (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v z)) outs1))) ∅
       (translate_set (mul_pt 75 (mk_pt p z)) (from_masks (init z) (g.lo,g.hi)))` by (
     gen_tac
-    \\ qpat_x_assum `!z. _ ∧ _` $ qspec_then `z` strip_assume_tac
+    \\ qpat_x_assum `!z. circuit_run _ _ _ _ _` $ qspec_then `z` strip_assume_tac
     \\ `FST (mk_pt p z) % 2 = 0 ∧ SND (mk_pt p z) % 2 = 0` by (
       PairCases_on `z` \\ fs [mk_pt_def, Abbr`p`] \\ ARITH_TAC)
     \\ drule_all circuit_run_translate \\ simp [])
   \\ pop_assum (fn h => mp_tac $ SRULE [h] $
     HO_PART_MATCH (lhand o lhand) circuit_run_compose_bigunion (concl h))
-  \\ qpat_x_assum `!z. _ ∧ _` kall_tac \\ impl_tac
+  \\ qpat_x_assum `!z. circuit_run _ _ _ _ _` kall_tac \\ impl_tac
   >- (
     `∀p1 p2 z1 z2. MEM (mk_pt p1 z1) s ∧ MEM (mk_pt p2 z2) s ∧
       (λ(x, y). -2 ≤ x ∧ x ≤ 2 ∧ -2 ≤ y ∧ y ≤ 2) (sub_pt p1 p2) ⇒ z1 = z2` by (
@@ -1494,6 +1519,8 @@ Theorem floodfill_run_cancel_new:
   floodfill_run area init ins outs
 Proof
   rw [floodfill_run_def] \\ fs [iunion_union]
+  >- metis_tac []
+  >- metis_tac []
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
   >- (irule floodfill_io_wf_union \\ metis_tac [])
   \\ strip_tac \\ drule circuit_run_internalise
@@ -1580,10 +1607,13 @@ Proof
   \\ conj_tac >- first_assum ACCEPT_TAC
   \\ imp_res_tac LIST_REL_LENGTH
   \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND]
-  \\ qspecl_then [
+  \\ drule_at_then Any (qspecl_then [`p`,`g`,
       `[((a,d),(λz n. e_eval (λi. env i z) v (&(n + base) − dl)))]`,
-      `ZIP (MAP FST outs',s')`
-    ] mp_tac floodfill_run_add_gate
+      `ZIP (MAP FST outs',s')`] mp_tac) floodfill_run_add_gate_new
+  \\ impl_tac >- (
+    rw [make_area_def]
+    >- cheat
+    >- simp [Abbr`p`])
   \\ PairCases_on `p`
   \\ fs [GSYM INSERT_SING_UNION, ZIP_MAP, MAP2_ZIP, MAP_COMPOSE,
     o_DEF, LAMBDA_PROD, make_area_def]
@@ -1952,6 +1982,7 @@ Proof
   \\ `env 0 = init` by simp [Abbr`env`] \\ pop_assum $ fs o single
   \\ qpat_x_assum `floodfill_run _ _ _ _` mp_tac
   \\ simp [floodfill_run_def]
+  \\ disch_then (mp_tac o CONJUNCT2 o CONJUNCT2)
   \\ impl_tac
   >- cheat
   \\ gvs [circuit_run_def]
@@ -2138,8 +2169,10 @@ Proof
   \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND] \\ rw []
   \\ drule_at_then Any (qspecl_then [
     `p`,`g`,`ZIP (MAP FST ins1,sin1)`,`ZIP (MAP FST outs1,sout1)`
-    ] mp_tac) floodfill_run_add_gate
-  \\ impl_tac >- fs [ZIP_MAP, MAP2_ZIP, MAP_COMPOSE, o_DEF, LAMBDA_PROD]
+    ] mp_tac) floodfill_run_add_gate_new
+  \\ impl_tac >- (
+    simp [Abbr`p`]
+    \\ cheat)
   \\ disch_then assume_tac
   \\ irule floodfill_run_cancel
   \\ qexists_tac `set (MAP (λ((a,d),v). ((add_pt p a,d),v)) (ZIP (MAP FST ins1,sin1)))`
