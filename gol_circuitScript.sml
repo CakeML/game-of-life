@@ -690,6 +690,12 @@ Proof
   simp [FORALL_PROD, int_sub] \\ ARITH_TAC
 QED
 
+Theorem add_pt_comm:
+  add_pt a b = add_pt b a
+Proof
+  MAP_EVERY Cases_on [`a`,`b`] \\ simp [INT_ADD_SYM]
+QED
+
 Theorem add_pt_assoc:
   add_pt a (add_pt b c) = add_pt (add_pt a b) c
 Proof
