@@ -1185,26 +1185,29 @@ Definition floodfill_run_def:
     ∅ init
 End
 
-Theorem floodfill_run_add_gate_new:
-  ∀ins1 outs1 ins outs init.
+Definition floodfill_gate_wf_def:
+  floodfill_gate_wf g ins1 outs1 init ⇔
   g.width < &^tile-1 ∧ g.height < &^tile-1 ∧
-  p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile ∧
   (∀a d v. MEM ((a,d),v) ins1 ⇒
-    MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
-  (∀a d v. MEM ((a,d),v) outs1 ⇒
-    MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
-  EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
-  EVERY in_range area ∧
-  (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
-  (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
-  (∀a d v. MEM ((a,d),v) ins1 ⇒
+    MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height) ∧
     ¬MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
   (∀a d v. MEM ((a,d),v) outs1 ⇒
+    MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height) ∧
     ¬MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
   (∀z. circuit (make_area g.width g.height)
     (MAP (λ((a,d),v). (a,d,v z)) ins1)
     (MAP (λ((a,d),v). (a,d,v z)) outs1) []
-    (from_masks (init z) (g.lo,g.hi))) ∧
+    (from_masks (init z) (g.lo,g.hi)))
+End
+
+Theorem floodfill_run_add_gate_new:
+  ∀ins1 outs1 ins outs init.
+  floodfill_gate_wf g ins1 outs1 init ∧
+  (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
+  EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
+  EVERY in_range area ∧
+  (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
+  (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
   floodfill_run area (mega_cell_builder gates init) ins outs
   ⇒
   floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
@@ -1212,7 +1215,7 @@ Theorem floodfill_run_add_gate_new:
     (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ ins)
     (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
 Proof
-  rw [floodfill_run_def, circuit_def] \\ fs [EVERY_MEM]
+  rw [floodfill_run_def, floodfill_gate_wf_def, circuit_def] \\ fs [EVERY_MEM]
   \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
   \\ pop_assum (fn h => POP_ASSUM_LIST (fn hs => MAP_EVERY assume_tac (h::rev hs)))
   \\ `∀a. MEM a (make_area g.width g.height) ⇒ in_range (add_pt p a)` by (
