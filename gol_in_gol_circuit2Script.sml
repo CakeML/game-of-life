@@ -5,7 +5,9 @@ open gol_simTheory listTheory gol_circuitTheory pred_setTheory
 
 val _ = new_theory "gol_in_gol_circuit2";
 
-(* val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac *)
+(* val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
+val fs = Timeout.apply (Time.fromMilliseconds 2000) o fs
+val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp *)
 
 fun suff_eqr_tac th: tactic = fn (g as (asl,w)) =>
  (SUFF_TAC(mk_eq(concl th, w))
@@ -1163,12 +1165,16 @@ Proof
   pt_arith_tac
 QED
 
+Definition hide_eq_def:
+  hide_eq a b ⇔ a = b
+End
+
 Definition floodfill_io_wf_def:
   floodfill_io_wf area ins outs ⇔
   (∀a z d v d' v'. ((a,d),v) ∈ ins ∧
-    ((mk_pt a z,d'),v') ∈ ins ⇒ d = d' ∧ v = v') ∧
+    ((mk_pt a z,d'),v') ∈ ins ⇒ hide_eq z (0,0) ∧ d = d' ∧ v = v') ∧
   (∀a z d v d' v'. ((a,d),v) ∈ outs ∧
-    ((mk_pt a z,d'),v') ∈ outs ⇒ d = d' ∧ v = v') ∧
+    ((mk_pt a z,d'),v') ∈ outs ⇒ hide_eq z (0,0) ∧ d = d' ∧ v = v') ∧
   (∀a d v z. ((a,d),v) ∈ ins ∧
     MEM (sub_pt (mk_pt a z) (dir_to_xy d)) area ⇒
     ∃z'. ((mk_pt a z',d),λi. v (add_pt i z')) ∈ outs) ∧
@@ -1458,11 +1464,13 @@ QED
 
 Theorem floodfill_io_wf_union:
   (∀a z d v d' v'. (((a,d),v) ∈ s ∨ ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs)
-    ∧ ((mk_pt a z,d'),v') ∈ s ⇒ d = d' ∧ v = v') ∧
+    ∧ ((mk_pt a z,d'),v') ∈ s ⇒ hide_eq z (0,0) ∧ d = d' ∧ v = v') ∧
   floodfill_io_wf area ins outs ⇒
   floodfill_io_wf area (s ∪ ins) (s ∪ outs)
 Proof
   `∀a z. mk_pt (mk_pt a z) (neg_pt z) = a` by pt_arith_tac
+  \\ `∀z. hide_eq (neg_pt z) (0,0) ⇒ hide_eq z (0,0)` by
+    (simp [hide_eq_def] \\ pt_arith_tac)
   \\ simp [floodfill_io_wf_def]
   \\ strip_tac \\ rpt conj_tac \\ rpt gen_tac
   >- metis_tac []
@@ -1478,21 +1486,29 @@ Proof
 QED
 
 Theorem floodfill_run_cancel_new:
-  (∀a z d v d' v'. (((a,d),v) ∈ del ∨ ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs)
-    ∧ ((mk_pt a z,d'),v') ∈ del ⇒ d = d' ∧ v = v') ∧
+  (∀a z d v d' v'. ((a,d),v) ∈ del ∧
+    ((mk_pt a z,d'),v') ∈ del ⇒ hide_eq z (0,0) ∧ d = d' ∧ v = v') ∧
+  (∀a z d v d' v'. ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs ⇒
+    ((mk_pt a z,d'),v') ∉ del) ∧
   floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
   floodfill_run area init ins outs
 Proof
   rw [floodfill_run_def] \\ fs [iunion_union]
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
-  >- (irule floodfill_io_wf_union \\ conj_tac \\ first_assum ACCEPT_TAC)
+  >- (irule floodfill_io_wf_union \\ metis_tac [])
   \\ strip_tac \\ drule circuit_run_internalise
   \\ disch_then $ qspec_then `iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z,d,v z)) del)`
     (suff_eq_tac o SRULE [])
   \\ cong_tac 3
   \\ DEP_REWRITE_TAC [prove(``DISJOINT a b ⇒ a ∪ b DIFF a = b``,
     simp [Once EXTENSION, SUBSET_DEF, DISJOINT_ALT] \\ metis_tac [])]
-  \\ cheat
+  \\ simp [DISJOINT_ALT, PULL_EXISTS,
+    Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD]
+  \\ rpt strip_tac
+  \\ `mk_pt (mk_pt p_1' z) (neg_pt z) = p_1'` by pt_arith_tac
+  \\ qpat_x_assum `_ = mk_pt _ _` (fs o single) \\ gvs []
+  \\ `mk_pt (mk_pt p_1'' z') (neg_pt z) = mk_pt p_1'' (sub_pt z' z)` by pt_arith_tac
+  \\ pop_assum (fs o single) \\ metis_tac []
 QED
 
 Theorem floodfill_run_cancel:
