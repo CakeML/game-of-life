@@ -1466,6 +1466,8 @@ Theorem circuit_run_compose_bigunion:
   (∀x1 x2. x1 ≠ x2 ⇒
     (* all areas must be disjoint *)
     DISJOINT (area x1) (area x2) ∧
+    DISJOINT (IMAGE FST (ins x1)) (IMAGE FST (ins x2)) ∧
+    DISJOINT (IMAGE FST (outs x1)) (IMAGE FST (outs x2)) ∧
     (* on a border between two areas, in/out ports must be matching, if they exist *)
     ∀p d r.
       ((p,d,r) ∈ ins x1 ∧ sub_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ outs x2) ∧
@@ -1575,6 +1577,8 @@ Theorem circuit_run_compose_union:
   circuit_run a1 ins1 outs1 {} init1 ∧
   circuit_run a2 ins2 outs2 {} init2 ∧
   DISJOINT a1 a2 ∧
+  DISJOINT (IMAGE FST ins1) (IMAGE FST ins2) ∧
+  DISJOINT (IMAGE FST outs1) (IMAGE FST outs2) ∧
   (∀p d r.
      ((p,d,r) ∈ ins1  ∧ sub_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ outs2) ∧
      ((p,d,r) ∈ outs1 ∧ add_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ ins2) ∧

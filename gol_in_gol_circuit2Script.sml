@@ -253,9 +253,9 @@ End
 
 val pt_arith_tac: tactic =
   POP_ASSUM_LIST kall_tac \\ rw []
-  \\ (fn g as (_, t) => (
+  \\ (fn g as (asm, t) => (
     MAP_EVERY (C tmCases_on []) (
-      filter (fn v => snd (dest_var v) = ``:int#int``) (free_vars t) @
+      filter (fn v => snd (dest_var v) = ``:int#int``) (free_varsl (t::asm)) @
       find_maximal_termsl (fn tm => rator tm ~~ ``dir_to_xy`` handle _ => false) t)
     \\ fs [mk_pt_def] \\ ARITH_TAC
   ) g);
@@ -1165,6 +1165,10 @@ QED
 
 Definition floodfill_io_wf_def:
   floodfill_io_wf area ins outs ⇔
+  (∀a z d v d' v'. ((a,d),v) ∈ ins ∧
+    ((mk_pt a z,d'),v') ∈ ins ⇒ d = d' ∧ v = v') ∧
+  (∀a z d v d' v'. ((a,d),v) ∈ outs ∧
+    ((mk_pt a z,d'),v') ∈ outs ⇒ d = d' ∧ v = v') ∧
   (∀a d v z. ((a,d),v) ∈ ins ∧
     MEM (sub_pt (mk_pt a z) (dir_to_xy d)) area ⇒
     ∃z'. ((mk_pt a z',d),λi. v (add_pt i z')) ∈ outs) ∧
@@ -1228,7 +1232,10 @@ Proof
     \\ pop_assum (fs o single)
     \\ dxrule_then drule in_range_unique \\ strip_tac \\ gvs [])
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
-  >- (simp [floodfill_io_wf_def] \\ rw []
+  >- (simp [floodfill_io_wf_def] \\ rpt conj_tac
+    >- (fs [floodfill_io_wf_def] \\ metis_tac [])
+    >- (fs [floodfill_io_wf_def] \\ metis_tac [])
+    \\ rw []
     THENL map (fn h => h suffices_by (fs [floodfill_io_wf_def] \\ metis_tac [])) [
       `∀v z. ¬MEM ((mk_pt a z,d),v) (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1)`,
       `∀v z. ¬MEM ((mk_pt a z,d),v) (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1)`]
@@ -1238,7 +1245,7 @@ Proof
     \\ rpt $ first_x_assum drule \\ rpt strip_tac
     \\ rfs [add_sub_pt_comm, sub_mk_pt_assoc, add_pt_assoc, add_mk_pt_assoc_l]
     \\ metis_tac [in_range_unique])
-  \\ `∀z. circuit_run (translate_set (mk_pt p z) (set (make_area g.width g.height)))
+  \\ `∀z. circuit_run (translate_set (mk_pt p z) (set s))
       (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v z)) ins1)))
       (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v z)) outs1))) ∅
       (translate_set (mul_pt 75 (mk_pt p z)) (from_masks (init z) (g.lo,g.hi)))` by (
@@ -1250,10 +1257,37 @@ Proof
   \\ pop_assum (fn h => mp_tac $ SRULE [h] $
     HO_PART_MATCH (lhand o lhand) circuit_run_compose_bigunion (concl h))
   \\ qpat_x_assum `!z. _ ∧ _` kall_tac \\ impl_tac
-  >- (rw []
+  >- (
+    `∀p1 p2 z1 z2. MEM (mk_pt p1 z1) s ∧ MEM (mk_pt p2 z2) s ∧
+      (λ(x, y). -2 ≤ x ∧ x ≤ 2 ∧ -2 ≤ y ∧ y ≤ 2) (sub_pt p1 p2) ⇒ z1 = z2` by (
+      simp [Abbr`s`, make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+      \\ rpt $ qpat_x_assum `_<_` mp_tac \\ pt_arith_tac)
+    \\ rw []
     >- (simp [DISJOINT_ALT] \\ rpt strip_tac
       \\ res_tac \\ fs [add_sub_pt_comm, sub_mk_pt_eq_add_neg]
       \\ metis_tac [in_range_unique, neg_pt_inj])
+    >- (
+      simp [DISJOINT_ALT, PULL_EXISTS, MEM_MAP,
+        Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+        Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD]
+      \\ rpt strip_tac \\ res_tac \\ fs [sub_mk_pt_eq_add_neg, add_mk_pt_assoc_l]
+      \\ first_x_assum $ dxrule_at_then Any $ dxrule_at Any
+      \\ qpat_x_assum `_≠_` mp_tac
+      \\ Cases_on `sub_pt x' p` \\ MAP_EVERY PairCases_on [`z`,`z'`]
+      \\ Cases_on `dir_to_xy p_1'` \\ drule dir_to_xy_bounded
+      \\ Cases_on `dir_to_xy p_1'³'` \\ drule dir_to_xy_bounded
+      \\ pt_arith_tac)
+    >- (
+      simp [DISJOINT_ALT, PULL_EXISTS, MEM_MAP,
+        Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+        Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD]
+      \\ rpt strip_tac \\ res_tac \\ fs [sub_mk_pt_eq_add_neg, sub_mk_pt_assoc]
+      \\ first_x_assum $ dxrule_at_then Any $ dxrule_at Any
+      \\ qpat_x_assum `_≠_` mp_tac
+      \\ Cases_on `sub_pt x' p` \\ MAP_EVERY PairCases_on [`z`,`z'`]
+      \\ Cases_on `dir_to_xy p_1'` \\ drule dir_to_xy_bounded
+      \\ Cases_on `dir_to_xy p_1'³'` \\ drule dir_to_xy_bounded
+      \\ pt_arith_tac)
     \\ `F` suffices_by rw []
     \\ qpat_x_assum `z ≠ z'` mp_tac \\ rw []
     \\ fs [MEM_MAP]
@@ -1275,6 +1309,46 @@ Proof
     \\ simp [FORALL_AND_THM, PULL_EXISTS, MEM_MAP,
       Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
     \\ fs [EVERY_MEM] \\ rw []
+    >- (
+      simp [DISJOINT_ALT, PULL_EXISTS, MEM_MAP,
+        Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+        Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD]
+      \\ rpt strip_tac
+      \\ `sub_pt (mk_pt p_1 z) (mk_pt p z') = mk_pt (sub_pt p_1 p) (sub_pt z z')` by pt_arith_tac
+      \\ pop_assum (fs o single)
+      \\ rename [`((a,d),r) ∈ ins`, `((mk_pt _ z1,d'),r')`]
+      \\ `d = d' ∧ r = r'` by (
+        `mk_pt a z1 = add_pt p (mk_pt (sub_pt a p) z1)` by pt_arith_tac
+        \\ fs [floodfill_io_wf_def, MEM_MAP,
+          Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD,
+          Q.INST_TYPE [`:α` |-> `:dir`] EXISTS_PROD]
+        \\ metis_tac [])
+      \\ gvs [] \\ res_tac \\ res_tac
+      \\ fs [add_mk_pt_assoc_l, add_mk_pt_assoc_r]
+      \\ `∀d. add_pt p (add_pt (sub_pt a p) d) = add_pt a d` by pt_arith_tac
+      \\ pop_assum (fs o single)
+      \\ `z1 = (0,0)` by metis_tac [in_range_unique, mk_pt_0]
+      \\ pop_assum (fs o single))
+    >- (
+      simp [DISJOINT_ALT, PULL_EXISTS, MEM_MAP,
+        Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+        Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD]
+      \\ rpt strip_tac
+      \\ `sub_pt (mk_pt p_1 z) (mk_pt p z') = mk_pt (sub_pt p_1 p) (sub_pt z z')` by pt_arith_tac
+      \\ pop_assum (fs o single)
+      \\ rename [`((a,d),r) ∈ outs`, `((mk_pt _ z1,d'),r')`]
+      \\ `d = d' ∧ r = r'` by (
+        `mk_pt a z1 = add_pt p (mk_pt (sub_pt a p) z1)` by pt_arith_tac
+        \\ fs [floodfill_io_wf_def, MEM_MAP,
+          Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD,
+          Q.INST_TYPE [`:α` |-> `:dir`] EXISTS_PROD]
+        \\ metis_tac [])
+      \\ gvs [] \\ res_tac \\ res_tac
+      \\ fs [sub_mk_pt_assoc, add_mk_pt_assoc_r]
+      \\ `∀d. add_pt p (sub_pt (sub_pt a p) d) = sub_pt a d` by pt_arith_tac
+      \\ pop_assum (fs o single)
+      \\ `z1 = (0,0)` by metis_tac [in_range_unique, mk_pt_0]
+      \\ pop_assum (fs o single))
     >- (
       `∀v z. ((mk_pt p_1 z,d),v) ∉ outs` by (
         rpt strip_tac \\ res_tac \\ res_tac
