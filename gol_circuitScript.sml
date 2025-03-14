@@ -1484,8 +1484,14 @@ Proof
     \\ strip_tac
     \\ rpt strip_tac
     \\ simp [SF SFY_ss]
-    >- cheat
-    >- cheat
+    >- (Cases_on ‘a = a'’ >- metis_tac []
+        \\ last_x_assum drule \\ strip_tac
+        \\ gvs [IN_DISJOINT,FORALL_PROD]
+        \\ metis_tac [PAIR])
+    >- (Cases_on ‘a = a'’ >- metis_tac []
+        \\ last_x_assum drule \\ strip_tac
+        \\ gvs [IN_DISJOINT,FORALL_PROD]
+        \\ metis_tac [PAIR])
     \\ metis_tac [])
   \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) {}’,
                   ‘init’] mp_tac run_compose_bigunion
