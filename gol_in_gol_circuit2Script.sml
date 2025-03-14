@@ -1347,21 +1347,21 @@ Proof
       \\ dxrule_all in_range_unique \\ disch_then (fs o single)))
   \\ simp []
   \\ disch_then suff_eq_tac
-  \\ reverse (cong_tac 1) >- (
+  \\ cong_tac 1 >>> HEADGOAL (cong_tac 2) >>> HEADGOAL (cong_tac 1)
+  >- (
+    `∀x y z. x = mk_pt (add_pt p y) z ⇔ y = sub_pt x (mk_pt p z)` by pt_arith_tac
+    \\ simp [Once EXTENSION, MEM_MAP, PULL_EXISTS] \\ metis_tac [])
+  >>> C NTH_GOAL 3 (
     simp [mega_cell_builder_def, Once EXTENSION, MEM_MAP, PULL_EXISTS,
       Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
-    \\ rw [IN_DEF] \\ eq_tac \\ rw []
-    \\ TRY (metis_tac [])
-    \\ cheat)
-  \\ reverse (cong_tac 2) >- (
-    simp [Once EXTENSION, MEM_MAP, PULL_EXISTS, translate_port_def,
-      Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
-      Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD,
-      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
-    \\ rw [] \\ eq_tac \\ rw []
-    \\ TRY (metis_tac [])
-    \\ cheat)
-  \\ cong_tac 1 \\ cheat
+    \\ rw [IN_DEF] \\ metis_tac [])
+  \\ simp [Once EXTENSION, MEM_MAP, PULL_EXISTS, translate_port_def,
+    Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+    Q.INST_TYPE [`:α` |-> `:dir`] FORALL_PROD,
+    Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+  \\ `∀a z. sub_pt (mk_pt (add_pt p a) z) (mk_pt p z) = a ∧
+            mk_pt (add_pt p (sub_pt a (mk_pt p z))) z = a` by pt_arith_tac
+  \\ metis_tac []
 QED
 
 Theorem floodfill_run_add_gate:
