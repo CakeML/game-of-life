@@ -714,6 +714,7 @@ Definition circ_mod_wf_def:
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
     (∀p r1 r2. (p,r1) ∈ ins ∧ (p,r2) ∈ ins ⇒ r1 = r2) ∧
     (∀p r1 r2. (p,r1) ∈ outs ∪ as ∧ (p,r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
+    (∀p d1 r1 d2 r2. (p,d1,r1) ∈ ins ∧ (p,d2,r2) ∈ outs ⇒ d1 = d2) ∧
     (∀p d r. (p,d,r) ∈ ins ∪ as ⇒ add_pt p (dir_to_xy d) ∈ area) ∧
     (∀p d r. (p,d,r) ∈ outs ∪ as ⇒ sub_pt p (dir_to_xy d) ∈ area) ∧
     (∀p d r. (p,d,r) ∈ ins ∧ sub_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ outs) ∧
@@ -726,6 +727,7 @@ Theorem circ_mod_wf_def_old:
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ ins ∧ ((x,y),r2) ∈ ins ⇒ r1 = r2) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ outs ∪ as ∧ ((x,y),r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
+    (∀p d1 r1 d2 r2. (p,d1,r1) ∈ ins ∧ (p,d2,r2) ∈ outs ⇒ d1 = d2) ∧
     (∀x y r. ((x,y),N,r) ∈ ins ∪ as ⇒ (x,y-1) ∈ area) ∧
     (∀x y r. ((x,y),S,r) ∈ ins ∪ as ⇒ (x,y+1) ∈ area) ∧
     (∀x y r. ((x,y),E,r) ∈ ins ∪ as ⇒ (x+1,y) ∈ area) ∧
@@ -739,6 +741,8 @@ Theorem circ_mod_wf_def_old:
     (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉outs)
 Proof
   simp [circ_mod_wf_def] \\ rpt AP_TERM_TAC
+  \\ qabbrev_tac ‘b = ∀p d1 r1 d2 r2. (p,d1,r1) ∈ ins ∧ (p,d2,r2) ∈ outs ⇒ d1 = d2’
+  \\ pop_assum kall_tac
   \\ `∀P. (∀d. P d) ⇔ P N ∧ P S ∧ P E ∧ P W` by
     (strip_tac \\ eq_tac \\ strip_tac \\ TRY Cases \\ metis_tac [])
   \\ pop_assum (rw o single) \\ rw [FORALL_PROD, GSYM int_sub]
@@ -1466,8 +1470,6 @@ Theorem circuit_run_compose_bigunion:
   (∀x1 x2. x1 ≠ x2 ⇒
     (* all areas must be disjoint *)
     DISJOINT (area x1) (area x2) ∧
-    DISJOINT (IMAGE FST (ins x1)) (IMAGE FST (ins x2)) ∧
-    DISJOINT (IMAGE FST (outs x1)) (IMAGE FST (outs x2)) ∧
     (* on a border between two areas, in/out ports must be matching, if they exist *)
     ∀p d r.
       ((p,d,r) ∈ ins x1 ∧ sub_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ outs x2) ∧
@@ -1485,13 +1487,44 @@ Proof
     \\ rpt strip_tac
     \\ simp [SF SFY_ss]
     >- (Cases_on ‘a = a'’ >- metis_tac []
+        \\ last_assum drule \\ strip_tac
+        \\ ‘a' ≠ a’ by gvs []
         \\ last_x_assum drule \\ strip_tac
-        \\ gvs [IN_DISJOINT,FORALL_PROD]
-        \\ metis_tac [PAIR])
+        \\ gvs [SF DNF_ss]
+        \\ last_x_assum (fn th => qspec_then ‘a’ assume_tac th
+                                  \\ qspec_then ‘a'’ assume_tac th)
+        \\ PairCases_on ‘r1’
+        \\ PairCases_on ‘r2’
+        \\ ‘add_pt p (dir_to_xy r20) ∈ area a' ∧
+            add_pt p (dir_to_xy r10) ∈ area a’ by metis_tac []
+        \\ Cases_on ‘r20 = r10’ >- metis_tac [IN_DISJOINT]
+        \\ ‘r20 = opposite r10’ by cheat
+        \\ PairCases_on ‘p’
+        \\ gvs [GSYM dir_to_xy_opposite]
+        \\ metis_tac [])
     >- (Cases_on ‘a = a'’ >- metis_tac []
+        \\ last_assum drule \\ strip_tac
+        \\ ‘a' ≠ a’ by gvs []
         \\ last_x_assum drule \\ strip_tac
-        \\ gvs [IN_DISJOINT,FORALL_PROD]
-        \\ metis_tac [PAIR])
+        \\ gvs [SF DNF_ss]
+        \\ last_x_assum (fn th => qspec_then ‘a’ assume_tac th
+                                  \\ qspec_then ‘a'’ assume_tac th)
+        \\ PairCases_on ‘r1’
+        \\ PairCases_on ‘r2’
+        \\ ‘sub_pt p (dir_to_xy r20) ∈ area a' ∧
+            sub_pt p (dir_to_xy r10) ∈ area a’ by metis_tac []
+        \\ Cases_on ‘r20 = r10’ >- metis_tac [IN_DISJOINT]
+        \\ ‘r20 = opposite r10’ by cheat
+        \\ PairCases_on ‘p’
+        \\ gvs [GSYM dir_to_xy_opposite]
+        \\ metis_tac [])
+    >- (Cases_on ‘a = a'’ >- metis_tac []
+        \\ CCONTR_TAC \\ gvs []
+        \\ ‘d1 = opposite d2’ by cheat
+        \\ ‘add_pt p (dir_to_xy d1) ∈ area a’ by metis_tac []
+        \\ PairCases_on ‘p’
+        \\ gvs [GSYM dir_to_xy_opposite]
+        \\ metis_tac [IN_DISJOINT])
     \\ metis_tac [])
   \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) {}’,
                   ‘init’] mp_tac run_compose_bigunion
@@ -1583,8 +1616,6 @@ Theorem circuit_run_compose_union:
   circuit_run a1 ins1 outs1 {} init1 ∧
   circuit_run a2 ins2 outs2 {} init2 ∧
   DISJOINT a1 a2 ∧
-  DISJOINT (IMAGE FST ins1) (IMAGE FST ins2) ∧
-  DISJOINT (IMAGE FST outs1) (IMAGE FST outs2) ∧
   (∀p d r.
      ((p,d,r) ∈ ins1  ∧ sub_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ outs2) ∧
      ((p,d,r) ∈ outs1 ∧ add_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ ins2) ∧
