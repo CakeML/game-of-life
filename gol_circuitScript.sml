@@ -1543,8 +1543,7 @@ Proof
   \\ last_assum $ qspec_then ‘x’ strip_assume_tac
   \\ last_x_assum $ qspec_then ‘y’ strip_assume_tac
   >- (gvs [SF DNF_ss] \\ drule_all in_io_cutout_lemma \\ gvs [])
-  >- (gvs [SF DNF_ss]
-      \\ drule_all (SRULE [Once DISJOINT_SYM] in_io_cutout_lemma) \\ gvs [])
+  >- (gvs [SF DNF_ss] \\ drule_all in_io_cutout_lemma \\ gvs [])
   \\ gvs [io_cutout_def]
   \\ dxrule_then dxrule IN_circ_io_areas
   \\ strip_tac \\ gvs []
