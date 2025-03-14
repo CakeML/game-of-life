@@ -1362,7 +1362,6 @@ Proof
 QED
 
 Theorem in_io_cutout_lemma:
-  DISJOINT (base_area (area x)) (base_area (area y)) ∧
   DISJOINT (area x) (area y) ∧
   circ_mod_wf (area x) (ins x) (outs x) (as x) ∧
   circ_mod_wf (area y) (ins y) (outs y) (as y) ∧
@@ -1438,6 +1437,28 @@ Proof
   \\ gvs [IN_DEF,is_ns_def,is_ew_def,dir_test_def]
 QED
 
+Theorem iunion_inter:
+  iunion f ∩ s = iunion (λz. f z ∩ s)
+Proof
+  gvs [EXTENSION] \\ metis_tac []
+QED
+
+Theorem circ_io_area_iunion:
+  circ_io_area (iunion f) = iunion (circ_io_area o f)
+Proof
+  gvs [EXTENSION,FORALL_PROD,circ_io_area_def]
+  \\ metis_tac []
+QED
+
+Theorem io_cutout_iunion:
+  io_cutout (iunion ins) (iunion outs) b =
+  iunion (λz. io_cutout (ins z) (outs z) b)
+Proof
+  gvs [EXTENSION,io_cutout_eq,FORALL_PROD,
+       iunion_inter,circ_io_area_iunion]
+  \\ metis_tac []
+QED
+
 Theorem circuit_run_compose_bigunion:
   ∀area ins outs as init.
   (* each element in the family must be a circuit_run *)
@@ -1485,11 +1506,34 @@ Proof
     \\ simp [Once FUN_EQ_THM] \\ rw []
     \\ gvs [circ_mod_def]
     \\ simp [GSYM iunion_def]
-    \\ conj_tac >- cheat (* ugh, circ_area_eq *)
-    \\ simp [EXTENSION]
-    \\ gvs [circ_io_area_def,circ_output_area_def,PULL_EXISTS,circ_io_lwss_def]
-    \\ rpt (IF_CASES_TAC \\ gvs [])
-    \\ metis_tac [])
+    \\ reverse conj_tac >-
+     (simp [EXTENSION]
+      \\ gvs [circ_io_area_def,circ_output_area_def,PULL_EXISTS,circ_io_lwss_def]
+      \\ rpt (IF_CASES_TAC \\ gvs [])
+      \\ metis_tac [])
+    \\ simp [circ_area_eq,EXTENSION] \\ PairCases
+    \\ qabbrev_tac ‘b = (n MOD 60 < 30)’
+    \\ reverse eq_tac
+    >-
+     (gvs [io_cutout_eq,circ_io_area_def]
+      \\ gvs [base_area_def,PULL_EXISTS,PULL_FORALL,IN_DISJOINT]
+      \\ rw [] \\ metis_tac [])
+    \\ reverse strip_tac
+    >-
+     (disj2_tac \\ gvs [io_cutout_eq,circ_io_area_def]
+      \\ gvs [base_area_def,PULL_EXISTS,PULL_FORALL,IN_DISJOINT]
+      \\ rw [] \\ metis_tac [])
+    \\ rename [‘(x,y) ∈ base_area (area a)’]
+    \\ CCONTR_TAC \\ gvs []
+    >- (gvs [base_area_def] \\ rw [] \\ metis_tac [])
+    \\ gvs [io_cutout_iunion]
+    \\ Cases_on ‘a = z’ >- gvs []
+    \\ dxrule_at_then (Pos last) (dxrule_at (Pos last)) in_io_cutout_lemma
+    \\ disch_then $ qspec_then ‘as’ mp_tac
+    \\ reverse impl_tac >- gvs []
+    \\ gvs [SF SFY_ss]
+    \\ ‘z ≠ a’ by gvs []
+    \\ gvs [SF SFY_ss])
   \\ reverse conj_tac >- simp [SF SFY_ss, mods_wf_circ_mod]
   \\ simp [disjoint_mods_def,disjoint_mod_def,circ_mod_def]
   \\ simp [IN_DISJOINT]
