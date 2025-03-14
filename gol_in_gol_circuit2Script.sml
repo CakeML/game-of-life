@@ -1456,6 +1456,45 @@ Proof
   cheat (* todo *)
 QED
 
+Theorem floodfill_io_wf_union:
+  (∀a z d v d' v'. (((a,d),v) ∈ s ∨ ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs)
+    ∧ ((mk_pt a z,d'),v') ∈ s ⇒ d = d' ∧ v = v') ∧
+  floodfill_io_wf area ins outs ⇒
+  floodfill_io_wf area (s ∪ ins) (s ∪ outs)
+Proof
+  `∀a z. mk_pt (mk_pt a z) (neg_pt z) = a` by pt_arith_tac
+  \\ simp [floodfill_io_wf_def]
+  \\ strip_tac \\ rpt conj_tac \\ rpt gen_tac
+  >- metis_tac []
+  >- metis_tac []
+  \\ (reverse strip_tac >- metis_tac [])
+  \\ qexists_tac `(0,0)` \\ simp [ETA_THM]
+QED
+
+Theorem iunion_union:
+  iunion (λz. a z ∪ b z) = iunion a ∪ iunion b
+Proof
+  simp [Once EXTENSION] \\ metis_tac []
+QED
+
+Theorem floodfill_run_cancel_new:
+  (∀a z d v d' v'. (((a,d),v) ∈ del ∨ ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs)
+    ∧ ((mk_pt a z,d'),v') ∈ del ⇒ d = d' ∧ v = v') ∧
+  floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
+  floodfill_run area init ins outs
+Proof
+  rw [floodfill_run_def] \\ fs [iunion_union]
+  \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
+  >- (irule floodfill_io_wf_union \\ conj_tac \\ first_assum ACCEPT_TAC)
+  \\ strip_tac \\ drule circuit_run_internalise
+  \\ disch_then $ qspec_then `iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z,d,v z)) del)`
+    (suff_eq_tac o SRULE [])
+  \\ cong_tac 3
+  \\ DEP_REWRITE_TAC [prove(``DISJOINT a b ⇒ a ∪ b DIFF a = b``,
+    simp [Once EXTENSION, SUBSET_DEF, DISJOINT_ALT] \\ metis_tac [])]
+  \\ cheat
+QED
+
 Theorem floodfill_run_cancel:
   floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
   floodfill_run area init ins outs
