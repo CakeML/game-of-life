@@ -1363,8 +1363,8 @@ QED
 
 Theorem in_io_cutout_lemma:
   DISJOINT (area x) (area y) ∧
-  circ_mod_wf (area x) (ins x) (outs x) (as x) ∧
-  circ_mod_wf (area y) (ins y) (outs y) (as y) ∧
+  circ_mod_wf (area x) (ins x) (outs x) {} ∧
+  circ_mod_wf (area y) (ins y) (outs y) {} ∧
   (∀p d r. (p,d,r) ∈ ins x ∧ sub_pt p (dir_to_xy d) ∈ area y ⇒ (p,d,r) ∈ outs y) ∧
   (∀p d r. (p,d,r) ∈ outs x ∧ add_pt p (dir_to_xy d) ∈ area y ⇒ (p,d,r) ∈ ins y) ∧
   (∀p d r. (p,d,r) ∈ ins y ∧ sub_pt p (dir_to_xy d) ∈ area x ⇒ (p,d,r) ∈ outs x) ∧
@@ -1460,9 +1460,9 @@ Proof
 QED
 
 Theorem circuit_run_compose_bigunion:
-  ∀area ins outs as init.
+  ∀area ins outs init.
   (* each element in the family must be a circuit_run *)
-  (∀x. circuit_run (area x) (ins x) (outs x) (as x) (init x)) ∧
+  (∀x. circuit_run (area x) (ins x) (outs x) {} (init x)) ∧
   (∀x1 x2. x1 ≠ x2 ⇒
     (* all areas must be disjoint *)
     DISJOINT (area x1) (area x2) ∧
@@ -1471,7 +1471,7 @@ Theorem circuit_run_compose_bigunion:
       ((p,d,r) ∈ ins x1 ∧ sub_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ outs x2) ∧
       ((p,d,r) ∈ outs x1 ∧ add_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ ins x2))
   ⇒
-  circuit_run (iunion area) (iunion ins) (iunion outs) (iunion as) (iunion init)
+  circuit_run (iunion area) (iunion ins) (iunion outs) {} (iunion init)
 Proof
   rw [] \\ gvs [circuit_run_def]
   \\ reverse conj_asm2_tac
@@ -1484,18 +1484,8 @@ Proof
     \\ simp [SF SFY_ss]
     >- cheat
     >- cheat
-    >- cheat
-    >- cheat
-    >- cheat
-    >- metis_tac []
-    >- metis_tac []
-    >- metis_tac []
-    >- metis_tac []
-    >- metis_tac []
-    >- metis_tac []
-    >- cheat
-    >- cheat)
-  \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) (as x)’,
+    \\ metis_tac [])
+  \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) {}’,
                   ‘init’] mp_tac run_compose_bigunion
   \\ simp []
   \\ reverse $ impl_tac
@@ -1529,7 +1519,6 @@ Proof
     \\ gvs [io_cutout_iunion]
     \\ Cases_on ‘a = z’ >- gvs []
     \\ dxrule_at_then (Pos last) (dxrule_at (Pos last)) in_io_cutout_lemma
-    \\ disch_then $ qspec_then ‘as’ mp_tac
     \\ reverse impl_tac >- gvs []
     \\ gvs [SF SFY_ss]
     \\ ‘z ≠ a’ by gvs []
@@ -1582,10 +1571,10 @@ Proof
 QED
 
 Theorem circuit_run_compose_union:
-  ∀a1 a2 ins1 ins2 outs1 outs2 as1 as2 init1 init2.
+  ∀a1 a2 ins1 ins2 outs1 outs2 init1 init2.
   (* each element in the family must be a circuit_run *)
-  circuit_run a1 ins1 outs1 as1 init1 ∧
-  circuit_run a2 ins2 outs2 as2 init2 ∧
+  circuit_run a1 ins1 outs1 {} init1 ∧
+  circuit_run a2 ins2 outs2 {} init2 ∧
   DISJOINT a1 a2 ∧
   (∀p d r.
      ((p,d,r) ∈ ins1  ∧ sub_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ outs2) ∧
@@ -1593,13 +1582,12 @@ Theorem circuit_run_compose_union:
      ((p,d,r) ∈ ins2  ∧ sub_pt p (dir_to_xy d) ∈ a1 ⇒ (p,d,r) ∈ outs1) ∧
      ((p,d,r) ∈ outs2 ∧ add_pt p (dir_to_xy d) ∈ a1 ⇒ (p,d,r) ∈ ins1))
   ⇒
-  circuit_run (a1 ∪ a2) (ins1 ∪ ins2) (outs1 ∪ outs2) (as1 ∪ as2) (init1 ∪ init2)
+  circuit_run (a1 ∪ a2) (ins1 ∪ ins2) (outs1 ∪ outs2) {} (init1 ∪ init2)
 Proof
   rpt gen_tac \\ strip_tac
   \\ qspecl_then [‘λb. if b then a1 else a2’,
                   ‘λb. if b then ins1 else ins2’,
                   ‘λb. if b then outs1 else outs2’,
-                  ‘λb. if b then as1 else as2’,
                   ‘λb. if b then init1 else init2’]
        mp_tac circuit_run_compose_bigunion
   \\ impl_tac
