@@ -684,6 +684,8 @@ Theorem add_pt_simps[simp]:
     sub_pt a (neg_pt b) = add_pt a b ∧
     add_pt (sub_pt a b) b = a ∧
     sub_pt (add_pt a b) b = a ∧
+    add_pt b (sub_pt a b) = a ∧
+    sub_pt (add_pt b a) b = a ∧
     add_pt (neg_pt a) (add_pt a b) = b ∧
     add_pt a (add_pt (neg_pt a) b) = b
 Proof

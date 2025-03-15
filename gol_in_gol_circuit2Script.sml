@@ -7,7 +7,8 @@ val _ = new_theory "gol_in_gol_circuit2";
 
 (* val metis_tac = Timeout.apply (Time.fromMilliseconds 2000) o metis_tac
 val fs = Timeout.apply (Time.fromMilliseconds 2000) o fs
-val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp *)
+val simp = Timeout.apply (Time.fromMilliseconds 2000) o simp
+val rw = Timeout.apply (Time.fromMilliseconds 2000) o rw *)
 
 fun suff_eqr_tac th: tactic = fn (g as (asl,w)) =>
  (SUFF_TAC(mk_eq(concl th, w))
@@ -1167,6 +1168,12 @@ Proof
   pt_arith_tac
 QED
 
+Theorem mk_mk_pt_assoc:
+  mk_pt (mk_pt a z) z' = mk_pt a (add_pt z z')
+Proof
+  pt_arith_tac
+QED
+
 Theorem neg_pt_inj[simp]:
   neg_pt a = neg_pt b ⇔ a = b
 Proof
@@ -1221,7 +1228,7 @@ Definition floodfill_run_def:
     (outs: (((int # int) # dir) # (int # int -> num -> bool)) list) ⇔
   EVERY in_range area ∧
   (∀a d v. MEM ((a,d),v) ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
-  (∀a d v. MEM ((a,d),v) outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
+  (∀a d v. MEM ((a,d),v) outs ⇒ ∃z. MEM (mk_pt (sub_pt a (dir_to_xy d)) z) area) ∧
   ALL_DISTINCT (MAP (λ((a,d),v). span {(a,d)}) ins) ∧
   ALL_DISTINCT (MAP (λ((a,d),v). span {(a,d)}) outs) ∧
   (floodfill_io_wf area (set ins) (set outs) ⇒
@@ -1277,7 +1284,7 @@ Proof
   \\ rw []
   >- metis_tac [add_pt_assoc]
   >- metis_tac [add_pt_assoc]
-  >- metis_tac [add_sub_pt_comm]
+  >- metis_tac [add_sub_pt_comm, mk_pt_0]
   >- metis_tac [add_sub_pt_comm]
   >- (
     fs [ALL_DISTINCT_APPEND, MAP_COMPOSE]
@@ -1302,8 +1309,8 @@ Proof
       simp [MEM_MAP, PULL_EXISTS, Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
         span_sn_eq_span_sn]
       \\ rpt strip_tac \\ res_tac \\ res_tac
-      \\ fs [add_sub_pt_assoc, sub_mk_pt_assoc]
-      \\ `z = (0,0)` by metis_tac [in_range_unique, mk_pt_0]
+      \\ fs [add_sub_pt_assoc, sub_mk_pt_assoc, mk_mk_pt_assoc]
+      \\ `add_pt z z' = (0,0)` by metis_tac [in_range_unique, mk_pt_0]
       \\ gvs [])
     \\ first_x_assum $ qspec_then `(0,0)` $ mp_then (Pos hd) irule ALL_DISTINCT_MAP_of_MAP
     \\ simp [Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD, span_sn_eq_span_sn] \\ rw []
@@ -1365,7 +1372,7 @@ Proof
     >- (
       `∀v z. ¬MEM ((mk_pt p_1 z,d),v) outs` by (
         rpt strip_tac \\ res_tac \\ res_tac
-        \\ fs [sub_mk_pt_assoc, add_mk_pt_assoc_r]
+        \\ fs [sub_mk_pt_assoc, add_mk_pt_assoc_r, mk_mk_pt_assoc]
         \\ `∀p'. mk_pt (add_pt p (sub_pt p' (mk_pt p z'))) z =
             mk_pt p' (sub_pt z z')` by pt_arith_tac
         \\ pop_assum (fs o single)
@@ -2307,6 +2314,39 @@ Proof
   \\ drule_then irule floodfill_run_perm \\ simp [PERM_FUN_APPEND_CONS]
 QED
 
+Theorem floodfill_run_teleport:
+  floodfill_run area init ins ((ad,v)::outs) ⇒
+  floodfill_run area init ins ((mk_dpt ad z,v ∘ add_pt z)::outs)
+Proof
+  Cases_on `ad` \\ simp [floodfill_run_def, mk_dpt_def] \\ strip_tac
+  \\ fs [SF DNF_ss] \\ qexists_tac `sub_pt z' z` \\ rpt conj_tac
+  >- first_assum ACCEPT_TAC
+  >- simp [sub_mk_pt_assoc, mk_mk_pt_assoc]
+  >- first_assum ACCEPT_TAC
+  >- metis_tac [span_sn_eq_span_sn]
+  \\ strip_tac \\ qpat_x_assum `_ ⇒ _` mp_tac
+  \\ impl_tac >- (
+    fs [floodfill_io_wf_def, SF DNF_ss] \\ rpt conj_tac
+    >- (rw [] \\ first_assum drule_all
+      \\ reverse (rw []) >- metis_tac []
+      \\ disj1_tac \\ qexists_tac `sub_pt z'³' z`
+      \\ conj_tac >- (qpat_x_assum `mk_pt _ _ = _` mp_tac \\ pt_arith_tac)
+      \\ `∀i. add_pt i (sub_pt z'³' z) = add_pt (sub_pt i z) z'³'` by pt_arith_tac
+      \\ fs [FUN_EQ_THM] \\ rw [])
+    >- (
+      `(∀z''. mk_pt (mk_pt q z) (sub_pt z'' z) = mk_pt q z'') ∧
+       ∀i z''. add_pt z (add_pt i z'') = add_pt i (add_pt z z'')` by pt_arith_tac
+      \\ pop_assum (fs o single)
+      \\ metis_tac [mk_mk_pt_assoc])
+    >- first_assum ACCEPT_TAC)
+  \\ disch_then suff_eq_tac \\ cong_tac 3 \\ simp [Once EXTENSION]
+  \\ simp [SF DNF_ss] \\ strip_tac \\ cong_tac 2
+  \\ Cases_on `q` \\ Cases_on `z` \\ simp [EXISTS_PROD, mk_pt_def]
+  \\ eq_tac \\ strip_tac \\ gvs []
+  THENL (map qexistsl_tac [[`p_1+q`,`p_2+r''`], [`p_1-q`,`p_2-r''`]])
+  \\ (conj_tac >- ARITH_TAC \\ cong_tac 1 \\ simp [] \\ ARITH_TAC)
+QED
+
 Theorem floodfill_teleport:
   floodfill area ins outs crosses init ∧
   PERM outs ((ad,P) :: outs') ⇒
@@ -2326,15 +2366,8 @@ Proof
     \\ Cases_on `r` \\ fs [v_teleport_def]
     \\ metis_tac [add_pt_comm, add_pt_assoc])
   \\ conj_tac >- first_assum ACCEPT_TAC
-  \\ rw [] \\ first_x_assum $ drule_all_then suff_eq_tac
-  \\ Cases_on `ad` \\ simp [floodfill_run_def, mk_dpt_def]
-  \\ cong_tac 1 >- cheat
-  \\ cong_tac 3 \\ simp [Once EXTENSION]
-  \\ simp [SF DNF_ss] \\ strip_tac \\ cong_tac 4
-  \\ Cases_on `q` \\ Cases_on `z` \\ simp [EXISTS_PROD, mk_pt_def]
-  \\ eq_tac \\ strip_tac \\ gvs []
-  THENL (map qexistsl_tac [[`p_1+q`,`p_2+r''`], [`p_1-q`,`p_2-r''`]])
-  \\ (conj_tac >- ARITH_TAC \\ cong_tac 1 \\ simp [] \\ ARITH_TAC)
+  \\ rw [] \\ first_x_assum $ drule_all_then assume_tac
+  \\ drule_then irule floodfill_run_teleport
 QED
 
 Theorem make_area_2_2 = EVAL ``EVERY (λa. ¬MEM (add_pt (x,y) a) area) (make_area 2 2)``
