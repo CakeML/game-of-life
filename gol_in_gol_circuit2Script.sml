@@ -1200,16 +1200,16 @@ End
 
 Definition floodfill_run_def:
   floodfill_run (area: (int # int) list) (init: state)
-    (ins: (((int # int) # dir) # (int # int -> num -> bool)) set)
-    (outs: (((int # int) # dir) # (int # int -> num -> bool)) set) ⇔
+    (ins: (((int # int) # dir) # (int # int -> num -> bool)) list)
+    (outs: (((int # int) # dir) # (int # int -> num -> bool)) list) ⇔
   EVERY in_range area ∧
-  (∀a d v. ((a,d),v) ∈ ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
-  (∀a d v. ((a,d),v) ∈ outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
-  (floodfill_io_wf area ins outs ⇒
+  (∀a d v. MEM ((a,d),v) ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
+  (∀a d v. MEM ((a,d),v) outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
+  (floodfill_io_wf area (set ins) (set outs) ⇒
   circuit_run
     (iunion (λz. set (MAP (λp. mk_pt p z) area)))
-    (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) ins))
-    (iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z, d, v z)) outs))
+    (iunion (λz. set (MAP (λ((p,d),v). (mk_pt p z, d, v z)) ins)))
+    (iunion (λz. set (MAP (λ((p,d),v). (mk_pt p z, d, v z)) outs)))
     ∅ init)
 End
 
@@ -1237,8 +1237,8 @@ Theorem floodfill_run_add_gate:
   ⇒
   floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
     (mega_cell_builder ((p,g)::gates) init)
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ ins)
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
+    (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1 ++ ins)
+    (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1 ++ outs)
 Proof
   simp [floodfill_run_def, floodfill_gate_wf_def, circuit_def]
   \\ rpt gen_tac \\ strip_tac
@@ -1310,7 +1310,7 @@ Proof
       Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
     \\ fs [EVERY_MEM] \\ rw []
     >- (
-      `∀v z. ((mk_pt p_1 z,d),v) ∉ outs` by (
+      `∀v z. ¬MEM ((mk_pt p_1 z,d),v) outs` by (
         rpt strip_tac \\ res_tac \\ res_tac
         \\ fs [sub_mk_pt_assoc, add_mk_pt_assoc_r]
         \\ `∀p'. mk_pt (add_pt p (sub_pt p' (mk_pt p z'))) z =
@@ -1327,7 +1327,7 @@ Proof
       \\ pop_assum suff_eq_tac \\ cong_tac 6
       \\ pop_assum mp_tac \\ pt_arith_tac)
     >- (
-      `∀v z. ((mk_pt p_1 z,d),v) ∉ ins` by (
+      `∀v z. ¬MEM ((mk_pt p_1 z,d),v) ins` by (
         rpt strip_tac \\ res_tac \\ res_tac
         \\ fs [sub_mk_pt_assoc, add_mk_pt_assoc_l, add_mk_pt_assoc_r]
         \\ `∀p'. mk_pt (add_pt p (sub_pt p' (mk_pt p z'))) z =
@@ -1344,7 +1344,7 @@ Proof
       \\ pop_assum suff_eq_tac \\ cong_tac 6
       \\ pop_assum mp_tac \\ pt_arith_tac)
     >- (
-      `∃z'. ((mk_pt p' (sub_pt z' z),d),(λi. p_2' (add_pt i z'))) ∈ outs ∨
+      `∃z'. MEM ((mk_pt p' (sub_pt z' z),d),(λi. p_2' (add_pt i z'))) outs ∨
           ∃a. mk_pt p' (sub_pt z' z) = add_pt p a ∧ MEM ((a,d),(λi. p_2' (add_pt i z'))) outs1` by (
         `mk_pt (add_pt p (sub_pt p' (mk_pt p z))) (sub_pt z z') = mk_pt p' (neg_pt z')` by pt_arith_tac
         \\ `sub_pt (mk_pt p' (neg_pt z')) (dir_to_xy d) = p''` by (simp [sub_mk_pt_assoc] \\ pt_arith_tac)
@@ -1363,7 +1363,7 @@ Proof
       \\ fs [add_mk_pt_assoc_l, add_mk_pt_assoc_r, sub_mk_pt_assoc]
       \\ dxrule_all in_range_unique \\ disch_then (fs o single))
     >- (
-      `∃z'. ((mk_pt p' (sub_pt z' z),d),(λi. p_2' (add_pt i z'))) ∈ ins ∨
+      `∃z'. MEM ((mk_pt p' (sub_pt z' z),d),(λi. p_2' (add_pt i z'))) ins ∨
           ∃a. mk_pt p' (sub_pt z' z) = add_pt p a ∧ MEM ((a,d),(λi. p_2' (add_pt i z'))) ins1` by (
         `mk_pt (add_pt p (sub_pt p' (mk_pt p z))) (sub_pt z z') = mk_pt p' (neg_pt z')` by pt_arith_tac
         \\ `add_pt (mk_pt p' (neg_pt z')) (dir_to_xy d) = p''` by (simp [add_mk_pt_assoc_l] \\ pt_arith_tac)
@@ -1419,9 +1419,9 @@ Proof
 QED
 
 Theorem floodfill_run_cancel_new:
-  (∀a z d v v'. ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs ⇒
-    ((mk_pt a z,d),v') ∉ del) ∧
-  floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
+  (∀a z d v v'. MEM ((a,d),v) ins ∨ MEM ((a,d),v) outs ⇒
+    ¬MEM ((mk_pt a z,d),v') del) ∧
+  floodfill_run area init (del ++ ins) (del ++ outs) ⇒
   floodfill_run area init ins outs
 Proof
   rw [floodfill_run_def] \\ fs [iunion_union]
@@ -1430,12 +1430,13 @@ Proof
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
   >- (irule floodfill_io_wf_union \\ metis_tac [])
   \\ strip_tac \\ drule circuit_run_internalise
-  \\ disch_then $ qspec_then `iunion (λz. IMAGE (λ((p,d),v). (mk_pt p z,d,v z)) del)`
+  \\ disch_then $ qspec_then
+    `iunion (λz. set (MAP (λ((p,d),v). (mk_pt p z,d,v z)) del))`
     (suff_eq_tac o SRULE [])
   \\ cong_tac 3
   \\ DEP_REWRITE_TAC [prove(``DISJOINT a b ⇒ a ∪ b DIFF a = b``,
     simp [Once EXTENSION, SUBSET_DEF, DISJOINT_ALT] \\ metis_tac [])]
-  \\ simp [DISJOINT_ALT, PULL_EXISTS,
+  \\ simp [DISJOINT_ALT, PULL_EXISTS, MEM_MAP,
     Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD]
   \\ rpt strip_tac
   \\ `mk_pt (mk_pt p_1' z) (neg_pt z) = p_1'` by pt_arith_tac
@@ -1445,10 +1446,20 @@ Proof
 QED
 
 Theorem floodfill_run_cancel:
-  floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
+  floodfill_run area init (del ++ ins) (del ++ outs) ⇒
   floodfill_run area init ins outs
 Proof
   cheat (* todo *)
+QED
+
+Theorem floodfill_run_perm:
+  floodfill_run area init ins outs ∧
+  PERM ins ins' ∧ PERM outs outs' ⇒
+  floodfill_run area init ins' outs'
+Proof
+  strip_tac \\ last_x_assum suff_eq_tac
+  \\ simp [floodfill_run_def, LIST_TO_SET_MAP]
+  \\ metis_tac [MEM_PERM, PERM_LIST_TO_SET]
 QED
 
 Theorem floodfill_run_add_gate_cancel:
@@ -1457,12 +1468,12 @@ Theorem floodfill_run_add_gate_cancel:
   (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
   EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
   floodfill_run area (mega_cell_builder gates init) ins
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1) ∪ outs)
+    (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1 ++ outs)
   ⇒
   floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
     (mega_cell_builder ((p,g)::gates) init)
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins2) ∪ ins)
-    (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
+    (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins2 ++ ins)
+    (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1 ++ outs)
 Proof
   rw []
   \\ irule floodfill_run_cancel_new
@@ -1470,11 +1481,12 @@ Proof
   \\ `∀a. MEM a (make_area g.width g.height) ⇒ in_range (add_pt p a)` by (
     simp [Abbr`p`, FORALL_PROD, make_area_def, MEM_FLAT, MEM_GENLIST,
       PULL_EXISTS, in_range_def] \\ ARITH_TAC)
-  \\ qexists_tac `set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1)`
+  \\ qexists_tac `MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1`
   \\ drule_then (drule_at_then Any $ drule_at Any) floodfill_run_add_gate
   \\ impl_tac >- simp [Abbr`p`] \\ strip_tac
   \\ reverse conj_tac >- (
-    pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [AC UNION_ASSOC UNION_COMM])
+    drule_then irule floodfill_run_perm \\ simp []
+    \\ metis_tac [PERM_APPEND, PERM_CONG, PERM_REFL])
   \\ simp [MEM_MAP, PULL_EXISTS,
     Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
     Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
@@ -1531,10 +1543,10 @@ Definition floodfill_def:
           classify 5 v = SOME (Zeros, Zeros) ∧
           v_eval env v s) ⇒
         floodfill_run area (mega_cell_builder gates (env 0))
-          (set (ZIP (MAP FST ins, sin)) ∪
-           set (MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross))
-          (set (ZIP (MAP FST outs, sout)) ∪
-           set (MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross))
+          (ZIP (MAP FST ins, sin) ++
+           MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross)
+          (ZIP (MAP FST outs, sout) ++
+           MAP2 (λ(_,p,d) v. ((p,d), delay 5 ∘ v)) crosses scross)
 End
 
 Theorem floodfill_start:
@@ -1611,7 +1623,8 @@ Proof
   \\ first_x_assum (qspec_then `scross` mp_tac) \\ impl_tac
   >- (conj_tac >- metis_tac [] \\ metis_tac [MEM_PERM])
   \\ simp [ZIP_MAP, MAP2_ZIP]
-  \\ metis_tac [PERM_LIST_TO_SET, PERM_MAP]
+  \\ strip_tac \\ drule_then irule floodfill_run_perm
+  \\ metis_tac [PERM_CONG, PERM_REFL, PERM_MAP]
 QED
 
 Theorem floodfill_weaken_gen:
@@ -1943,7 +1956,7 @@ Proof
   \\ first_x_assum drule \\ strip_tac
   \\ gvs [v_eval_def]
   \\ qmatch_asmsub_rename_tac `floodfill_run _ _
-    {(_,latch);(_,clock)} {(_,latch');(_,clock')}`
+    [(_,latch);(_,clock)] [(_,latch');(_,clock')]`
   \\ `latch = latch' ∧ clock = clock'` by
     (simp [FUN_EQ_THM, e_clock_def] \\ ARITH_TAC)
   \\ `env 0 = init` by simp [Abbr`env`] \\ pop_assum $ fs o single
@@ -2140,10 +2153,12 @@ Proof
   \\ impl_tac >- (
     simp [Abbr`p`]
     \\ cheat)
-  \\ disch_then assume_tac
-  \\ irule floodfill_run_cancel
-  \\ qexists_tac `set (MAP (λ((a,d),v). ((add_pt p a,d),v)) (ZIP (MAP FST ins1,sin1)))`
-  \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ PairCases_on `p`
+  \\ strip_tac \\ irule floodfill_run_cancel
+  \\ qexists_tac `MAP (λ((a,d),v). ((add_pt p a,d),v)) (ZIP (MAP FST ins1,sin1))`
+  \\ drule_then irule floodfill_run_perm \\ simp []
+  \\ irule $ METIS_PROVE [PERM_CONG, PERM_APPEND, PERM_REFL]
+    ``a1 = a1' ∧ a2 = a2' ⇒ PERM (a1++a2++a3++a4) (a2'++a1'++a3++a4)``
+  \\ PairCases_on `p`
   \\ simp [ZIP_MAP, MAP_COMPOSE, o_DEF, LAMBDA_PROD, AC UNION_ASSOC UNION_COMM]
 QED
 
@@ -2214,9 +2229,12 @@ Proof
     simp [Abbr`p`]
     \\ cheat)
   \\ strip_tac \\ irule floodfill_run_cancel
-  \\ qexists_tac `{((add_pt p a,d1),v1)}`
-  \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [Once EXTENSION]
-  \\ CONV_TAC $ DEPTH_CONV ETA_CONV \\ metis_tac []
+  \\ qexists_tac `[((add_pt p a,d1),v1)]`
+  \\ drule_then irule floodfill_run_perm
+  \\ simp [iffLR PERM_SYM, PERM_FUN_APPEND_CONS]
+  \\ CONV_TAC $ DEPTH_CONV ETA_CONV
+  \\ metis_tac [PERM_FUN_CONS, PERM_FUN_SWAP_AT_FRONT,
+    PERM_FUN_APPEND_CONS, APPEND, PERM_REFL]
 QED
 
 Theorem floodfill_add_crossover_l:
@@ -2303,9 +2321,8 @@ Proof
   \\ simp [SF DNF_ss]
   \\ disch_then $ drule_then $ drule_then assume_tac
   \\ irule floodfill_run_cancel
-  \\ qexists_tac `{((p,d),v)}`
-  \\ pop_assum suff_eq_tac \\ cong_tac 1
-  \\ simp [Once EXTENSION] \\ metis_tac []
+  \\ qexists_tac `[((p,d),v)]`
+  \\ drule_then irule floodfill_run_perm \\ simp [PERM_FUN_APPEND_CONS]
 QED
 
 Theorem floodfill_teleport:
