@@ -312,6 +312,15 @@ Proof
   \\ simp [SUBSET_DEF, PULL_EXISTS]
 QED
 
+Theorem span_sn_eq_span_sn:
+  span {(a,d)} = span {(a',d')} ⇔ d = d' ∧ ∃z. a' = mk_pt a z
+Proof
+  simp [Once SET_EQ_SUBSET, SUBSET_DEF, PULL_EXISTS, span_def, mk_dpt_def]
+  \\ `∀z z'. mk_pt (mk_pt a z) z' = mk_pt a (add_pt z z') ∧
+      mk_pt a z' = mk_pt (mk_pt a z) (sub_pt z' z)` by pt_arith_tac
+  \\ metis_tac [mk_pt_0]
+QED
+
 Definition assign_ext_def:
   assign_ext (s, dom) (s', dom') ⇔
     span dom ⊆ span dom' ∧ (∀x. x ∈ span dom ⇒ s x = s' x)
@@ -1188,6 +1197,14 @@ Proof
   pt_arith_tac
 QED
 
+Theorem ALL_DISTINCT_MAP_of_MAP:
+  ALL_DISTINCT (MAP f ls) ∧
+  (∀x y. MEM x ls ∧ MEM y ls ∧ g x = g y ⇒ f x = f y) ⇒
+  ALL_DISTINCT (MAP g ls)
+Proof
+  Induct_on `ls` \\ rw [MAP, ALL_DISTINCT, MEM_MAP, SF DNF_ss] \\ metis_tac []
+QED
+
 Definition floodfill_io_wf_def:
   floodfill_io_wf area ins outs ⇔
   (∀a d v z. ((a,d),v) ∈ ins ∧
@@ -1205,6 +1222,8 @@ Definition floodfill_run_def:
   EVERY in_range area ∧
   (∀a d v. MEM ((a,d),v) ins ⇒ MEM (add_pt a (dir_to_xy d)) area) ∧
   (∀a d v. MEM ((a,d),v) outs ⇒ MEM (sub_pt a (dir_to_xy d)) area) ∧
+  ALL_DISTINCT (MAP (λ((a,d),v). span {(a,d)}) ins) ∧
+  ALL_DISTINCT (MAP (λ((a,d),v). span {(a,d)}) outs) ∧
   (floodfill_io_wf area (set ins) (set outs) ⇒
   circuit_run
     (iunion (λz. set (MAP (λp. mk_pt p z) area)))
@@ -1260,6 +1279,40 @@ Proof
   >- metis_tac [add_pt_assoc]
   >- metis_tac [add_sub_pt_comm]
   >- metis_tac [add_sub_pt_comm]
+  >- (
+    fs [ALL_DISTINCT_APPEND, MAP_COMPOSE]
+    \\ reverse conj_tac >- (
+      simp [MEM_MAP, PULL_EXISTS, Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+        span_sn_eq_span_sn]
+      \\ rpt strip_tac \\ res_tac \\ res_tac
+      \\ fs [add_pt_assoc, add_mk_pt_assoc_l]
+      \\ `z = (0,0)` by metis_tac [in_range_unique, mk_pt_0]
+      \\ gvs [])
+    \\ first_x_assum $ qspec_then `(0,0)` $ mp_then (Pos hd) irule ALL_DISTINCT_MAP_of_MAP
+    \\ simp [Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD, span_sn_eq_span_sn] \\ rw []
+    \\ ntac 2 $ last_assum dxrule \\ pop_assum mp_tac
+    \\ MAP_EVERY PairCases_on [`p_1'`,`p_1`,`z`]
+    \\ gvs [mk_pt_def, Abbr`p`, Abbr`s`]
+    \\ Cases_on `dir_to_xy p_2` \\ drule dir_to_xy_bounded
+    \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+    \\ ARITH_TAC)
+  >- (
+    fs [ALL_DISTINCT_APPEND, MAP_COMPOSE]
+    \\ reverse conj_tac >- (
+      simp [MEM_MAP, PULL_EXISTS, Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+        span_sn_eq_span_sn]
+      \\ rpt strip_tac \\ res_tac \\ res_tac
+      \\ fs [add_sub_pt_assoc, sub_mk_pt_assoc]
+      \\ `z = (0,0)` by metis_tac [in_range_unique, mk_pt_0]
+      \\ gvs [])
+    \\ first_x_assum $ qspec_then `(0,0)` $ mp_then (Pos hd) irule ALL_DISTINCT_MAP_of_MAP
+    \\ simp [Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD, span_sn_eq_span_sn] \\ rw []
+    \\ ntac 2 $ last_assum dxrule \\ pop_assum mp_tac
+    \\ MAP_EVERY PairCases_on [`p_1'`,`p_1`,`z`]
+    \\ gvs [mk_pt_def, Abbr`p`, Abbr`s`]
+    \\ Cases_on `dir_to_xy p_2` \\ drule dir_to_xy_bounded
+    \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+    \\ ARITH_TAC)
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
   >- (simp [floodfill_io_wf_def] \\ rpt conj_tac
     \\ rw []
@@ -1418,38 +1471,29 @@ Proof
   simp [Once EXTENSION] \\ metis_tac []
 QED
 
-Theorem floodfill_run_cancel_new:
-  (∀a z d v v'. MEM ((a,d),v) ins ∨ MEM ((a,d),v) outs ⇒
-    ¬MEM ((mk_pt a z,d),v') del) ∧
+Theorem floodfill_run_cancel:
   floodfill_run area init (del ++ ins) (del ++ outs) ⇒
   floodfill_run area init ins outs
 Proof
-  rw [floodfill_run_def] \\ fs [iunion_union]
-  >- metis_tac []
-  >- metis_tac []
+  simp [floodfill_run_def, ALL_DISTINCT_APPEND] \\ strip_tac
+  \\ fs [iunion_union, MEM_MAP, PULL_EXISTS, span_sn_eq_span_sn,
+    Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD]
+  \\ conj_tac >- metis_tac []
+  \\ conj_tac >- metis_tac []
+  \\ strip_tac
   \\ qpat_x_assum `_ ⇒ _` mp_tac \\ impl_tac
-  >- (irule floodfill_io_wf_union \\ metis_tac [])
+  >- (irule floodfill_io_wf_union \\ rw [])
   \\ strip_tac \\ drule circuit_run_internalise
   \\ disch_then $ qspec_then
     `iunion (λz. set (MAP (λ((p,d),v). (mk_pt p z,d,v z)) del))`
     (suff_eq_tac o SRULE [])
+  \\ `∀a b z z'. mk_pt a z = mk_pt b z' ⇒ b = mk_pt a (sub_pt z z')` by pt_arith_tac
   \\ cong_tac 3
   \\ DEP_REWRITE_TAC [prove(``DISJOINT a b ⇒ a ∪ b DIFF a = b``,
     simp [Once EXTENSION, SUBSET_DEF, DISJOINT_ALT] \\ metis_tac [])]
   \\ simp [DISJOINT_ALT, PULL_EXISTS, MEM_MAP,
     Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD]
-  \\ rpt strip_tac
-  \\ `mk_pt (mk_pt p_1' z) (neg_pt z) = p_1'` by pt_arith_tac
-  \\ qpat_x_assum `_ = mk_pt _ _` (fs o single) \\ gvs []
-  \\ `mk_pt (mk_pt p_1'' z') (neg_pt z) = mk_pt p_1'' (sub_pt z' z)` by pt_arith_tac
-  \\ pop_assum (fs o single) \\ metis_tac []
-QED
-
-Theorem floodfill_run_cancel:
-  floodfill_run area init (del ++ ins) (del ++ outs) ⇒
-  floodfill_run area init ins outs
-Proof
-  cheat (* todo *)
+  \\ metis_tac []
 QED
 
 Theorem floodfill_run_perm:
@@ -1459,69 +1503,7 @@ Theorem floodfill_run_perm:
 Proof
   strip_tac \\ last_x_assum suff_eq_tac
   \\ simp [floodfill_run_def, LIST_TO_SET_MAP]
-  \\ metis_tac [MEM_PERM, PERM_LIST_TO_SET]
-QED
-
-Theorem floodfill_run_add_gate_cancel:
-  ∀ins1 ins2 outs1 ins outs init.
-  floodfill_gate_wf g (ins1 ++ ins2) outs1 init ∧
-  (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
-  EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
-  floodfill_run area (mega_cell_builder gates init) ins
-    (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1 ++ outs)
-  ⇒
-  floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
-    (mega_cell_builder ((p,g)::gates) init)
-    (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins2 ++ ins)
-    (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1 ++ outs)
-Proof
-  rw []
-  \\ irule floodfill_run_cancel_new
-  \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
-  \\ `∀a. MEM a (make_area g.width g.height) ⇒ in_range (add_pt p a)` by (
-    simp [Abbr`p`, FORALL_PROD, make_area_def, MEM_FLAT, MEM_GENLIST,
-      PULL_EXISTS, in_range_def] \\ ARITH_TAC)
-  \\ qexists_tac `MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1`
-  \\ drule_then (drule_at_then Any $ drule_at Any) floodfill_run_add_gate
-  \\ impl_tac >- simp [Abbr`p`] \\ strip_tac
-  \\ reverse conj_tac >- (
-    drule_then irule floodfill_run_perm \\ simp []
-    \\ metis_tac [PERM_APPEND, PERM_CONG, PERM_REFL])
-  \\ simp [MEM_MAP, PULL_EXISTS,
-    Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
-    Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
-  \\ rpt strip_tac \\ gvs []
-  >- cheat
-  >- (
-    `MEM (add_pt p_1 (dir_to_xy d)) (make_area g.width g.height) ∧
-      MEM (add_pt a (dir_to_xy d)) area ∧ EVERY in_range area` by (
-      fs [floodfill_run_def, MEM_MAP, floodfill_gate_wf_def] \\ metis_tac [])
-    \\ fs [EVERY_MEM] \\ res_tac
-    \\ fs [add_pt_assoc]
-    \\ qpat_x_assum `mk_pt a z = _` (fs o single o SYM)
-    \\ fs [add_mk_pt_assoc_l]
-    \\ metis_tac [in_range_unique, mk_pt_0])
-  >- (
-    `p_1' = mk_pt p_1 z` by (qpat_x_assum `_=_` mp_tac \\ pt_arith_tac)
-    \\ gvs [] \\ qpat_x_assum `_=_` kall_tac
-    \\ fs [floodfill_gate_wf_def, SF DNF_ss]
-    \\ res_tac \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
-    \\ `z = (0,0)` by (
-      rpt $ qpat_x_assum `MEM _ (make_area _ _)` mp_tac
-      \\ rpt $ qpat_x_assum `_ < _` mp_tac \\ POP_ASSUM_LIST kall_tac
-      \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
-      \\ Cases_on `dir_to_xy d` \\ drule dir_to_xy_bounded
-      \\ pt_arith_tac)
-    \\ pop_assum (fs o single))
-  >- (
-    `p_1 = sub_pt (mk_pt a z) p` by (qpat_x_assum `_=_` mp_tac \\ pt_arith_tac)
-    \\ gvs [] \\ qpat_x_assum `_=_` kall_tac
-    \\ fs [MEM_MAP, floodfill_io_wf_def, floodfill_gate_wf_def,
-      SF DNF_ss, EVERY_MEM] \\ rpt $ qpat_x_assum `_ ⇒ _` kall_tac
-    \\ res_tac \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
-    \\ `∀a d. add_pt p (add_pt (sub_pt a p) d) = add_pt a d` by pt_arith_tac
-    \\ pop_assum (fn h => fs [add_mk_pt_assoc_l, h])
-    \\ cheat)
+  \\ metis_tac [MEM_PERM, PERM_LIST_TO_SET, PERM_MAP, ALL_DISTINCT_PERM]
 QED
 
 Definition floodfill_def:
@@ -1962,7 +1944,7 @@ Proof
   \\ `env 0 = init` by simp [Abbr`env`] \\ pop_assum $ fs o single
   \\ qpat_x_assum `floodfill_run _ _ _ _` mp_tac
   \\ simp [floodfill_run_def]
-  \\ disch_then (mp_tac o CONJUNCT2 o CONJUNCT2)
+  \\ disch_then (mp_tac o el 5 o CONJUNCTS)
   \\ impl_tac
   >- cheat
   \\ gvs [circuit_run_def]
