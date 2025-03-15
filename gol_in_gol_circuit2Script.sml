@@ -1128,6 +1128,12 @@ QED
 Theorem add_sub_pt_assoc =
   SRULE [] $ Q.INST [`c` |-> `neg_pt c`] add_pt_assoc;
 
+Theorem add_pt_left_comm:
+  add_pt a (add_pt b c) = add_pt b (add_pt a c)
+Proof
+  pt_arith_tac
+QED
+
 Theorem add_pt_right_comm:
   add_pt (add_pt a b) c = add_pt (add_pt a c) b
 Proof
@@ -1413,8 +1419,8 @@ Proof
 QED
 
 Theorem floodfill_run_cancel_new:
-  (∀a z d v d' v'. ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs ⇒
-    ((mk_pt a z,d'),v') ∉ del) ∧
+  (∀a z d v v'. ((a,d),v) ∈ ins ∨ ((a,d),v) ∈ outs ⇒
+    ((mk_pt a z,d),v') ∉ del) ∧
   floodfill_run area init (del ∪ ins) (del ∪ outs) ⇒
   floodfill_run area init ins outs
 Proof
@@ -1459,7 +1465,7 @@ Theorem floodfill_run_add_gate_cancel:
     (set (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1) ∪ outs)
 Proof
   rw []
-  \\ irule floodfill_run_cancel
+  \\ irule floodfill_run_cancel_new
   \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
   \\ `∀a. MEM a (make_area g.width g.height) ⇒ in_range (add_pt p a)` by (
     simp [Abbr`p`, FORALL_PROD, make_area_def, MEM_FLAT, MEM_GENLIST,
@@ -1467,7 +1473,43 @@ Proof
   \\ qexists_tac `set (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1)`
   \\ drule_then (drule_at_then Any $ drule_at Any) floodfill_run_add_gate
   \\ impl_tac >- simp [Abbr`p`] \\ strip_tac
-  \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [AC UNION_ASSOC UNION_COMM]
+  \\ reverse conj_tac >- (
+    pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [AC UNION_ASSOC UNION_COMM])
+  \\ simp [MEM_MAP, PULL_EXISTS,
+    Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
+    Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+  \\ rpt strip_tac \\ gvs []
+  >- cheat
+  >- (
+    `MEM (add_pt p_1 (dir_to_xy d)) (make_area g.width g.height) ∧
+      MEM (add_pt a (dir_to_xy d)) area ∧ EVERY in_range area` by (
+      fs [floodfill_run_def, MEM_MAP, floodfill_gate_wf_def] \\ metis_tac [])
+    \\ fs [EVERY_MEM] \\ res_tac
+    \\ fs [add_pt_assoc]
+    \\ qpat_x_assum `mk_pt a z = _` (fs o single o SYM)
+    \\ fs [add_mk_pt_assoc_l]
+    \\ metis_tac [in_range_unique, mk_pt_0])
+  >- (
+    `p_1' = mk_pt p_1 z` by (qpat_x_assum `_=_` mp_tac \\ pt_arith_tac)
+    \\ gvs [] \\ qpat_x_assum `_=_` kall_tac
+    \\ fs [floodfill_gate_wf_def, SF DNF_ss]
+    \\ res_tac \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
+    \\ `z = (0,0)` by (
+      rpt $ qpat_x_assum `MEM _ (make_area _ _)` mp_tac
+      \\ rpt $ qpat_x_assum `_ < _` mp_tac \\ POP_ASSUM_LIST kall_tac
+      \\ simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS]
+      \\ Cases_on `dir_to_xy d` \\ drule dir_to_xy_bounded
+      \\ pt_arith_tac)
+    \\ pop_assum (fs o single))
+  >- (
+    `p_1 = sub_pt (mk_pt a z) p` by (qpat_x_assum `_=_` mp_tac \\ pt_arith_tac)
+    \\ gvs [] \\ qpat_x_assum `_=_` kall_tac
+    \\ fs [MEM_MAP, floodfill_io_wf_def, floodfill_gate_wf_def,
+      SF DNF_ss, EVERY_MEM] \\ rpt $ qpat_x_assum `_ ⇒ _` kall_tac
+    \\ res_tac \\ res_tac \\ rpt $ qpat_x_assum `$! _` kall_tac
+    \\ `∀a d. add_pt p (add_pt (sub_pt a p) d) = add_pt a d` by pt_arith_tac
+    \\ pop_assum (fn h => fs [add_mk_pt_assoc_l, h])
+    \\ cheat)
 QED
 
 Definition floodfill_def:
