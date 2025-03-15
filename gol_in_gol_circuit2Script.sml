@@ -1953,7 +1953,9 @@ Proof
   \\ simp [floodfill_run_def]
   \\ disch_then (mp_tac o el 5 o CONJUNCTS)
   \\ impl_tac
-  >- cheat
+  >- (ntac 4 $ pop_assum kall_tac
+    \\ simp [floodfill_io_wf_def, SF DNF_ss, FUN_EQ_THM]
+    \\ metis_tac [add_pt_0, mk_pt_0])
   \\ gvs [circuit_run_def]
   \\ strip_tac
   \\ dxrule run_clear_mods
