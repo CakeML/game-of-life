@@ -442,8 +442,17 @@ End
 Definition gate_wf_def:
   gate_wf (g:gate) ⇔
     g.width ≠ 0 ∧ g.height ≠ 0 ∧
+    g.width < ^tile ∧ g.height < ^tile ∧
     rectangle g.width g.height (MAP from_mask g.lo) ∧
     rectangle g.width g.height (MAP from_mask g.hi)
+End
+
+Definition gate_ports_wf_def:
+  gate_ports_wf w h ins outs ⇔
+    (∀p d. (p,d) ∈ ins ⇒ MEM (add_pt p (dir_to_xy d)) (make_area w h) ∧
+                        ¬MEM (sub_pt p (dir_to_xy d)) (make_area w h)) ∧
+    ∀p d. (p,d) ∈ outs ⇒ MEM (sub_pt p (dir_to_xy d)) (make_area w h) ∧
+                        ¬MEM (add_pt p (dir_to_xy d)) (make_area w h)
 End
 
 Definition is_gate_def:
@@ -452,6 +461,7 @@ Definition is_gate_def:
     (outs: (((int # int) # dir) # value) list) ⇔
   (* ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧ *)
   gate_wf g ∧
+  gate_ports_wf g.width g.height (set (MAP FST ins)) (set (MAP FST outs)) ∧
   ∀env. env_wf env ⇒
     ∀s. LIST_REL (λ(_,v). v_eval env v) ins s ⇒
       ∃s'. LIST_REL (λ(_,v). v_eval env v) outs s' ∧
@@ -535,6 +545,7 @@ Theorem is_gate_perm:
   is_gate g ins' outs'
 Proof
   simp [is_gate_def] \\ rw []
+  >- metis_tac [PERM_MAP, PERM_LIST_TO_SET]
   \\ rename [`_ ins' sin'`]
   \\ imp_res_tac PERM_LENGTH
   \\ imp_res_tac LIST_REL_LENGTH
@@ -919,14 +930,26 @@ Proof
   >- (HO_BACKCHAIN_TAC v_eval_v_or \\ rw [])
 QED
 
-Theorem blist_simulation_ok_gate_wf:
+Theorem blist_simulation_ok_gate_ports_wf:
   blist_simulation_ok w h ins outs init ⇒
+  gate_ports_wf w h (set (MAP (λ(p,d,_). (p,d)) ins)) (set (MAP (λ(p,d,_). (p,d)) outs))
+Proof
+  REWRITE_TAC [blist_simulation_ok_def]
+  \\ disch_then (mp_tac o CONJUNCT1)
+  \\ simp [blist_simple_checks_def, EVERY_MEM, gate_ports_wf_def, MEM_MAP, PULL_EXISTS,
+      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD,
+      Q.INST_TYPE [`:α` |-> `:dir`] EXISTS_PROD]
+  \\ ntac 6 strip_tac \\ first_x_assum drule \\ simp []
+QED
+
+Theorem blist_simulation_ok_gate_wf:
+  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
   gate_wf (instantiate_gate w h ee init)
 Proof
   strip_tac
   \\ `w ≠ 0 ∧ h ≠ 0 ∧ ∀ee. rectangle w h (MAP from_mask (instantiate ee init))`
     suffices_by (PairCases_on `ee` \\ simp [gate_wf_def, instantiate_gate_def])
-  \\ pop_assum mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
+  \\ qpat_x_assum `_ init` mp_tac \\ REWRITE_TAC [blist_simulation_ok_def]
   \\ disch_then (mp_tac o CONJUNCT1) \\ REWRITE_TAC [blist_simple_checks_def]
   \\ simp [rectangle_def, instantiate_def, EVERY_MEM, MEM_MAP, PULL_EXISTS]
   \\ rw [] \\ first_x_assum $ dxrule_then (rw o single o SYM)
@@ -1000,7 +1023,11 @@ Theorem blist_simulation_ok_imp_gate:
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
 Proof
   rw [is_gate_def, LIST_REL_MAP1, LIST_REL_MAP2]
-  >- drule_then irule blist_simulation_ok_gate_wf
+  >- (drule_then irule blist_simulation_ok_gate_wf \\ rw [])
+  >- (drule blist_simulation_ok_gate_ports_wf
+    \\ simp [MAP_COMPOSE]
+    \\ disch_then suff_eq_tac \\ cong_tac 4
+    \\ simp [FUN_EQ_THM, FORALL_PROD])
   \\ qpat_abbrev_tac `f = λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)`
   \\ qabbrev_tac `s1 = λv z n. eval (age n (mk_output_env env s (da,db) (ea,eb) z)) v`
   \\ qexists_tac `MAP (λ(_,_,v). s1 v) outs` \\ rw [LIST_REL_MAP2]
@@ -1059,6 +1086,10 @@ Theorem gate_weaken:
   is_gate g ins outs ⇒ is_gate g ins outs'
 Proof
   simp [is_gate_def] \\ strip_tac
+  \\ `MAP FST outs = MAP FST outs'` by (
+    CONV_TAC $ PATH_CONV "ll" $ REWR_CONV $ SYM LIST_REL_eq
+    \\ simp [EVERY2_MAP] \\ drule_at_then Any irule EVERY2_mono
+    \\ simp [FORALL_PROD])
   \\ fs [] \\ rpt strip_tac
   \\ last_x_assum (dxrule_then dxrule) \\ strip_tac
   \\ qexists_tac `s'` \\ conj_tac
@@ -1069,11 +1100,7 @@ Proof
     \\ simp [FORALL_PROD, v_subset_def])
   \\ pop_assum suff_eqr_tac \\ cong_tac 5
   \\ `MAP2 (λ(p,d) v. (p,d,v z)) (MAP FST outs) s' =
-      MAP2 (λ(p,d) v. (p,d,v z)) (MAP FST outs') s'` by (
-    cong_tac 2
-    \\ CONV_TAC $ PATH_CONV "ll" $ REWR_CONV $ SYM LIST_REL_eq
-    \\ simp [EVERY2_MAP] \\ drule_at_then Any irule EVERY2_mono
-    \\ simp [FORALL_PROD])
+      MAP2 (λ(p,d) v. (p,d,v z)) (MAP FST outs') s'` by simp []
   \\ pop_assum suff_eq_tac \\ cong_tac 1 \\ simp [MAP2_MAP_L]
   \\ cong_tac 3 \\ simp [FUN_EQ_THM, FORALL_PROD]
 QED
@@ -1241,13 +1268,8 @@ End
 
 Definition floodfill_gate_wf_def:
   floodfill_gate_wf g ins1 outs1 init ⇔
-  g.width < &^tile-1 ∧ g.height < &^tile-1 ∧
-  (∀a d v. MEM ((a,d),v) ins1 ⇒
-    MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height) ∧
-    ¬MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
-  (∀a d v. MEM ((a,d),v) outs1 ⇒
-    MEM (sub_pt a (dir_to_xy d)) (make_area g.width g.height) ∧
-    ¬MEM (add_pt a (dir_to_xy d)) (make_area g.width g.height)) ∧
+  g.width < &^tile ∧ g.height < &^tile ∧
+  gate_ports_wf g.width g.height (set (MAP FST ins1)) (set (MAP FST outs1)) ∧
   (∀z. circuit (make_area g.width g.height)
     (MAP (λ((a,d),v). (a,d,v z)) ins1)
     (MAP (λ((a,d),v). (a,d,v z)) outs1) []
@@ -1266,7 +1288,7 @@ Theorem floodfill_run_add_gate:
     (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1 ++ ins)
     (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1 ++ outs)
 Proof
-  simp [floodfill_run_def, floodfill_gate_wf_def, circuit_def]
+  simp [floodfill_run_def, floodfill_gate_wf_def, gate_ports_wf_def, circuit_def]
   \\ rpt gen_tac \\ strip_tac
   \\ gvs [] \\ qabbrev_tac `p = (&(2*x):int,&(2*y):int)`
   \\ pop_assum (fn h => POP_ASSUM_LIST (fn hs => MAP_EVERY assume_tac (h::rev hs)))
@@ -1579,9 +1601,9 @@ Proof
       `[((a,d),(λz n. e_eval (λi. env i z) v (&(n + base) − dl)))]`,
       `ZIP (MAP FST outs',s')`] mp_tac) floodfill_run_add_gate
   \\ impl_tac >- (
-    rw [make_area_def]
-    >- cheat
-    >- simp [Abbr`p`])
+    fs [make_area_def, floodfill_gate_wf_def, MAP_ZIP]
+    \\ reverse conj_tac >- simp [Abbr`p`]
+    \\ fs [ZIP_MAP, MAP2_ZIP, MAP_COMPOSE, o_DEF, LAMBDA_PROD])
   \\ PairCases_on `p`
   \\ fs [GSYM INSERT_SING_UNION, ZIP_MAP, MAP2_ZIP, MAP_COMPOSE,
     o_DEF, LAMBDA_PROD, make_area_def]
@@ -2143,7 +2165,8 @@ Proof
     ] mp_tac) floodfill_run_add_gate
   \\ impl_tac >- (
     simp [Abbr`p`]
-    \\ cheat)
+    \\ fs [floodfill_gate_wf_def, gate_wf_def, MAP_ZIP]
+    \\ fs [ZIP_MAP, MAP2_ZIP, MAP_COMPOSE, o_DEF, LAMBDA_PROD])
   \\ strip_tac \\ irule floodfill_run_cancel
   \\ qexists_tac `MAP (λ((a,d),v). ((add_pt p a,d),v)) (ZIP (MAP FST ins1,sin1))`
   \\ drule_then irule floodfill_run_perm \\ simp []
@@ -2172,6 +2195,7 @@ QED
 Theorem floodfill_add_crossover_gen:
   floodfill area ins outs crosses gates ∧
   gate_wf g ∧
+  gate_ports_wf 1 1 {(a,d1); (b,d2)} {(a',d1); (b',d2)} ∧
   PERM outs (((p',d1),P) :: outs') ∧
   classify 5 P = SOME ea ∧
   g.width = 1 ∧ g.height = 1 ∧
@@ -2216,9 +2240,7 @@ Proof
       `[((a',d1),λz. delay' (5,eval_pair (env 0 z) ea) (v1 z)); ((b',d2),delay 5 ∘ v2)]`
     ] mp_tac) floodfill_run_add_gate
   \\ simp [make_area_def]
-  \\ impl_tac >- (
-    simp [Abbr`p`]
-    \\ cheat)
+  \\ impl_tac >- simp [Abbr`p`, floodfill_gate_wf_def, make_area_def]
   \\ strip_tac \\ irule floodfill_run_cancel
   \\ qexists_tac `[((add_pt p a,d1),v1)]`
   \\ drule_then irule floodfill_run_perm
@@ -2246,8 +2268,9 @@ Theorem floodfill_add_crossover_l:
     ((p, g) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
-  \\ rpt $ last_assum $ irule_at Any \\ rw []
-  >- drule_then irule blist_simulation_ok_gate_wf
+  \\ rpt $ last_assum $ irule_at Any \\ rw [] >>> ROTATE_LT 2
+  >- (drule blist_simulation_ok_gate_ports_wf \\ simp [])
+  >- (drule_then irule blist_simulation_ok_gate_wf \\ simp [])
   \\ dxrule blist_simulation_ok_imp_circuit
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ rev_drule_then $ drule_then $
@@ -2274,8 +2297,9 @@ Theorem floodfill_add_crossover_r:
     ((p, g) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
-  \\ rpt $ last_assum $ irule_at Any \\ rw []
-  >- drule_then irule blist_simulation_ok_gate_wf
+  \\ rpt $ last_assum $ irule_at Any \\ rw [] >>> ROTATE_LT 2
+  >- (drule blist_simulation_ok_gate_ports_wf \\ simp [INSERT_COMM])
+  >- (drule_then irule blist_simulation_ok_gate_wf \\ rw [])
   \\ dxrule blist_simulation_ok_imp_circuit
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ dxrule_then $ drule_then $
