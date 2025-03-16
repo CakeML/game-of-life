@@ -33,7 +33,7 @@ Definition step_def:
 End
 
 (*---------------------------------------------------------------*
-    Define what ist means to simulate GOL in GOL.
+    Define what it means to simulate GOL in GOL.
 
         s0 --step---> s1 --step---> ... --step---> sN
          |             ∧             ∧              ∧

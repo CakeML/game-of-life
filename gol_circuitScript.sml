@@ -4,7 +4,7 @@
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
-     integerTheory intLib
+     integerTheory intLib gol_simTheory;
 
 val _ = new_theory "gol_circuit";
 
@@ -637,39 +637,11 @@ Definition io_box_def:
     box (75 * x - 6, 75 * y - 6) (12, 12)
 End
 
-Datatype:
-  dir = N | S | W | E
-End
-
-Definition is_ns_def:
-  is_ns (p,d,r) = (d = N ∨ d = S)
-End
-
-Definition is_ew_def:
-  is_ew (p,d,r) = (d = E ∨ d = W)
-End
-
 Theorem is_ns_not_is_ew:
   is_ns x ⇔ ~ is_ew x
 Proof
   PairCases_on ‘x’ \\ gvs [is_ns_def, is_ew_def] \\ Cases_on ‘x1’ \\ simp []
 QED
-
-Definition add_pt_def[simp]:
-  add_pt (a:int,b:int) (c,d) = (a+c,b+d)
-End
-
-Definition sub_pt_def[simp]:
-  sub_pt (a:int,b:int) (c,d) = (a-c,b-d)
-End
-
-Definition neg_pt_def[simp]:
-  neg_pt (a:int,b:int) = (-a,-b)
-End
-
-Definition mul_pt_def[simp]:
-  mul_pt (n:int) (a, b) ⇔ (n * a, n * b)
-End
 
 Theorem add_pt_0[simp]:
   add_pt x (0,0) = x
@@ -703,13 +675,6 @@ Theorem add_pt_assoc:
 Proof
   MAP_EVERY Cases_on [`a`,`b`,`c`] \\ simp [INT_ADD_ASSOC]
 QED
-
-Definition dir_to_xy_def[simp]:
-  dir_to_xy N = (0,-1) ∧
-  dir_to_xy S = (0,1) ∧
-  dir_to_xy E = (1,0) ∧
-  dir_to_xy W = (-1,0)
-End
 
 Definition circ_mod_wf_def:
   circ_mod_wf area ins outs as ⇔
@@ -808,53 +773,6 @@ Proof
   \\ gvs [circ_io_area_def,EXISTS_PROD,io_cutout_eq,dir_test_def]
   \\ simp [IN_DEF,is_ns_def,is_ew_def]
 QED
-
-Definition io_gate_def:
-  io_gate E =
-   [[F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;T;F;F;T;F];
-    [F;F;F;F;F;F;F;F;F;T];
-    [F;F;F;F;F;T;F;F;F;T];
-    [F;F;F;F;F;F;T;T;T;T];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F]] ∧
-  io_gate W =
-   [[F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [T;T;T;T;F;F;F;F;F;F];
-    [T;F;F;F;T;F;F;F;F;F];
-    [T;F;F;F;F;F;F;F;F;F];
-    [F;T;F;F;T;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F]] ∧
-  io_gate N =
-   [[F;F;T;T;T;F;F;F;F;F];
-    [F;T;F;F;T;F;F;F;F;F];
-    [F;F;F;F;T;F;F;F;F;F];
-    [F;F;F;F;T;F;F;F;F;F];
-    [F;T;F;T;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F]] ∧
-  io_gate S =
-   [[F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;F;F;F;F];
-    [F;F;F;F;F;F;T;F;T;F];
-    [F;F;F;F;F;T;F;F;F;F];
-    [F;F;F;F;F;T;F;F;F;F];
-    [F;F;F;F;F;T;F;F;T;F];
-    [F;F;F;F;F;T;T;T;F;F]]
-End
 
 Definition from_row_def:
   from_row (x,y) [] = {} ∧

@@ -4,10 +4,10 @@ open Abbrev HolKernel bossLib boolLib Parse gol_simTheory
 
 val A_tm  = prim_mk_const {Name = "A",  Thy = "gol_sim"}
 val B_tm  = prim_mk_const {Name = "B",  Thy = "gol_sim"}
-val N_tm  = prim_mk_const {Name = "N",  Thy = "gol_circuit"}
-val E_tm  = prim_mk_const {Name = "E",  Thy = "gol_circuit"}
-val S_tm  = prim_mk_const {Name = "S",  Thy = "gol_circuit"}
-val W_tm  = prim_mk_const {Name = "W",  Thy = "gol_circuit"}
+val N_tm  = prim_mk_const {Name = "N",  Thy = "gol_sim"}
+val E_tm  = prim_mk_const {Name = "E",  Thy = "gol_sim"}
+val S_tm  = prim_mk_const {Name = "S",  Thy = "gol_sim"}
+val W_tm  = prim_mk_const {Name = "W",  Thy = "gol_sim"}
 val True_tm  = prim_mk_const {Name = "True",  Thy = "gol_sim"}
 val False_tm = prim_mk_const {Name = "False", Thy = "gol_sim"}
 val Var_tm   = prim_mk_const {Name = "Var", Thy = "gol_sim"}
