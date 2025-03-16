@@ -474,17 +474,17 @@ fun diag_to_svg_with_wires diag params {speed, fade} filename = let
     " ", realToString (b + 0.1 * Real.fromInt j), ")"]
   val wires = C map (Redblackmap.listItems wires) $ apsnd (fn
     Regular (n, Cell p) =>
-    reg ("white", oklab red p, "white", oklab blue p) n
+    reg ("#ccc", oklab red p, "#ccc", oklab blue p) n
   | Regular (n, v) =>
-      if v = nextCell then reg ("white", oklab blue (0,0), "white", oklab red (0,0)) n
-      else reg ("white", "purple", "white", "green") n
+      if v = nextCell then reg ("#ccc", oklab blue (0,0), "#ccc", oklab red (0,0)) n
+      else reg ("#ccc", "purple", "#ccc", "green") n
   | Exact (n, v) => let
     val (off, on, off', on') = case v of
-      Clock => ("black", "maroon", "black", "maroon")
-    | NotClock => ("maroon", "black", "maroon", "black")
+      Clock => ("white", "black", "white", "black")
+    | NotClock => ("black", "white", "black", "white")
     | ThisCell => (oklab blue (0,0), oklab red (0,0), oklab red (0,0), oklab blue (0,0))
-    | ThisCellClock => ("black", oklab red (0,0), "black", oklab blue (0,0))
-    | ThisCellNotClock => (oklab blue (0,0), "black", oklab red (0,0), "black")
+    | ThisCellClock => ("white", oklab red (0,0), "white", oklab blue (0,0))
+    | ThisCellNotClock => (oklab blue (0,0), "white", oklab red (0,0), "black")
     in clock (off, on, off', on') n end)
   val w = {period = Real.fromInt dur, speed = speed, wires = wires}
   in diag_to_svg (recognize diag) (SOME w) filename end
