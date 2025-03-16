@@ -229,6 +229,7 @@ fun new_grid cols rows =
 datatype dir = N | S | W | E
 
 val dirToXY = fn E => (1,0) | S => (0,1) | W => (~1,0) | N => (0,~1)
+val dirToRot = fn E => 0 | S => 1 | W => 2 | N => 3
 val rotate_dir = fn E => S | S => W | W => N | N => E
 
 type io_port = (int * int) * dir * bexp

@@ -22,14 +22,12 @@ sig
 
   val coord: diag -> int * int -> sigil
   val lineHeader: string -> string * string
-  val match_with:
-      (''a -> ''a) ->
-        (gate * ''a) list -> ''a -> gate * int
   val neighbors:
       diag -> int * int -> sigil * (sigil * sigil * sigil * sigil)
   val parse: 'a frag list -> diag
   val print_diag: diag -> unit
   val recognize: diag -> gates * teleport list
+  val diag_to_svg: gates * teleport list -> string -> unit
   val rotate_diag: diag -> string * string vector
   val rotate_sigil: sigil -> sigil
   type sigils = sigil * sigil * sigil * sigil

@@ -13,6 +13,7 @@ datatype bexp = False
 datatype dir = N | S | W | E
 
 val dirToXY: dir -> int * int
+val dirToRot: dir -> int
 
 type io_port = (int * int) * dir * bexp
 
