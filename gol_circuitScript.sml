@@ -1070,6 +1070,64 @@ Proof
   cheat
 QED
 
+Theorem circ_io_area_empty:
+  circ_io_area {} = {}
+Proof
+  gvs [circ_io_area_def]
+QED
+
+Theorem circ_io_area_inter:
+  a ⊆ b ⇒
+  circ_io_area a ∩ circ_io_area b = circ_io_area a
+Proof
+  simp [EXTENSION] \\ rw [] \\ reverse eq_tac \\ rw []
+  \\ gvs [circ_io_area_def,PULL_EXISTS,SUBSET_DEF]
+  \\ metis_tac []
+QED
+
+Theorem circ_io_area_SUBSET:
+  m1 ⊆ m2 ⇒ circ_io_area m1 ⊆ circ_io_area m2
+Proof
+  gvs [circ_io_area_def,SUBSET_DEF,PULL_EXISTS]
+  \\ metis_tac []
+QED
+
+Theorem lwss_at_inter:
+  U (IMAGE (lwss_at n) ins) ∩ circ_io_area m =
+  U (IMAGE (lwss_at n) (ins ∩ m))
+Proof
+  simp [Once EXTENSION] \\ gvs [PULL_EXISTS]
+  \\ rw [] \\ eq_tac \\ rw [] \\ gvs []
+  \\ last_assum $ irule_at Any \\ gvs []
+  \\ cheat
+QED
+
+Theorem io_box_11:
+  a ∈ io_box x ∧ a ∈ io_box y ⇒ x = y
+Proof
+  PairCases_on ‘x’
+  \\ PairCases_on ‘y’
+  \\ gvs [io_box_def,box_def]
+  \\ strip_tac \\ gvs []
+  \\ COOPER_TAC
+QED
+
+Theorem circ_io_area_disjoint:
+  m ⊆ outs ∧ DISJOINT m p ∧ circ_mod_wf area ins outs as ⇒
+  circ_io_area m ∩ circ_io_area (outs ∩ p) = ∅
+Proof
+  gvs [circ_io_area_def]
+  \\ simp [Once EXTENSION]
+  \\ strip_tac
+  \\ CCONTR_TAC \\ gvs []
+  \\ dxrule_then dxrule io_box_11 \\ strip_tac \\ gvs []
+  \\ gvs [SUBSET_DEF]
+  \\ gvs [EXTENSION]
+  \\ gvs [circ_mod_wf_def]
+  \\ gvs [IN_DISJOINT]
+  \\ metis_tac []
+QED
+
 Triviality circuit_run_internalise_lemma:
   ∀m area ins outs as init.
     circuit_run area ins outs as init ∧ m ⊆ ins ∧ m ⊆ outs ∧
@@ -1080,7 +1138,40 @@ Proof
   \\ dxrule to_del_io_run
   \\ disch_then $ qspec_then ‘circ_io_area m’ mp_tac
   \\ impl_tac
-  >- cheat
+  >-
+   (gvs [can_assert_def,circ_mod_def]
+    \\ gen_tac \\ gvs [circ_output_area_def]
+    \\ IF_CASES_TAC \\ gvs [] \\ strip_tac
+    >-
+     (‘m ⊆ is_ns’ by
+        (CCONTR_TAC \\ gvs []
+         \\ qpat_x_assum ‘_ ≠ EMPTY’ mp_tac \\ gvs []
+         \\ irule circ_io_area_disjoint
+         \\ last_x_assum $ irule_at Any \\ gvs []
+         \\ gvs [IN_DISJOINT,SUBSET_DEF]
+         \\ CCONTR_TAC \\ gvs [] \\ res_tac
+         \\ gvs [IN_DEF] \\ gvs [is_ns_not_is_ew])
+      \\ gvs [circ_io_lwss_def,lwss_at_inter]
+      \\ rpt $ irule_at Any circ_io_area_SUBSET
+      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
+      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
+      \\ rpt AP_TERM_TAC \\ gvs [SUBSET_DEF,EXTENSION] \\ metis_tac [])
+    \\ IF_CASES_TAC \\ gvs []
+    >-
+     (‘m ⊆ is_ew’ by
+        (CCONTR_TAC \\ gvs []
+         \\ qpat_x_assum ‘_ ≠ EMPTY’ mp_tac \\ gvs []
+         \\ irule circ_io_area_disjoint
+         \\ last_x_assum $ irule_at Any \\ gvs []
+         \\ gvs [IN_DISJOINT,SUBSET_DEF]
+         \\ CCONTR_TAC \\ gvs [] \\ res_tac
+         \\ gvs [IN_DEF] \\ gvs [is_ns_not_is_ew])
+      \\ gvs [circ_io_lwss_def,lwss_at_inter]
+      \\ rpt $ irule_at Any circ_io_area_SUBSET
+      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
+      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
+      \\ rpt AP_TERM_TAC \\ gvs [SUBSET_DEF,EXTENSION] \\ metis_tac [])
+    \\ gvs [circ_io_area_empty])
   \\ qsuff_tac
      ‘del_io (circ_io_area m) (circ_mod area ins outs as) =
       circ_mod area (ins DIFF m) (outs DIFF m) as’
