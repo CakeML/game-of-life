@@ -63,7 +63,7 @@ val params = {
 
 (* val _ = diag_to_svg (recognize diag) NONE "diag.svg"; *)
 (* val _ = diag_to_svg_with_wires diag params
-  {speed = 25.0, fade = 4} "propagation.svg"; *)
+  {speed = 25.0, fade = 4, offset = ~4} "propagation.svg"; *)
 
 Theorem floodfill_result = floodfill diag params;
 

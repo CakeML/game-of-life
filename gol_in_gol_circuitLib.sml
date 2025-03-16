@@ -451,28 +451,38 @@ fun floodfill diag params = let
   val x = mk_var ("area", type_of (hd args))
   in EXISTS (boolSyntax.mk_exists (x, list_mk_comb (f, x :: tl args)), hd args) thm end
 
-fun diag_to_svg_with_wires diag params {speed, fade} filename = let
+fun diag_to_svg_with_wires diag params {speed, fade, offset} filename = let
   val wires = build (recognize diag) params nolog
   val period = #period params
   val dur = 2 * period
-  fun clock (off, on, off', on') n = let
-    val ls = [(off, n), (on, n + fade),
+  fun trim ls = let
+    val ls = filter (fn (_, n) => 0 <= n andalso n <= dur) ls
+    val (ls0, lsN) = (hd ls, last ls)
+    val ls1 = if snd ls0 = 0 then [] else [(fst ls0, 0)]
+    val ls2 = if snd lsN = dur then [] else [(fst lsN, dur)]
+    in ls1 @ ls @ ls2 end
+  fun clock (off, on, off', on') n = [
+      (off', n - period), (on', n + fade - period),
+      (on', n + #pulse params - period), (off, n + #pulse params + fade - period),
+      (off, n), (on, n + fade),
       (on, n + #pulse params), (off', n + #pulse params + fade),
       (off', n + period), (on', n + period + fade),
       (on', n + period + #pulse params), (off, n + period + #pulse params + fade),
       (off, n + dur), (on, n + dur + fade)]
-    val ls = filter (fn (_, n) => 0 <= n andalso n <= dur) ls
-    in [(fst (hd ls), 0)] @ ls @ [(fst (last ls), dur)] end
   fun reg (off, on, off', on') n = [
-    (off, 0), (off, n), (on, n+fade), (on, period),
-    (off', period), (off', period + n), (on', period + n+fade), (on', dur)]
+    (off', offset+Int.min (fade, n)-period), (off', n+offset-period),
+    (on', n+offset+fade-period), (on', offset),
+    (off, offset+Int.min (fade, n)), (off, n+offset),
+    (on, n+offset+fade), (on, period+offset),
+    (off', period+offset+Int.min (fade, n)), (off', period + n+offset),
+    (on', period + n+fade+offset), (on', dur+offset)]
   val red = (0.15, 0.1)
   val blue = (~0.1, ~0.2)
   fun oklab (a, b) (i, j) = String.concat [
     "oklab(", realToString (0.6 + 0.2 * Real.fromInt i),
     " ", realToString a,
     " ", realToString (b + 0.1 * Real.fromInt j), ")"]
-  val wires = C map (Redblackmap.listItems wires) $ apsnd (fn
+  val wires = C map (Redblackmap.listItems wires) $ apsnd (trim o (fn
     Regular (n, Cell p) =>
     reg ("#ccc", oklab red p, "#ccc", oklab blue p) n
   | Regular (n, v) =>
@@ -485,7 +495,7 @@ fun diag_to_svg_with_wires diag params {speed, fade} filename = let
     | ThisCell => (oklab blue (0,0), oklab red (0,0), oklab red (0,0), oklab blue (0,0))
     | ThisCellClock => ("white", oklab red (0,0), "white", oklab blue (0,0))
     | ThisCellNotClock => (oklab blue (0,0), "white", oklab red (0,0), "black")
-    in clock (off, on, off', on') n end)
+    in clock (off, on, off', on') (n + offset) end))
   val w = {period = Real.fromInt dur, speed = speed, wires = wires}
   in diag_to_svg (recognize diag) (SOME w) filename end
 
