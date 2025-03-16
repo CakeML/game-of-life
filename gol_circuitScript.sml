@@ -1067,7 +1067,12 @@ Theorem circ_area_diff:
   circ_area area ins outs x =
   circ_area area (ins DIFF m) (outs DIFF m) x
 Proof
-  cheat
+  gvs [circ_area_eq] \\ rw []
+  \\ simp [Once EXTENSION]
+  \\ rw [] \\ eq_tac
+  \\ strip_tac \\ gvs []
+  \\ gvs [io_cutout_def]
+  \\ cheat
 QED
 
 Theorem circ_io_area_empty:
@@ -1092,13 +1097,19 @@ Proof
   \\ metis_tac []
 QED
 
-Theorem lwss_at_inter:
-  U (IMAGE (lwss_at n) ins) ∩ circ_io_area m =
-  U (IMAGE (lwss_at n) (ins ∩ m))
+Theorem lwss_at_circ_io_area:
+  m ⊆ s1 ∧ m ⊆ s2 ∧
+  (∀p r1 r2. (p,r1) ∈ s1 ∧ (p,r2) ∈ s1 ⇒ r1 = r2) ∧
+  (∀p r1 r2. (p,r1) ∈ s2 ∧ (p,r2) ∈ s2 ⇒ r1 = r2) ⇒
+  U (IMAGE (lwss_at n) s1) ∩ circ_io_area m =
+  U (IMAGE (lwss_at n) s2) ∩ circ_io_area m
 Proof
-  simp [Once EXTENSION] \\ gvs [PULL_EXISTS]
-  \\ rw [] \\ eq_tac \\ rw [] \\ gvs []
-  \\ last_assum $ irule_at Any \\ gvs []
+  simp [Once EXTENSION]
+  \\ gvs [PULL_EXISTS]
+  \\ rw [] \\ eq_tac \\ rw []
+  \\ gvs [circ_io_area_def]
+  \\ rename [‘x ∈ lwss_at n z’] \\ PairCases_on ‘z’ \\ gvs []
+  \\ gvs [PULL_EXISTS]
   \\ cheat
 QED
 
@@ -1129,10 +1140,10 @@ Proof
 QED
 
 Triviality circuit_run_internalise_lemma:
-  ∀m area ins outs as init.
-    circuit_run area ins outs as init ∧ m ⊆ ins ∧ m ⊆ outs ∧
+  ∀m area ins outs init.
+    circuit_run area ins outs {} init ∧ m ⊆ ins ∧ m ⊆ outs ∧
     (¬ (m ⊆ is_ns) ⇒ m ⊆ is_ew) ⇒
-    circuit_run area (ins DIFF m) (outs DIFF m) as init
+    circuit_run area (ins DIFF m) (outs DIFF m) {} init
 Proof
   gvs [circuit_run_def] \\ rpt gen_tac \\ strip_tac
   \\ dxrule to_del_io_run
@@ -1151,11 +1162,11 @@ Proof
          \\ gvs [IN_DISJOINT,SUBSET_DEF]
          \\ CCONTR_TAC \\ gvs [] \\ res_tac
          \\ gvs [IN_DEF] \\ gvs [is_ns_not_is_ew])
-      \\ gvs [circ_io_lwss_def,lwss_at_inter]
+      \\ gvs [circ_io_lwss_def]
       \\ rpt $ irule_at Any circ_io_area_SUBSET
-      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
-      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
-      \\ rpt AP_TERM_TAC \\ gvs [SUBSET_DEF,EXTENSION] \\ metis_tac [])
+      \\ irule_at Any lwss_at_circ_io_area
+      \\ gvs [SUBSET_DEF, SF SFY_ss]
+      \\ gvs [circ_mod_wf_def,SF SFY_ss])
     \\ IF_CASES_TAC \\ gvs []
     >-
      (‘m ⊆ is_ew’ by
@@ -1166,15 +1177,15 @@ Proof
          \\ gvs [IN_DISJOINT,SUBSET_DEF]
          \\ CCONTR_TAC \\ gvs [] \\ res_tac
          \\ gvs [IN_DEF] \\ gvs [is_ns_not_is_ew])
-      \\ gvs [circ_io_lwss_def,lwss_at_inter]
+      \\ gvs [circ_io_lwss_def]
       \\ rpt $ irule_at Any circ_io_area_SUBSET
-      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
-      \\ conj_tac >- (gvs [SUBSET_DEF] \\ metis_tac [])
-      \\ rpt AP_TERM_TAC \\ gvs [SUBSET_DEF,EXTENSION] \\ metis_tac [])
+      \\ irule_at Any lwss_at_circ_io_area
+      \\ gvs [SUBSET_DEF, SF SFY_ss]
+      \\ gvs [circ_mod_wf_def,SF SFY_ss])
     \\ gvs [circ_io_area_empty])
   \\ qsuff_tac
-     ‘del_io (circ_io_area m) (circ_mod area ins outs as) =
-      circ_mod area (ins DIFF m) (outs DIFF m) as’
+     ‘del_io (circ_io_area m) (circ_mod area ins outs {}) =
+      circ_mod area (ins DIFF m) (outs DIFF m) {}’
   >- (gvs [] \\ rw [] \\ gvs [circ_mod_wf_def, SF SFY_ss, SF DNF_ss])
   \\ gvs [FUN_EQ_THM] \\ gvs [del_io_def,del_io_mod_def,circ_mod_def]
   \\ gen_tac \\ IF_CASES_TAC
@@ -1192,9 +1203,9 @@ Proof
 QED
 
 Theorem circuit_run_internalise:
-  ∀m area ins outs as init.
-    circuit_run area ins outs as init ∧ m ⊆ ins ∧ m ⊆ outs ⇒
-    circuit_run area (ins DIFF m) (outs DIFF m) as init
+  ∀m area ins outs init.
+    circuit_run area ins outs {} init ∧ m ⊆ ins ∧ m ⊆ outs ⇒
+    circuit_run area (ins DIFF m) (outs DIFF m) {} init
 Proof
   rpt strip_tac
   \\ ‘∃m1 m2. m = m1 ∪ m2 ∧ DISJOINT m1 m2 ∧ m1 ⊆ is_ns ∧ m2 ⊆ is_ew’ by
