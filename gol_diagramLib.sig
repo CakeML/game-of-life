@@ -27,7 +27,6 @@ sig
   val parse: 'a frag list -> diag
   val print_diag: diag -> unit
   val recognize: diag -> gates * teleport list
-  val diag_to_svg: gates * teleport list -> string -> unit
   val rotate_diag: diag -> string * string vector
   val rotate_sigil: sigil -> sigil
   type sigils = sigil * sigil * sigil * sigil
@@ -39,4 +38,13 @@ sig
   val sigil_to_string: sigil -> string
   val smallNodePattern:
       small_gate -> (gol_simLib.gate * (sigils)) list
+
+  type diag_opts = {
+    period: real, speed: real,
+    wires: ((int * int) * (string * int) list) list}
+
+  val realToString: real -> string
+
+  val diag_to_svg: gates * teleport list -> diag_opts option -> string -> unit
+
 end

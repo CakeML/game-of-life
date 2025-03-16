@@ -45,4 +45,7 @@ sig
   val getWire: wires -> int * int -> dir -> value
 
   val floodfill: gol_diagramLib.diag -> params -> thm
+
+  val diag_to_svg_with_wires:
+    gol_diagramLib.diag -> params -> {fade: int, speed: real} -> string -> unit
 end

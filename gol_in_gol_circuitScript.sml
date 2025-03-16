@@ -54,14 +54,18 @@ Quote diag = gol_diagramLib.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
 End
 
-(* val _ = diag_to_svg (recognize diag) "diag.svg"; *)
-
-Theorem floodfill_result = floodfill diag {
+val params = {
   period = 586,
   pulse = 22,
   asserts = [((6, 0), E, Exact (~77, Clock)), ((11, 4), E, Exact (~15, ThisCell))],
   weaken = [((14, 4), E), ((14, 4), N)]
 };
+
+(* val _ = diag_to_svg (recognize diag) NONE "diag.svg"; *)
+(* val _ = diag_to_svg_with_wires diag params
+  {speed = 25.0, fade = 4} "propagation.svg"; *)
+
+Theorem floodfill_result = floodfill diag params;
 
 val _ = cv_transLib.cv_auto_trans test_pt_slow_def
 val _ = cv_transLib.cv_auto_trans $ definition "main_circuit_def"

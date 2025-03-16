@@ -451,4 +451,42 @@ fun floodfill diag params = let
   val x = mk_var ("area", type_of (hd args))
   in EXISTS (boolSyntax.mk_exists (x, list_mk_comb (f, x :: tl args)), hd args) thm end
 
+fun diag_to_svg_with_wires diag params {speed, fade} filename = let
+  val wires = build (recognize diag) params nolog
+  val period = #period params
+  val dur = 2 * period
+  fun clock (off, on, off', on') n = let
+    val ls = [(off, n), (on, n + fade),
+      (on, n + #pulse params), (off', n + #pulse params + fade),
+      (off', n + period), (on', n + period + fade),
+      (on', n + period + #pulse params), (off, n + period + #pulse params + fade),
+      (off, n + dur), (on, n + dur + fade)]
+    val ls = filter (fn (_, n) => 0 <= n andalso n <= dur) ls
+    in [(fst (hd ls), 0)] @ ls @ [(fst (last ls), dur)] end
+  fun reg (off, on, off', on') n = [
+    (off, 0), (off, n), (on, n+fade), (on, period),
+    (off', period), (off', period + n), (on', period + n+fade), (on', dur)]
+  val red = (0.15, 0.1)
+  val blue = (~0.1, ~0.2)
+  fun oklab (a, b) (i, j) = String.concat [
+    "oklab(", realToString (0.6 + 0.2 * Real.fromInt i),
+    " ", realToString a,
+    " ", realToString (b + 0.1 * Real.fromInt j), ")"]
+  val wires = C map (Redblackmap.listItems wires) $ apsnd (fn
+    Regular (n, Cell p) =>
+    reg ("white", oklab red p, "white", oklab blue p) n
+  | Regular (n, v) =>
+      if v = nextCell then reg ("white", oklab blue (0,0), "white", oklab red (0,0)) n
+      else reg ("white", "purple", "white", "green") n
+  | Exact (n, v) => let
+    val (off, on, off', on') = case v of
+      Clock => ("black", "maroon", "black", "maroon")
+    | NotClock => ("maroon", "black", "maroon", "black")
+    | ThisCell => (oklab blue (0,0), oklab red (0,0), oklab red (0,0), oklab blue (0,0))
+    | ThisCellClock => ("black", oklab red (0,0), "black", oklab blue (0,0))
+    | ThisCellNotClock => (oklab blue (0,0), "black", oklab red (0,0), "black")
+    in clock (off, on, off', on') n end)
+  val w = {period = Real.fromInt dur, speed = speed, wires = wires}
+  in diag_to_svg (recognize diag) (SOME w) filename end
+
 end
