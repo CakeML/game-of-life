@@ -1465,6 +1465,20 @@ Proof
   \\ metis_tac []
 QED
 
+Theorem dir_test_opposite:
+  d1 ≠ d2 ∧ (p,d1,r1) ∈ dir_test b ∧ (p,d2,r2) ∈ dir_test b ⇒
+  d1 = opposite d2
+Proof
+  Cases_on ‘b’ \\ gvs [dir_test_def,IN_DEF]
+  \\ Cases_on ‘d1’ \\ Cases_on ‘d2’ \\ gvs [is_ns_def,is_ew_def]
+QED
+
+Theorem opposite_opposite:
+  ∀d. opposite (opposite d) = d
+Proof
+  Cases \\ EVAL_TAC
+QED
+
 Theorem circuit_run_compose_bigunion:
   ∀area ins outs init.
   (* each element in the family must be a circuit_run *)
@@ -1483,6 +1497,9 @@ Proof
   \\ reverse conj_asm2_tac
   >-
    (simp [circ_mod_wf_def,PULL_EXISTS,SF DNF_ss]
+    \\ ‘(∀x p d r. (p,d,r) ∈ ins x ⇒ (p,d,r) ∈ dir_test (FST p % 2 = 0)) ∧
+        (∀x p d r. (p,d,r) ∈ outs x ⇒ (p,d,r) ∈ dir_test (FST p % 2 = 0))’
+         by metis_tac [circ_mod_wf_imp_dir_test]
     \\ last_x_assum mp_tac
     \\ CONV_TAC (RATOR_CONV (SCONV [circ_mod_wf_def,PULL_EXISTS,SF DNF_ss]))
     \\ strip_tac
@@ -1493,14 +1510,12 @@ Proof
         \\ ‘a' ≠ a’ by gvs []
         \\ last_x_assum drule \\ strip_tac
         \\ gvs [SF DNF_ss]
-        \\ last_x_assum (fn th => qspec_then ‘a’ assume_tac th
-                                  \\ qspec_then ‘a'’ assume_tac th)
         \\ PairCases_on ‘r1’
         \\ PairCases_on ‘r2’
         \\ ‘add_pt p (dir_to_xy r20) ∈ area a' ∧
             add_pt p (dir_to_xy r10) ∈ area a’ by metis_tac []
         \\ Cases_on ‘r20 = r10’ >- metis_tac [IN_DISJOINT]
-        \\ ‘r20 = opposite r10’ by cheat
+        \\ ‘r20 = opposite r10’ by metis_tac [dir_test_opposite]
         \\ PairCases_on ‘p’
         \\ gvs [GSYM dir_to_xy_opposite]
         \\ metis_tac [])
@@ -1509,20 +1524,18 @@ Proof
         \\ ‘a' ≠ a’ by gvs []
         \\ last_x_assum drule \\ strip_tac
         \\ gvs [SF DNF_ss]
-        \\ last_x_assum (fn th => qspec_then ‘a’ assume_tac th
-                                  \\ qspec_then ‘a'’ assume_tac th)
         \\ PairCases_on ‘r1’
         \\ PairCases_on ‘r2’
         \\ ‘sub_pt p (dir_to_xy r20) ∈ area a' ∧
             sub_pt p (dir_to_xy r10) ∈ area a’ by metis_tac []
         \\ Cases_on ‘r20 = r10’ >- metis_tac [IN_DISJOINT]
-        \\ ‘r20 = opposite r10’ by cheat
+        \\ ‘r20 = opposite r10’ by metis_tac [dir_test_opposite]
         \\ PairCases_on ‘p’
         \\ gvs [GSYM dir_to_xy_opposite]
         \\ metis_tac [])
     >- (Cases_on ‘a = a'’ >- metis_tac []
         \\ CCONTR_TAC \\ gvs []
-        \\ ‘d1 = opposite d2’ by cheat
+        \\ ‘d1 = opposite d2’ by metis_tac [dir_test_opposite,opposite_opposite]
         \\ ‘add_pt p (dir_to_xy d1) ∈ area a’ by metis_tac []
         \\ PairCases_on ‘p’
         \\ gvs [GSYM dir_to_xy_opposite]
