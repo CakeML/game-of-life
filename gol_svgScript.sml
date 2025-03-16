@@ -233,25 +233,24 @@ fun diag_to_svg_with_wires {speed, fade, offset} filename = let
     (on', period + n+fade+offset), (on', dur+offset),
     (off, dur+offset+Int.min (fade, n)), (off, dur + n+offset),
     (on, dur + n+fade+offset)]
-  val red = (0.15, 0.1)
-  val blue = (~0.1, ~0.2)
   fun oklab (a, b) (i, j) = String.concat [
     "oklab(", realToString (0.6 + 0.2 * Real.fromInt i),
     " ", realToString a,
     " ", realToString (b + 0.1 * Real.fromInt j), ")"]
+  val red = oklab (0.15, 0.1)
+  val blue = oklab (~0.1, ~0.2)
   val wires = C map (Redblackmap.listItems wires) $ apsnd (trim o (fn
-    Regular (n, Cell p) =>
-    reg ("#ccc", oklab red p, "#ccc", oklab blue p) n
+    Regular (n, Cell p) => reg ("#ccc", red p, "#ccc", blue p) n
   | Regular (n, v) =>
-      if v = nextCell then reg ("#ccc", oklab blue (0,0), "#ccc", oklab red (0,0)) n
+      if v = nextCell then reg ("#ccc", blue (0,0), "#ccc", red (0,0)) n
       else reg ("#ccc", "purple", "#ccc", "green") n
   | Exact (n, v) => let
     val (off, on, off', on') = case v of
       Clock => ("white", "black", "white", "black")
     | NotClock => ("black", "white", "black", "white")
-    | ThisCell => (oklab blue (0,0), oklab red (0,0), oklab red (0,0), oklab blue (0,0))
-    | ThisCellClock => ("white", oklab red (0,0), "white", oklab blue (0,0))
-    | ThisCellNotClock => (oklab blue (0,0), "white", oklab red (0,0), "black")
+    | ThisCell => (blue (0,0), red (0,0), red (0,0), blue (0,0))
+    | ThisCellClock => ("white", red (0,0), "white", blue (0,0))
+    | ThisCellNotClock => (blue (0,0), "white", red (0,0), "white")
     in clock (off, on, off', on') (n + offset) end))
   val w = {period = Real.fromInt dur, speed = speed, wires = wires}
   in diag_to_svg (SOME w) filename end

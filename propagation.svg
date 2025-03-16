@@ -1314,7 +1314,7 @@
     <animate attributeName="fill" values="white;white;black;black;white;white;black;black;white;white" dur="46.88s" keyTimes="0.0;0.214163822526;0.217576791809;0.232935153584;0.236348122867;0.714163822526;0.717576791809;0.732935153584;0.736348122867;1.0" repeatCount="indefinite" />
   </circle>
   <circle cx="11.0" cy="4.5" r=".11" style="stroke-width: .01; stroke: black">
-    <animate attributeName="fill" values="oklab(0.6 0.15 0.1);oklab(0.6 0.15 0.1);oklab(0.6 0.15 0.1);black;black;oklab(0.6 -0.1 -0.2);oklab(0.6 -0.1 -0.2);white;white;white" dur="46.88s" keyTimes="0.0;0.00170648464164;0.4795221843;0.482935153584;0.498293515358;0.501706484642;0.9795221843;0.982935153584;0.998293515358;1.0" repeatCount="indefinite" />
+    <animate attributeName="fill" values="oklab(0.6 0.15 0.1);oklab(0.6 0.15 0.1);oklab(0.6 0.15 0.1);white;white;oklab(0.6 -0.1 -0.2);oklab(0.6 -0.1 -0.2);white;white;white" dur="46.88s" keyTimes="0.0;0.00170648464164;0.4795221843;0.482935153584;0.498293515358;0.501706484642;0.9795221843;0.982935153584;0.998293515358;1.0" repeatCount="indefinite" />
   </circle>
   <circle cx="11.0" cy="16.5" r=".11" style="stroke-width: .01; stroke: black">
     <animate attributeName="fill" values="#ccc;#ccc;purple;purple;#ccc;#ccc;green;green;#ccc" dur="46.88s" keyTimes="0.0;0.301194539249;0.304607508532;0.496587030717;0.5;0.801194539249;0.804607508532;0.996587030717;1.0" repeatCount="indefinite" />
