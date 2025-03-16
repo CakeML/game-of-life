@@ -468,14 +468,17 @@ fun diag_to_svg_with_wires diag params {speed, fade, offset} filename = let
       (on, n + #pulse params), (off', n + #pulse params + fade),
       (off', n + period), (on', n + period + fade),
       (on', n + period + #pulse params), (off, n + period + #pulse params + fade),
-      (off, n + dur), (on, n + dur + fade)]
+      (off, n + dur), (on, n + dur + fade),
+      (on, n + dur + #pulse params), (off', n + dur + #pulse params + fade)]
   fun reg (off, on, off', on') n = [
     (off', offset+Int.min (fade, n)-period), (off', n+offset-period),
     (on', n+offset+fade-period), (on', offset),
     (off, offset+Int.min (fade, n)), (off, n+offset),
     (on, n+offset+fade), (on, period+offset),
     (off', period+offset+Int.min (fade, n)), (off', period + n+offset),
-    (on', period + n+fade+offset), (on', dur+offset)]
+    (on', period + n+fade+offset), (on', dur+offset),
+    (off, dur+offset+Int.min (fade, n)), (off, dur + n+offset),
+    (on, dur + n+fade+offset)]
   val red = (0.15, 0.1)
   val blue = (~0.1, ~0.2)
   fun oklab (a, b) (i, j) = String.concat [
