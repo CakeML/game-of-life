@@ -1,7 +1,8 @@
 open HolKernel bossLib boolLib Parse;
 open gol_simTheory listTheory gol_circuitTheory pred_setTheory
      pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
-     dep_rewrite intLib combinTheory rich_listTheory quantHeuristicsTheory;
+     dep_rewrite intLib combinTheory rich_listTheory quantHeuristicsTheory
+     gol_in_gol_paramsLib;
 
 val _ = new_theory "gol_in_gol_circuit2";
 
@@ -40,9 +41,6 @@ Datatype:
   value = Reg num rvalue | Exact int evalue | Fail
 End
 
-val period = ``586:num``
-val pulse = ``22:num``
-
 Definition base_def:
   (base:num) = 0
 End
@@ -56,11 +54,11 @@ Definition r_eval_def[simp]:
 End
 
 Definition e_clock_def:
-  e_clock (n:int) ⇔ n % &^period < &^pulse
+  e_clock (n:int) ⇔ n % ^periodZ < ^pulseZ
 End
 
 Definition e_cell_def:
-  e_cell env (n:int) ⇔ 0 ≤ n ∧ env (Num n DIV ^period)
+  e_cell env (n:int) ⇔ 0 ≤ n ∧ env (Num n DIV ^periodN)
 End
 
 Definition e_eval_def[simp]:
@@ -73,7 +71,7 @@ End
 
 Definition v_eval'_def[simp]:
   (v_eval' env (Reg d rv) s ⇔
-    ∀ n. d ≤ (n + base) MOD ^period ⇒ s n = r_eval (env ((n + base) DIV ^period)) rv) ∧
+    ∀ n. d ≤ (n + base) MOD ^periodN ⇒ s n = r_eval (env ((n + base) DIV ^periodN)) rv) ∧
   (v_eval' env (Exact d ev) s ⇔ s = (λn. e_eval (λi. env i (0, 0)) ev (&(n + base) - d))) ∧
   (v_eval' env Fail s ⇔ T)
 End
@@ -130,11 +128,11 @@ End
 Definition v_and_def[simp,compute]:
   (v_and (Reg d1 rv1) (Reg d2 rv2) = Reg (MAX d1 d2) (RAnd rv1 rv2)) ∧
   (v_and (Exact d1 ThisCell) (Exact d2 NotClock) =
-    if d2 ≤ d1 ∧ d1 ≤ d2 + &^pulse then
+    if d2 ≤ d1 ∧ d1 ≤ d2 + ^pulseZ then
       Exact d2 ThisCellNotClock
     else Fail) ∧
   (v_and (Exact d1 Clock) (Reg d2 v2) =
-    if v2 = nextCell ∧ &d2 ≤ d1 + &^period ∧ d1 ≤ -&^pulse then
+    if v2 = nextCell ∧ &d2 ≤ d1 + ^periodZ ∧ d1 ≤ -^pulseZ then
       Exact d1 ThisCellClock
     else Fail) ∧
   (v_and _ _ = Fail)
@@ -247,11 +245,8 @@ Definition env_wf_def:
     ∀t x. env (t + 1) x = r_eval (env t ∘ add_pt x) nextCell
 End
 
-val tile = ``21:num``;
-val tile2 = ``42:num``;
-
 Definition mk_pt_def[compute]:
-  mk_pt a z ⇔ add_pt a (mul_pt (&^tile2) z)
+  mk_pt a z ⇔ add_pt a (mul_pt (^tile2Z) z)
 End
 
 val pt_arith_tac: tactic =
@@ -389,24 +384,24 @@ QED *)
 
 Definition classify_clock_def[compute]:
   (classify_clock da T d =
-    if &da + d + &^pulse ≤ &^period ∧ -&^period ≤ d then
-      if 0 ≤ d ∨ &da + d + &^pulse ≤ 0 then SOME Zeros else
+    if &da + d + ^pulseZ ≤ ^periodZ ∧ -^periodZ ≤ d then
+      if 0 ≤ d ∨ &da + d + ^pulseZ ≤ 0 then SOME Zeros else
         SOME (Pulse
           (if 0 ≤ &da + d then Num (&da + d) else 0)
-          (MIN da (Num (&da + d + &^pulse))))
+          (MIN da (Num (&da + d + ^pulseZ))))
     else NONE) ∧
   (classify_clock da F d =
-    if &da + d ≤ 0 ∧ -&^period ≤ d then
+    if &da + d ≤ 0 ∧ -^periodZ ≤ d then
       SOME (Pulse
-        (if 0 ≤ &da + d + &^pulse then Num (&da + d + &^pulse) else 0)
-        (MIN da (Num (&da + d + &^period))))
+        (if 0 ≤ &da + d + ^pulseZ then Num (&da + d + ^pulseZ) else 0)
+        (MIN da (Num (&da + d + ^periodZ))))
     else NONE)
 End
 
 Definition classify_this_def[compute]:
   classify_this da d =
     if 0 < d then SOME Zeros else
-    if 0 < d + &^period then
+    if 0 < d + ^periodZ then
       SOME (Pulse (if 0 ≤ &da + d then Num (&da + d) else 0) da)
     else NONE
 End
@@ -442,7 +437,7 @@ End
 Definition gate_wf_def:
   gate_wf (g:gate) ⇔
     g.width ≠ 0 ∧ g.height ≠ 0 ∧
-    g.width < ^tile ∧ g.height < ^tile ∧
+    g.width < ^tileN ∧ g.height < ^tileN ∧
     rectangle g.width g.height (MAP from_mask g.lo) ∧
     rectangle g.width g.height (MAP from_mask g.hi)
 End
@@ -605,7 +600,7 @@ QED
 
 Theorem eval_classify_clock:
   classify_clock da b d = SOME ea ∧ n < da ⇒
-  &n − (&da + d) < &^period ∧
+  &n − (&da + d) < ^periodZ ∧
   (eval_env_kind ea n ⇔ e_clock (&n − (&da + d)) = b) ∧
   (e_clock (&n − (&da + d)) ∨ ¬b ⇒ 0 ≤ &n − (&da + d))
 Proof
@@ -614,14 +609,14 @@ QED
 
 Theorem eval_classify_this:
   classify_this da d = SOME ea ∧ n < da ⇒
-  &n − (&da + d) < &^period ∧
+  &n − (&da + d) < ^periodZ ∧
   (eval_env_kind ea n ⇔ 0 ≤ &n − (&da + d))
 Proof
   rw [classify_this_def] \\ rw [eval_env_kind_def, e_cell_def] \\ ARITH_TAC
 QED
 
 Theorem e_cell_init:
-  i < &^period ⇒ (∀env. e_cell env i ⇔ 0 ≤ i ∧ env 0)
+  i < ^periodZ ⇒ (∀env. e_cell env i ⇔ 0 ≤ i ∧ env 0)
 Proof
   rw [e_cell_def] \\ Cases_on `0 ≤ i` \\ rw [] \\ AP_TERM_TAC \\ ARITH_TAC
 QED
@@ -632,8 +627,8 @@ Theorem v_eval'_v_delay':
 Proof
   gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [FUN_EQ_THM]
   \\ gvs [v_eval_def, delay'_def, base_def]
-  >- (`da ≤ i + k ∧ n ≤ (i + k - da) MOD ^period ∧
-      (i + k − da) DIV ^period = i DIV ^period` by ARITH_TAC
+  >- (`da ≤ i + k ∧ n ≤ (i + k - da) MOD ^periodN ∧
+      (i + k − da) DIV ^periodN = i DIV ^periodN` by ARITH_TAC
     \\ simp [])
   \\ reverse (rw []) >- (AP_TERM_TAC \\ ARITH_TAC)
   \\ `&n − (&(da − k) + i) = &(k + n) − (&da + i)` by ARITH_TAC
@@ -681,7 +676,7 @@ Proof
     \\ DEP_ASM_REWRITE_TAC [] \\ gvs [e_clock_def, e_cell_def] \\ rw []
     >- ARITH_TAC
     \\ `∃k. i = -&k` by ARITH_TAC \\ gvs [INT_ADD]
-    \\ `(k + (n' + base)) DIV &^period = (n' + base) DIV &^period + 1` by ARITH_TAC
+    \\ `(k + (n' + base)) DIV ^periodN = (n' + base) DIV ^periodN + 1` by ARITH_TAC
     \\ fs [env_wf_def]
     \\ cong_tac 2 \\ simp [FUN_EQ_THM, FORALL_PROD])
   (* v_and (Exact i' ThisCell) (Exact i NotClock) = Exact d2 ThisCellNotClock *)
@@ -691,7 +686,7 @@ Proof
       \\ `∃k. i = -&k ∧ ∃j. &(n + base) − i' = &j` by ARITH_TAC \\ gvs [INT_ADD]
       \\ cong_tac 2 \\ ARITH_TAC)
     \\ `(∃k. i = &k) ∧ ∃k'. i' = &k'` by ARITH_TAC \\ gvs [INT_SUB, INT_SUB_LE]
-    \\ `∀m:int. &^period * m ≤ &(n + base) − &k ⇔ &^period * m ≤ &(n + base) − &k'` by ARITH_TAC
+    \\ `∀m:int. ^periodZ * m ≤ &(n + base) − &k ⇔ ^periodZ * m ≤ &(n + base) − &k'` by ARITH_TAC
     \\ pop_assum (qspec_then `&(m:num)` (assume_tac o GEN ``m:num`` o SRULE []))
     \\ first_assum (qspec_then `0` mp_tac) \\ simp [NoAsms] \\ rw []
     \\ gvs [INT_SUB, INT_SUB_LE] \\ Cases_on `k' ≤ n + base` \\ gvs [INT_SUB, INT_SUB_LE]
@@ -801,13 +796,13 @@ Proof
 QED
 
 Theorem blist_simulation_ok_injective:
-  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
   MEM (p,d,v) outs ∧ (MEM (p',d,v') ins ∨ MEM (p',d,v') outs) ∧
   mk_pt p z = mk_pt p' z' ⇒ (p,z) = (p',z') ∧ v = v' ∧ ¬MEM (p',d,v') ins
 Proof
   strip_tac
   \\ `∀x y d v. MEM ((x,y),d,v) (ins ++ outs) ⇒
-      -1 ≤ x ∧ x < &^tile2 - 1 ∧ -1 ≤ y ∧ y < &^tile2 - 1` by (
+      -1 ≤ x ∧ x < ^tile2Z - 1 ∧ -1 ≤ y ∧ y < ^tile2Z - 1` by (
     simp []
     \\ last_x_assum (assume_tac o CONJUNCT1
       o REWRITE_RULE [simulation_ok_def]
@@ -829,7 +824,7 @@ Proof
 QED
 
 Theorem blist_simulation_ok_injective_oo:
-  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
   MEM (p,d,v) outs ∧ MEM (p',d,v') outs ∧
   mk_pt p z = mk_pt p' z' ⇒ (p,z) = (p',z') ∧ v = v'
 Proof
@@ -837,7 +832,7 @@ Proof
 QED
 
 Theorem blist_simulation_ok_injective_io:
-  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
   MEM (p,d,v) ins ∧ MEM (p',d,v') outs ∧ mk_pt p z = mk_pt p' z' ⇒ F
 Proof
   metis_tac [blist_simulation_ok_injective]
@@ -943,7 +938,7 @@ Proof
 QED
 
 Theorem blist_simulation_ok_gate_wf:
-  blist_simulation_ok w h ins outs init ∧ w < ^tile ∧ h < ^tile ⇒
+  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
   gate_wf (instantiate_gate w h ee init)
 Proof
   strip_tac
@@ -1015,7 +1010,7 @@ Theorem blist_simulation_ok_imp_gate:
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
   (∀x. db' = SOME x ⇒ x = db) ∧
-  w < ^tile ∧ h < ^tile ∧
+  w < ^tileN ∧ h < ^tileN ∧
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
   is_gate (instantiate_gate w h (ea, eb) init)
@@ -1054,7 +1049,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_1:
   blist_simulation_ok w h [(p1,d1,Var A da)] outs init ⇒
-  w < ^tile ∧ h < ^tile ⇒
+  w < ^tileN ∧ h < ^tileN ⇒
   classify da a = SOME ea ⇒
   is_gate (instantiate_gate w h (ea, ea) init)
     [((p1,d1),a)]
@@ -1068,7 +1063,7 @@ QED
 
 Theorem blist_simulation_ok_imp_gate_2:
   blist_simulation_ok w h [(p1,d1,Var A da); (p2,d2,Var B db)] outs init ⇒
-  w < ^tile ∧ h < ^tile ⇒
+  w < ^tileN ∧ h < ^tileN ⇒
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
   is_gate (instantiate_gate w h (ea, eb) init)
@@ -1126,7 +1121,7 @@ End
 
 Definition gate_at_def:
   gate_at p init =
-    U {gate_at' (add_pt p (mul_pt (&^tile2) z)) init | z | T}
+    U {gate_at' (add_pt p (mul_pt (^tile2Z) z)) init | z | T}
 End *)
 
 Definition mega_cell_builder_def:
@@ -1138,8 +1133,8 @@ End
 
 Definition in_range_def:
   in_range (x,y) ⇔
-    (x % 2 = 0 ∧ 0 ≤ x ∧ x < &^tile2) ∧
-    (y % 2 = 0 ∧ 0 ≤ y ∧ y < &^tile2)
+    (x % 2 = 0 ∧ 0 ≤ x ∧ x < ^tile2Z) ∧
+    (y % 2 = 0 ∧ 0 ≤ y ∧ y < ^tile2Z)
 End
 
 Theorem in_range_unique:
@@ -1268,7 +1263,7 @@ End
 
 Definition floodfill_gate_wf_def:
   floodfill_gate_wf g ins1 outs1 init ⇔
-  g.width < &^tile ∧ g.height < &^tile ∧
+  g.width < ^tileN ∧ g.height < ^tileN ∧
   gate_ports_wf g.width g.height (set (MAP FST ins1)) (set (MAP FST outs1)) ∧
   (∀z. circuit (make_area g.width g.height)
     (MAP (λ((a,d),v). (a,d,v z)) ins1)
@@ -1279,7 +1274,7 @@ End
 Theorem floodfill_run_add_gate:
   ∀ins1 outs1 ins outs init.
   floodfill_gate_wf g ins1 outs1 init ∧
-  (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tile ∧ y + g.height ≤ ^tile) ∧
+  (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tileN ∧ y + g.height ≤ ^tileN) ∧
   EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
   floodfill_run area (mega_cell_builder gates init) ins outs
   ⇒
@@ -1570,7 +1565,7 @@ Theorem floodfill_add_ins:
   floodfill area ins outs [] gates ∧
   is_gate g [((a,d),Exact dl v)] outs' ⇒
   ∀p x' y'.
-  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   g.width = 1 ∧ g.height = 1 ∧ ¬MEM p area ∧
   ¬MEM (add_pt p a) (MAP (FST ∘ FST) (ins ++ outs)) ⇒
   floodfill (p :: area) (((add_pt p a,d),Exact dl v) :: ins)
@@ -1805,16 +1800,16 @@ Definition test_pt_def:
   test_pt gates s (p1:int,p2:int) =
     let lo1 = (p1 + 65) / 150; lo2 = (p2 + 65) / 150 in
     let hi1 = (p1 + 85) / 150; hi2 = (p2 + 85) / 150 in
-    let lo1r = lo1 % &^tile; lo2r = lo2 % &^tile in
-    let hi1r = hi1 % &^tile; hi2r = hi2 % &^tile in
+    let lo1r = lo1 % ^tileZ; lo2r = lo2 % ^tileZ in
+    let hi1r = hi1 % ^tileZ; hi2r = hi2 % ^tileZ in
     EXISTS (λ((q1,q2),g).
       majority (q1 ≤ hi1r) (lo1r < q1 + &g.width) (hi1r < lo1r) ∧
       majority (q2 ≤ hi2r) (lo2r < q2 + &g.height) (hi2r < lo2r) ∧
-      let q1d = lo1 / &^tile + (if lo1r < q1 + &g.width then 0 else 1) in
-      let q2d = lo2 / &^tile + (if lo2r < q2 + &g.height then 0 else 1) in
+      let q1d = lo1 / ^tileZ + (if lo1r < q1 + &g.width then 0 else 1) in
+      let q2d = lo2 / ^tileZ + (if lo2r < q2 + &g.height then 0 else 1) in
       let masks = if s (q1d, q2d) then g.hi else g.lo in
-      let row = Num (p1 - (150 * (q1d * &^tile + q1) - 85)) in
-      let col = Num (p2 - (150 * (q2d * &^tile + q2) - 85)) in
+      let row = Num (p1 - (150 * (q1d * ^tileZ + q1) - 85)) in
+      let col = Num (p2 - (150 * (q2d * ^tileZ + q2) - 85)) in
       test_masks (row,col) masks
     ) gates
 End
@@ -1848,7 +1843,7 @@ Proof
       z = x` suffices_by metis_tac []
     \\ rw [Abbr`y`] \\ MAP_EVERY PairCases_on [`x`,`q`,`z`] \\ fs [mk_pt_def]
     \\ `∃r0 r1. q0 = 2*r0 ∧ q1 = 2*r1 ∧ 0 ≤ r0 ∧ 0 ≤ r1 ∧
-        r0 + &w ≤ &^tile ∧ r1 + &h ≤ &^tile` by (
+        r0 + &w ≤ ^tileZ ∧ r1 + &h ≤ ^tileZ` by (
       `MEM (0,0) (make_area w h) ∧ MEM (2 * &w - 2,2 * &h - 2) (make_area w h)` by
         (simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS] \\ ARITH_TAC)
       \\ res_tac \\ fs [in_range_def] \\ ARITH_TAC)
@@ -1955,7 +1950,7 @@ Theorem floodfill_finish:
     [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact (-77) Clock)]
     [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact 509 Clock)] [] gates ∧
   test_pt_slow T gates (1726,599) ∧ ¬test_pt_slow F gates (1726,599) ⇒
-  gol_in_gol (mega_cell_builder gates) (^period * 60) read_mega_cells
+  gol_in_gol (mega_cell_builder gates) (^periodN * 60) read_mega_cells
 Proof
   rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
   \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
@@ -1988,7 +1983,7 @@ Proof
             circ_mod_def])
   \\ rw []
   \\ gvs [run_def]
-  \\ pop_assum $ qspec_then ‘^period * 60 * n’ mp_tac
+  \\ pop_assum $ qspec_then ‘^periodN * 60 * n’ mp_tac
   \\ rw []
   \\ dxrule run_to_clear_mods
   \\ strip_tac
@@ -2010,9 +2005,9 @@ Proof
   \\ strip_tac
   \\ dxrule (METIS_PROVE [] “(x1 ∧ x2 ⇔ y) ⇒ x2 ⇒ (x1 = y)”)
   \\ Cases_on ‘n = 0’ \\ gvs []
-  \\ ‘(60 * ^period * n − 1) MOD 60 = 59’ by
+  \\ ‘(60 * ^periodN * n − 1) MOD 60 = 59’ by
    (rewrite_tac [GSYM MULT_ASSOC]
-    \\ Cases_on ‘^period * n’ \\ gvs []
+    \\ Cases_on ‘^periodN * n’ \\ gvs []
     \\ gvs [MULT_CLAUSES])
   \\ impl_tac
   >-
@@ -2123,7 +2118,7 @@ Theorem floodfill_add_gate:
   PERM outs (del ++ outs') ⇒
   ∀p x' y'.
   (p = (&(2 * x'), &(2 * y')) ∧
-  x' + g.width ≤ ^tile ∧ y' + g.height ≤ ^tile ∧
+  x' + g.width ≤ ^tileN ∧ y' + g.height ≤ ^tileN ∧
   del = MAP (λ((a, d), P). ((add_pt p a, d), P)) ins1) ∧
   EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ⇒
   floodfill
@@ -2181,7 +2176,7 @@ Theorem floodfill_add_small_gate:
   is_gate g ins1 outs1 ∧
   PERM outs (del ++ outs') ⇒
   ∀p x' y'.
-  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   g.width = 1 ∧ g.height = 1 ∧ ¬MEM p area ∧
   del = MAP (λ((a,d),P). ((add_pt p a, d), P)) ins1 ⇒
   floodfill (p :: area) ins
@@ -2207,7 +2202,7 @@ Theorem floodfill_add_crossover_gen:
        (b',d2, delay 5 (v2 z))] []
       (from_masks (env 0 z) (g.lo,g.hi))) ⇒
   ∀p x' y'.
-  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   ¬MEM p area ∧
   p' = add_pt p a ⇒
   floodfill (p :: area) ins
@@ -2259,7 +2254,7 @@ Theorem floodfill_add_crossover_l:
   classify 5 P = SOME ea ⇒
   instantiate_gate 1 1 (ea, (Zeros, Zeros)) init1 = g ⇒
   ∀p x' y'.
-  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   ¬MEM p area ∧
   p' = add_pt p a ⇒
   floodfill (p :: area) ins
@@ -2288,7 +2283,7 @@ Theorem floodfill_add_crossover_r:
   classify 5 P = SOME eb ⇒
   instantiate_gate 1 1 ((Zeros, Zeros), eb) init1 = g ⇒
   ∀p x' y'.
-  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tile ∧ y' < ^tile ∧
+  p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   ¬MEM p area ∧
   p' = add_pt p b ⇒
   floodfill (p :: area) ins

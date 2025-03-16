@@ -1,28 +1,12 @@
 structure gol_in_gol_circuitLib :> gol_in_gol_circuitLib =
 struct
 open HolKernel bossLib boolLib
-open Abbrev gol_simLib gol_diagramLib
+open Abbrev gol_simLib gol_diagramLib gol_in_gol_paramsLib
 open sortingTheory gol_in_gol_circuit2Theory listTheory pairSyntax
      gol_simSyntax listSyntax
 
 val int2cmp = pair_compare (Int.compare, Int.compare)
 val int3cmp = pair_compare (int2cmp, Int.compare)
-
-datatype rvalue =
-    Cell of int * int
-  | RAnd of rvalue * rvalue
-  | ROr of rvalue * rvalue
-  | RNot of rvalue
-  | RXor of rvalue * rvalue
-
-datatype evalue =
-    Clock
-  | NotClock
-  | ThisCell
-  | ThisCellClock
-  | ThisCellNotClock
-
-datatype value = Regular of int * rvalue | Exact of int * evalue
 
 fun mk_ROr p = case p of
     (RAnd (a1, ROr (RAnd (a2, RNot b1), RAnd (RNot a3, RAnd (b2, RNot b3)))),
@@ -33,25 +17,6 @@ fun mk_ROr p = case p of
 
 fun delay d (Regular (d', v)) = Regular (d + d', v)
   | delay d (Exact (d', v)) = Exact (d + d', v)
-
-val nextCell = let
-  val e1 = RXor (Cell (0, 1), Cell (~1, 1))
-  val e2 = RXor (Cell (1, 0), Cell (1, 1))
-  val e3 = RXor (Cell (0, ~1), Cell (1, ~1))
-  val e4 = RXor (Cell (~1, 0), Cell (~1, ~1))
-  val e5 = RAnd (Cell (0, 1), Cell (~1, 1))
-  val e6 = RAnd (Cell (0, ~1), Cell (1, ~1))
-  val e7 = RAnd (Cell (~1, 0), Cell (~1, ~1))
-  val e8 = RAnd (Cell (1, 0), Cell (1, 1))
-  val e9 = (e1, RXor (e2, RXor (e3, e4)))
-  val e10 = ROr (RAnd (e2, RXor (e3, e4)), e8)
-  val e11 = ROr (RAnd e9, e5)
-  val e12 = (ROr (RAnd (e3, e4), e6), e7)
-  val e13 = (e11, RXor (e10, RXor e12))
-  in
-    RAnd (ROr (Cell (0, 0), RXor e9), RAnd (RXor e13,
-      RNot (ROr (RAnd e13, ROr (RAnd (e10, RXor e12), RAnd e12)))))
-  end
 
 type io_port = (int * int) * dir * value
 
@@ -450,56 +415,5 @@ fun floodfill diag params = let
   val (f, args) = strip_comb (concl thm)
   val x = mk_var ("area", type_of (hd args))
   in EXISTS (boolSyntax.mk_exists (x, list_mk_comb (f, x :: tl args)), hd args) thm end
-
-fun diag_to_svg_with_wires diag params {speed, fade, offset} filename = let
-  val wires = build (recognize diag) params nolog
-  val period = #period params
-  val dur = 2 * period
-  fun trim ls = let
-    val ls = filter (fn (_, n) => 0 <= n andalso n <= dur) ls
-    val (ls0, lsN) = (hd ls, last ls)
-    val ls1 = if snd ls0 = 0 then [] else [(fst ls0, 0)]
-    val ls2 = if snd lsN = dur then [] else [(fst lsN, dur)]
-    in ls1 @ ls @ ls2 end
-  fun clock (off, on, off', on') n = [
-      (off', n - period), (on', n + fade - period),
-      (on', n + #pulse params - period), (off, n + #pulse params + fade - period),
-      (off, n), (on, n + fade),
-      (on, n + #pulse params), (off', n + #pulse params + fade),
-      (off', n + period), (on', n + period + fade),
-      (on', n + period + #pulse params), (off, n + period + #pulse params + fade),
-      (off, n + dur), (on, n + dur + fade),
-      (on, n + dur + #pulse params), (off', n + dur + #pulse params + fade)]
-  fun reg (off, on, off', on') n = [
-    (off', offset+Int.min (fade, n)-period), (off', n+offset-period),
-    (on', n+offset+fade-period), (on', offset),
-    (off, offset+Int.min (fade, n)), (off, n+offset),
-    (on, n+offset+fade), (on, period+offset),
-    (off', period+offset+Int.min (fade, n)), (off', period + n+offset),
-    (on', period + n+fade+offset), (on', dur+offset),
-    (off, dur+offset+Int.min (fade, n)), (off, dur + n+offset),
-    (on, dur + n+fade+offset)]
-  val red = (0.15, 0.1)
-  val blue = (~0.1, ~0.2)
-  fun oklab (a, b) (i, j) = String.concat [
-    "oklab(", realToString (0.6 + 0.2 * Real.fromInt i),
-    " ", realToString a,
-    " ", realToString (b + 0.1 * Real.fromInt j), ")"]
-  val wires = C map (Redblackmap.listItems wires) $ apsnd (trim o (fn
-    Regular (n, Cell p) =>
-    reg ("#ccc", oklab red p, "#ccc", oklab blue p) n
-  | Regular (n, v) =>
-      if v = nextCell then reg ("#ccc", oklab blue (0,0), "#ccc", oklab red (0,0)) n
-      else reg ("#ccc", "purple", "#ccc", "green") n
-  | Exact (n, v) => let
-    val (off, on, off', on') = case v of
-      Clock => ("white", "black", "white", "black")
-    | NotClock => ("black", "white", "black", "white")
-    | ThisCell => (oklab blue (0,0), oklab red (0,0), oklab red (0,0), oklab blue (0,0))
-    | ThisCellClock => ("white", oklab red (0,0), "white", oklab blue (0,0))
-    | ThisCellNotClock => (oklab blue (0,0), "white", oklab red (0,0), "black")
-    in clock (off, on, off', on') (n + offset) end))
-  val w = {period = Real.fromInt dur, speed = speed, wires = wires}
-  in diag_to_svg (recognize diag) (SOME w) filename end
 
 end

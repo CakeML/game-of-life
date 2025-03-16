@@ -39,12 +39,4 @@ sig
   val smallNodePattern:
       small_gate -> (gol_simLib.gate * (sigils)) list
 
-  type diag_opts = {
-    period: real, speed: real,
-    wires: ((int * int) * (string * int) list) list}
-
-  val realToString: real -> string
-
-  val diag_to_svg: gates * teleport list -> diag_opts option -> string -> unit
-
 end

@@ -2,21 +2,9 @@ signature gol_in_gol_circuitLib =
 sig
   include Abbrev
 
-  datatype rvalue =
-    Cell of int * int
-  | RAnd of rvalue * rvalue
-  | RNot of rvalue
-  | ROr of rvalue * rvalue
-  | RXor of rvalue * rvalue
-
-  datatype evalue =
-      Clock
-    | NotClock
-    | ThisCell
-    | ThisCellClock
-    | ThisCellNotClock
-
-  datatype value = Exact of int * evalue | Regular of int * rvalue
+  type rvalue = gol_in_gol_paramsLib.rvalue
+  type evalue = gol_in_gol_paramsLib.evalue
+  type value = gol_in_gol_paramsLib.value
 
   val mk_ROr: rvalue * rvalue -> rvalue
   val delay: int -> value -> value
@@ -38,7 +26,7 @@ sig
     weaken: (int * int) * value -> unit
   }
 
-  type wires
+  type wires = (int * int, value) Redblackmap.dict
   type params = {period: int, pulse: int, asserts: io_port list, weaken: ((int * int) * dir) list}
   val build: gol_diagramLib.gates * teleport list -> params -> 'b log -> wires
   val nolog: unit log
@@ -46,6 +34,4 @@ sig
 
   val floodfill: gol_diagramLib.diag -> params -> thm
 
-  val diag_to_svg_with_wires:
-    gol_diagramLib.diag -> params -> {fade: int, speed: real, offset: int} -> string -> unit
 end
