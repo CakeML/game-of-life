@@ -8,6 +8,11 @@ fun toString (s: unit frag list) = let
   val lines = String.fields (fn x => x = #"\n") lines
   in String.concatWith "\n" (tl lines) end
 
+fun intToString i = if i < 0 then "-"^(Int.toString (~i)) else Int.toString i
+fun realToString r = if r < 0.0 then "-"^Real.toString (~r) else Real.toString r
+
+(* circuit diagrams *)
+
 Quote svg_header = toString:
   <style>
     text {
@@ -117,8 +122,6 @@ Quote svg_header = toString:
   </defs>
 End
 
-fun realToString r = if r < 0.0 then "-"^Real.toString (~r) else Real.toString r
-
 type diag_opts = {
   period: real, speed: real,
   wires: ((int * int) * (string * int) list) list}
@@ -132,8 +135,8 @@ fun diag_to_svg (wires:diag_opts option) filename = let
   val _ = TextIO.output (f, String.concat [
     "<svg viewBox=\"", realToString (~margin - 0.5),
       " ", realToString (~margin - 0.5),
-      " ", realToString (Real.fromInt CSIZE + 2.0 * margin),
-      " ", realToString (Real.fromInt CSIZE + 2.0 * margin),
+      " ", realToString (Real.fromInt tile + 2.0 * margin),
+      " ", realToString (Real.fromInt tile + 2.0 * margin),
       "\" xmlns=\"http://www.w3.org/2000/svg\"",
       " width=\"100%\" height=\"100%\"",
       " style=\"stroke-width: 0px; background-color: white\">\n",
@@ -142,8 +145,8 @@ fun diag_to_svg (wires:diag_opts option) filename = let
       "; }</style>\n",
       svg_header,
       "  <rect x=\"-.5\" y=\"-.5\" width=\"",
-      Int.toString CSIZE, "\" height=\"",
-      Int.toString CSIZE, "\" fill=\"white\"",
+      Int.toString tile, "\" height=\"",
+      Int.toString tile, "\" fill=\"white\"",
       " stroke-dashoffset=\".09\" stroke-dasharray=\".18 .32\"",
       " style=\"stroke-width: .05; stroke: black\" />\n"])
   fun use_obj name (tx, ty) rot =
@@ -187,7 +190,7 @@ fun diag_to_svg (wires:diag_opts option) filename = let
     val _ = use_obj "teleport-out" (pair_map Real.fromInt
       ((wx + a) div 2, (wy + b) div 2)) rot
     val _ = use_obj "teleport-in" (pair_map Real.fromInt
-      ((wx - a) div 2 - CSIZE * a, (wy - b) div 2 - CSIZE * b)) rot
+      ((wx - a) div 2 - tile * a, (wy - b) div 2 - tile * b)) rot
     in () end)
   val _ = case wires of
     NONE => ()
@@ -257,5 +260,189 @@ fun diag_to_svg_with_wires {speed, fade, offset} filename = let
 
 val _ = diag_to_svg NONE "diag.svg";
 val _ = diag_to_svg_with_wires {speed = 25.0, fade = 4, offset = ~4} "propagation.svg";
+
+(* gate diagrams *)
+
+(*
+fun fun_to_svg (rows, cols, g) filename =
+  let
+    val cell_size = 6
+    val f = TextIO.openOut filename
+    fun every_col row_index col_index h =
+      if col_index < cols then
+        (h col_index row_index (g row_index col_index);
+         every_col row_index (col_index+1) h)
+      else ()
+    fun every_row row_index h =
+      if row_index < rows then
+        (every_col row_index 0 h;
+         every_row (row_index+1) h)
+      else ();
+    fun fold_grid h = every_row 0 h
+    val _ = TextIO.output(f,String.concat [
+      "<svg width=\"", Int.toString (cell_size * cols),
+        "\" height=\"", Int.toString (cell_size * rows),
+        "\" xmlns=\"http://www.w3.org/2000/svg\">\n",
+        "<rect x=\"0\" y=\"0",
+        "\" width=\"", Int.toString (cell_size * cols),
+        "\" height=\"", Int.toString (cell_size * rows),
+        "\" fill=\"black\" />\n"])
+    fun fmla cell = case cell of
+        False => "\226\138\165"
+      | True => "\226\138\164"
+      | And(a, b) => "("^fmla a^" \226\136\167 "^fmla b^")"
+      | Or(a, b) => "("^fmla a^" \226\136\168 "^fmla b^")"
+      | Not(a) => "\194\172"^fmla a
+      | Var(0, i) => "a"^Int.toString i
+      | Var(1, i) => "b"^Int.toString i
+      | Var _ => "*"
+    fun output_cell _ _ False = ()
+      | output_cell col row cell =
+      let
+        val color = case cell of
+          True => "white"
+        | Var (0, _) => "red"
+        | Var (1, _) => "blue"
+        | _ => "purple"
+        val x = Int.toString (col * cell_size)
+        val y = Int.toString (row * cell_size)
+        val cell_size_str = Int.toString cell_size
+      in
+        TextIO.output(f,String.concat
+          ["<rect x=\"", x,
+           "\" y=\"", y,
+           "\" width=\"", cell_size_str,
+           "\" height=\"", cell_size_str,
+           "\" fill=\"", color,
+           "\" stroke=\"black\" stroke-width=\"1\"><title>", fmla cell,
+           "</title></rect>\n"])
+      end handle Match => ()
+    val _ = fold_grid output_cell
+    val _ = TextIO.output(f,"</svg>\n")
+    val _ = TextIO.closeOut(f)
+  in () end
+
+fun array_to_svg grid =
+  fun_to_svg (Array.length grid, Array.length (Array.sub(grid,0)),
+    fn i => fn j => Array.sub(Array.sub(grid,i),j))
+
+fun vector_to_svg grid =
+  fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
+    fn i => fn j => Vector.sub(Vector.sub(grid,i),j)) *)
+
+Quote svg_header = toString:
+  <defs>
+    <pattern id="grid" viewBox="0 0 1 1" x="-.05" y="-.05" width="1" height="1" patternUnits="userSpaceOnUse">
+      <path style="stroke-width: .1; stroke: #ccc; fill: none" d="M .05 1.1 V .05 H 1.1" />
+    </pattern>
+  </defs>
+End
+
+fun grid_to_svg (g: gate) filename =
+  let
+    val {grid, inputs, outputs} = run_to_fixpoint (prepare (load g))
+    val io = map (fn x => (x, false)) inputs @ map (fn x => (x, false)) outputs
+    fun mk_paths ph2 = let
+      fun getIO x = Option.map (fn (p, out) => (p, if (is_ew p = out) = ph2 then 1 else ~1)) $
+        List.find (fn (p, _) => #1 p = x) io
+      fun on_ports lo hi f g = for_loop lo hi ((fn i => Option.app (g i) (getIO i)) o f)
+      val outer = ref ["M -75 -75 "]
+      val inner = ref ["M -74 -74 "]
+      fun write' r s l = r := String.concat (map (fn i => intToString i ^ " ") l) :: s :: !r
+      fun write s l = (write' outer s (map fst l); write' inner s (map (op +) l))
+      val _ = on_ports 0 (#width g) (fn i => (2*i, ~1))
+        (fn (x, y) => fn (v, out) => (
+          write "H " [(~6 + 75*x, out)];
+          write "V " [(75*y - out*6, ~1)];
+          write "H " [(6 + 75*x, ~out)];
+          write "V " [(75*y, ~1)]))
+      val _ = write "H " [(150 * #width g - 75, ~1)];
+      val _ = on_ports 0 (#height g) (fn i => (2 * #width g - 1, 2*i))
+        (fn (x,y) => fn (v, out) => (
+          write "V " [(~6 + 75*y, out)];
+          write "H " [(75*x + out*6, ~1)];
+          write "V " [(6 + 75*y, ~out)];
+          write "H " [(75*x, ~1)]))
+      val _ = write "V " [(150 * #height g - 75, ~1)];
+      val _ = on_ports 0 (#height g) (fn i => (2*(#height g - 1 - i), 2 * #height g - 1))
+        (fn (x,y) => fn (v, out) => (
+          write "H " [(6 + 75*x, ~out)];
+          write "V " [(75*y + out*6, ~1)];
+          write "H " [(~6 + 75*x, out)];
+          write "V " [(75*y, ~1)]))
+      val _ = write "H " [(~75, 1)];
+      val _ = on_ports 0 (#width g) (fn i => (~1, 2*(#width g - 1 - i)))
+        (fn (x,y) => fn (v, out) => (
+          write "V " [(6 + 75*y, ~out)];
+          write "H " [(75*x - out*6, 1)];
+          write "V " [(~6 + 75*y, out)];
+          write "H " [(75*x, 1)]))
+      in (String.concat $ rev (!outer), String.concat $ rev (!inner)) end
+    val margin = 10.0
+    val grid_rows = Vector.length grid
+    val grid_cols = Vector.length (Vector.sub (grid,0))
+    val f = TextIO.openOut filename
+    (* fun every_col row_arr row_index col_index h =
+      if col_index < Vector.length row_arr then
+        (h col_index row_index (Vector.sub (row_arr, col_index));
+         every_col row_arr row_index (col_index+1) h)
+      else ()
+    fun every_row row_index h =
+      if row_index < Vector.length grid then
+        (every_col (Vector.sub(grid,row_index)) row_index 0 h;
+         every_row (row_index+1) h)
+      else ();
+    fun fold_grid h = every_row 0 h *)
+    val _ = TextIO.output(f, String.concat [
+      "<svg viewBox=\"", realToString (~margin - 75.0),
+        " ", realToString (~margin - 75.0),
+        " ", realToString (150.0 * Real.fromInt (#width g) + 2.0 * margin),
+        " ", realToString (150.0 * Real.fromInt (#height g) + 2.0 * margin),
+        "\" xmlns=\"http://www.w3.org/2000/svg\"",
+        " width=\"100%\" height=\"100%\"",
+        " style=\"stroke-width: 0px; background-color: white\">\n",
+        svg_header])
+    (* fun output_cell col row cell =
+      let
+        val color = if cell = False then "black" else
+                    if cell = True then "white" else "purple"
+        val x = Int.toString (col * cell_size)
+        val y = Int.toString (row * cell_size)
+        val cell_size_str = Int.toString cell_size
+      in
+        TextIO.output(f,String.concat
+          ["<rect x=\"", x,
+           "\" y=\"", y,
+           "\" width=\"", cell_size_str,
+           "\" height=\"", cell_size_str,
+           "\" fill=\"", color, "\" stroke=\"black\" stroke-width=\"1\" />\n"])
+      end *)
+    (* val _ = fold_grid output_cell *)
+    val _ = for_loop 0 (Vector.length grid) (fn y => let
+      val row = Vector.sub (grid, y)
+      val _ = for_loop 0 (Vector.length row) (fn x => let
+        fun write color =
+          TextIO.output(f, String.concat [
+            "  <rect x=\"", intToString (x-85), "\" y=\"", intToString (y-85),
+            "\" width=\"1\" height=\"1\" fill=\"", color, "\" />\n"])
+        val _ = case Vector.sub (row, x) of
+            False => ()
+          | True => write "black"
+          | Var (0, n) => write "red"
+          | Var (1, n) => write "blue"
+          | _ => write "purple"
+        in () end)
+      in () end)
+    val (outer, inner) = mk_paths false
+    val _ = TextIO.output(f, String.concat [
+      "  <path fill=\"none\" style=\"stroke-width: .1; stroke: black\" d=\"\n",
+      "    ", outer, "Z\" />\n",
+      "  <path fill=\"url(#grid)\" style=\"stroke-width: .1; stroke: url(#grid)\" d=\"\n",
+      "    ", inner, "Z\" />\n",
+      "</svg>\n"])
+    val _ = TextIO.closeOut(f)
+  in () end;
+
+val _ = grid_to_svg and_en_e "and-en-e.svg";
 
 val _ = export_theory();

@@ -174,47 +174,6 @@ fun delete_box x y w h grid =
 fun get_width_height grid =
   (Array.length (Array.sub(grid,0)), Array.length grid);
 
-fun grid_to_svg grid filename =
-  let
-    val cell_size = 6
-    val grid_rows = Array.length grid
-    val grid_cols = Array.length (Array.sub(grid,0))
-    val f = TextIO.openOut filename
-    fun every_col row_arr row_index col_index h =
-      if col_index < Array.length row_arr then
-        (h col_index row_index (Array.sub(row_arr,col_index));
-         every_col row_arr row_index (col_index+1) h)
-      else ()
-    fun every_row row_index h =
-      if row_index < Array.length grid then
-        (every_col (Array.sub(grid,row_index)) row_index 0 h;
-         every_row (row_index+1) h)
-      else ();
-    fun fold_grid h = every_row 0 h
-    val _ = TextIO.output(f,String.concat [
-      "<svg width=\"", Int.toString (cell_size * grid_cols),
-        "\" height=\"", Int.toString (cell_size * grid_rows),
-        "\" xmlns=\"http://www.w3.org/2000/svg\">\n"])
-    fun output_cell col row cell =
-      let
-        val color = if cell = False then "black" else
-                    if cell = True then "white" else "purple"
-        val x = Int.toString (col * cell_size)
-        val y = Int.toString (row * cell_size)
-        val cell_size_str = Int.toString cell_size
-      in
-        TextIO.output(f,String.concat
-          ["<rect x=\"", x,
-           "\" y=\"", y,
-           "\" width=\"", cell_size_str,
-           "\" height=\"", cell_size_str,
-           "\" fill=\"", color, "\" stroke=\"black\" stroke-width=\"1\" />\n"])
-      end
-    val _ = fold_grid output_cell
-    val _ = TextIO.output(f,"</svg>\n")
-    val _ = TextIO.closeOut(f)
-  in () end
-
 fun for_loop i m f = if i < m then (f i; for_loop (i+1) m f) else ()
 
 fun get_cell row col grid =
@@ -481,72 +440,6 @@ fun rotate_90
 fun rotate 0 gate = gate
   | rotate 1 gate = rotate_90 gate
   | rotate n gate = rotate (n - 2) (rotate_180 gate)
-
-fun fun_to_svg (rows, cols, g) filename =
-  let
-    val cell_size = 6
-    val f = TextIO.openOut filename
-    fun every_col row_index col_index h =
-      if col_index < cols then
-        (h col_index row_index (g row_index col_index);
-         every_col row_index (col_index+1) h)
-      else ()
-    fun every_row row_index h =
-      if row_index < rows then
-        (every_col row_index 0 h;
-         every_row (row_index+1) h)
-      else ();
-    fun fold_grid h = every_row 0 h
-    val _ = TextIO.output(f,String.concat [
-      "<svg width=\"", Int.toString (cell_size * cols),
-        "\" height=\"", Int.toString (cell_size * rows),
-        "\" xmlns=\"http://www.w3.org/2000/svg\">\n",
-        "<rect x=\"0\" y=\"0",
-        "\" width=\"", Int.toString (cell_size * cols),
-        "\" height=\"", Int.toString (cell_size * rows),
-        "\" fill=\"black\" />\n"])
-    fun fmla cell = case cell of
-        False => "\226\138\165"
-      | True => "\226\138\164"
-      | And(a, b) => "("^fmla a^" \226\136\167 "^fmla b^")"
-      | Or(a, b) => "("^fmla a^" \226\136\168 "^fmla b^")"
-      | Not(a) => "\194\172"^fmla a
-      | Var(0, i) => "a"^Int.toString i
-      | Var(1, i) => "b"^Int.toString i
-      | Var _ => "*"
-    fun output_cell _ _ False = ()
-      | output_cell col row cell =
-      let
-        val color = case cell of
-          True => "white"
-        | Var (0, _) => "red"
-        | Var (1, _) => "blue"
-        | _ => "purple"
-        val x = Int.toString (col * cell_size)
-        val y = Int.toString (row * cell_size)
-        val cell_size_str = Int.toString cell_size
-      in
-        TextIO.output(f,String.concat
-          ["<rect x=\"", x,
-           "\" y=\"", y,
-           "\" width=\"", cell_size_str,
-           "\" height=\"", cell_size_str,
-           "\" fill=\"", color,
-           "\" stroke=\"black\" stroke-width=\"1\"><title>", fmla cell,
-           "</title></rect>\n"])
-      end handle Match => ()
-    val _ = fold_grid output_cell
-    val _ = TextIO.output(f,"</svg>\n")
-    val _ = TextIO.closeOut(f)
-  in () end
-
-fun array_to_svg grid =
-  fun_to_svg (Array.length grid, Array.length (Array.sub(grid,0)),
-    fn i => fn j => Array.sub(Array.sub(grid,i),j))
-
-fun vector_to_svg grid =
-  fun_to_svg (Vector.length grid, Vector.length (Vector.sub(grid,0)),
-    fn i => fn j => Vector.sub(Vector.sub(grid,i),j))
 
 fun make_abbrev name tm =
   let

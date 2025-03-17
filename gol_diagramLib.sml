@@ -4,8 +4,8 @@ open HolKernel gol_simLib
 
 type diag = string * string vector
 
-val CSIZE = 21
-val SIZE = CSIZE * 2 + 1
+val tile = 21
+val tile2 = 2 * tile
 
 fun parse [QUOTE s]: diag = let
     val lines = String.fields (fn x => x = #"\n") s
@@ -59,7 +59,7 @@ fun sigil_to_string s = case s of
   | Large SlowWire => "S "
 
 fun lineHeader line =
-  (String.substring (line, 0, 3), String.extract (line, 3 + 2 * SIZE, NONE))
+  (String.substring (line, 0, 3), String.extract (line, 4 + 2 * tile2, NONE))
 
 fun rotate_sigil s = case s of
     Wire dir => Wire (rotate_dir dir)
@@ -67,10 +67,10 @@ fun rotate_sigil s = case s of
   | s => s
 
 fun rotate_diag (d as (header, lines):diag) = let
-  val lines' = Vector.tabulate (SIZE, fn i => let
+  val lines' = Vector.tabulate (tile2+1, fn i => let
     val (left, right) = lineHeader (Vector.sub (lines, i))
-    val body = List.tabulate (SIZE, fn j =>
-      sigil_to_string $ rotate_sigil (coord d (i, SIZE-1-j)))
+    val body = List.tabulate (tile2+1, fn j =>
+      sigil_to_string $ rotate_sigil (coord d (i, tile2-j)))
     in left ^ String.concat body ^ right end)
   in (header, lines') end
 
@@ -132,8 +132,8 @@ type teleport = (int * int) * dir
 
 fun recognize d = let
   val gates = ref []
-  val _ = for_loop 0 CSIZE (fn y =>
-    for_loop 0 CSIZE (fn x => let
+  val _ = for_loop 0 tile (fn y =>
+    for_loop 0 tile (fn x => let
       fun push (x, y) (gate, i) = gates := ((x, y), (gate, i)) :: !gates
       val r = neighbors d (x, y)
       fun nn p = #2 (neighbors d p)
@@ -169,14 +169,14 @@ fun recognize d = let
         handle Match => (PolyML.print ((x, y), r); raise Fail "unknown connection pattern")
       end))
   val teleports = ref []
-  val _ = for_loop 0 CSIZE (fn n => (
-    case (coord d (0, 2*n+1), coord d (2*CSIZE, 2*n+1)) of
-      (Wire E, Wire E) => teleports := ((2*CSIZE-1, 2*n), E) :: !teleports
+  val _ = for_loop 0 tile (fn n => (
+    case (coord d (0, 2*n+1), coord d (tile2, 2*n+1)) of
+      (Wire E, Wire E) => teleports := ((tile2-1, 2*n), E) :: !teleports
     | (Wire W, Wire W) => teleports := ((~1, 2*n), W) :: !teleports
     | (Empty, Empty) => ()
     | r => (PolyML.print r; raise Fail "unmatched teleport");
-    case (coord d (2*n+1, 0), coord d (2*n+1, 2*CSIZE)) of
-      (Wire S, Wire S) => teleports := ((2*n, 2*CSIZE-1), S) :: !teleports
+    case (coord d (2*n+1, 0), coord d (2*n+1, tile2)) of
+      (Wire S, Wire S) => teleports := ((2*n, tile2-1), S) :: !teleports
     | (Wire N, Wire N) => teleports := ((2*n, ~1), N) :: !teleports
     | (Empty, Empty) => ()
     | r => (PolyML.print r; raise Fail "unmatched teleport")))

@@ -66,8 +66,8 @@ Quote diag = gol_diagramLib.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |
 End
 
-val tile = 21
-val tile2 = 2 * tile
+val tile = gol_diagramLib.tile
+val tile2 = gol_diagramLib.tile2
 val period = 586
 val pulse = 22
 

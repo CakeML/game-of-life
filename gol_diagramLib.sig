@@ -3,8 +3,8 @@ sig
   type dir = gol_simLib.dir
   type gate = gol_simLib.gate
 
-  val CSIZE: int
-  val SIZE: int
+  val tile: int
+  val tile2: int
 
   datatype small_gate = AndG | Node | NotG | OrG | SlowNode
   datatype large_gate = HalfAddG | SlowWire

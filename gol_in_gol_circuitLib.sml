@@ -147,7 +147,7 @@ fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a lo
           in (processQueue (ins, p, r, g, ins, outs) depth; ()) end
         | Teleport dir => let
           val (a,b) = dirToXY dir
-          val wout = (fst w - 2*CSIZE*a, snd w - 2*CSIZE*b)
+          val wout = (fst w - tile2*a, snd w - tile2*b)
           val (d, (x, y)) = case value of
               Regular (d, Cell p) => (d, p)
             | _ => raise Fail "bad signal on teleport"
