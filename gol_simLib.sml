@@ -19,14 +19,12 @@ type bexp8 =
   { y1: bexp, y2: bexp, y3: bexp, y4: bexp,
     y5: bexp, y6: bexp, y7: bexp, y8: bexp }
 
-fun eval_bexp False (env: bexp_env list) = false
+fun eval_bexp False env = false
   | eval_bexp True env = true
   | eval_bexp (Not x) env = not (eval_bexp x env)
   | eval_bexp (And (x,y)) env = eval_bexp x env andalso eval_bexp y env
   | eval_bexp (Or (x,y)) env = eval_bexp x env orelse eval_bexp y env
-  | eval_bexp (Var (s,g)) env =
-      #value (first (fn {name=s1,generation=g1,...} =>
-                        s = s1 andalso g = g1) env)
+  | eval_bexp (Var (s,g)) env = env (s,g)
 
 fun bvar_lt ({name=n1,generation=g1}:bvar)
             ({name=n2,generation=g2}:bvar) =
@@ -90,6 +88,9 @@ fun count_falses x ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) =
   int_of_bool (y7 = False) +
   int_of_bool (y8 = False)
 
+fun env_of_list env (s, g) =
+  #value (first (fn {name=s1,generation=g1,...} => s = s1 andalso g = g1) env)
+
 fun gol_eval (vars : bvar list) env x ys =
   case vars of
     ({ name=n, generation=g }::vs) =>
@@ -97,8 +98,8 @@ fun gol_eval (vars : bvar list) env x ys =
         (gol_eval vs ({ name=n, generation=g, value=true }::env) x ys)
         (gol_eval vs ({ name=n, generation=g, value=false }::env) x ys)
   | [] => let
-            val k = eval_bexp8 ys env
-            val mid = eval_bexp x env
+            val k = eval_bexp8 ys (env_of_list env)
+            val mid = eval_bexp x (env_of_list env)
             fun to_bexp true = True
               | to_bexp false = False
           in

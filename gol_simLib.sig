@@ -10,6 +10,8 @@ datatype bexp = False
               | And of bexp * bexp
               | Or of bexp * bexp
 
+val eval_bexp: bexp -> (int * int -> bool) -> bool
+
 datatype dir = N | S | W | E
 
 val dirToXY: dir -> int * int

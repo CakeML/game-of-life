@@ -338,7 +338,7 @@ Quote svg_header = toString:
   </defs>
 End
 
-fun grid_to_svg (g: gate) filename =
+fun grid_to_svg (g: gate) env filename =
   let
     val {grid, inputs, outputs} = run_to_fixpoint (prepare (load g))
     val io = map (fn x => (x, false)) inputs @ map (fn x => (x, true)) outputs
@@ -411,9 +411,14 @@ fun grid_to_svg (g: gate) filename =
       end *)
     (* val _ = fold_grid output_cell *)
     val depth = map (fn (_,_,Var (_, i)) => Real.fromInt i | _ => raise Match) (#inputs g)
+    val env = Option.map (fn ls => fn (n, _) => List.nth (ls, n) <> 0) env
     val _ = for_loop 0 (Vector.length grid) (fn y => let
       val row = Vector.sub (grid, y)
       val _ = for_loop 0 (Vector.length row) (fn x => let
+        val cell = Vector.sub (row, x)
+        val cell = case env of
+          NONE => cell
+        | SOME env => if eval_bexp cell env then True else False
         fun write color =
           TextIO.output(f, String.concat [
             "  <rect x=\"", intToString (x-85), "\" y=\"", intToString (y-85),
@@ -421,14 +426,14 @@ fun grid_to_svg (g: gate) filename =
         fun oklab n depth (a, b) = String.concat [
           "oklab(", realToString (~0.25 + 1.5 * Real.fromInt n / depth),
           " ", realToString a, " ", realToString b, ")"]
-        val _ = case Vector.sub (row, x) of
-            False => ()
-          | True => write "black"
-          (* | Var (0, n) => write $ oklab n (List.nth (depth, 0)) (0.15, 0.1)
-          | Var (1, n) => write $ oklab n (List.nth (depth, 0)) (~0.1, ~0.2) *)
-          | Var (0, n) => write "red"
-          | Var (1, n) => write "blue"
-          | _ => write "purple"
+        val _ = case cell of
+          False => ()
+        | True => write "black"
+        (* | Var (0, n) => write $ oklab n (List.nth (depth, 0)) (0.15, 0.1)
+        | Var (1, n) => write $ oklab n (List.nth (depth, 0)) (~0.1, ~0.2) *)
+        | Var (0, n) => write "red"
+        | Var (1, n) => write "blue"
+        | _ => write "purple"
         in () end)
       in () end)
     val (outer, inner) = mk_paths false
@@ -441,7 +446,11 @@ fun grid_to_svg (g: gate) filename =
     val _ = TextIO.closeOut(f)
   in () end;
 
-val _ = grid_to_svg and_en_e "and-en-e.svg";
-val _ = grid_to_svg half_adder_ee_ee "half-adder-ee-ee.svg";
+val _ = grid_to_svg and_en_e NONE "and-en-e.svg";
+val _ = grid_to_svg and_en_e (SOME [0, 0]) "and-en-e-00.svg";
+val _ = grid_to_svg and_en_e (SOME [0, 1]) "and-en-e-01.svg";
+val _ = grid_to_svg and_en_e (SOME [1, 0]) "and-en-e-10.svg";
+val _ = grid_to_svg and_en_e (SOME [1, 1]) "and-en-e-11.svg";
+val _ = grid_to_svg half_adder_ee_ee NONE "half-adder-ee-ee.svg";
 
 val _ = export_theory();
