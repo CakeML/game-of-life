@@ -341,7 +341,7 @@ End
 fun grid_to_svg (g: gate) filename =
   let
     val {grid, inputs, outputs} = run_to_fixpoint (prepare (load g))
-    val io = map (fn x => (x, false)) inputs @ map (fn x => (x, false)) outputs
+    val io = map (fn x => (x, false)) inputs @ map (fn x => (x, true)) outputs
     fun mk_paths ph2 = let
       fun getIO x = Option.map (fn (p, out) => (p, if (is_ew p = out) = ph2 then 1 else ~1)) $
         List.find (fn (p, _) => #1 p = x) io
@@ -352,31 +352,23 @@ fun grid_to_svg (g: gate) filename =
       fun write s l = (write' outer s (map fst l); write' inner s (map (op +) l))
       val _ = on_ports 0 (#width g) (fn i => (2*i, ~1))
         (fn (x, y) => fn (v, out) => (
-          write "H " [(~6 + 75*x, out)];
-          write "V " [(75*y - out*6, ~1)];
-          write "H " [(6 + 75*x, ~out)];
-          write "V " [(75*y, ~1)]))
+          write "H " [(~6 + 75*x, out)]; write "V " [(75*y - out*6, 1)];
+          write "H " [(6 + 75*x, ~out)]; write "V " [(75*y, 1)]))
       val _ = write "H " [(150 * #width g - 75, ~1)];
       val _ = on_ports 0 (#height g) (fn i => (2 * #width g - 1, 2*i))
         (fn (x,y) => fn (v, out) => (
-          write "V " [(~6 + 75*y, out)];
-          write "H " [(75*x + out*6, ~1)];
-          write "V " [(6 + 75*y, ~out)];
-          write "H " [(75*x, ~1)]))
+          write "V " [(~6 + 75*y, out)]; write "H " [(75*x + out*6, ~1)];
+          write "V " [(6 + 75*y, ~out)]; write "H " [(75*x, ~1)]))
       val _ = write "V " [(150 * #height g - 75, ~1)];
       val _ = on_ports 0 (#height g) (fn i => (2*(#height g - 1 - i), 2 * #height g - 1))
         (fn (x,y) => fn (v, out) => (
-          write "H " [(6 + 75*x, ~out)];
-          write "V " [(75*y + out*6, ~1)];
-          write "H " [(~6 + 75*x, out)];
-          write "V " [(75*y, ~1)]))
+          write "H " [(6 + 75*x, ~out)]; write "V " [(75*y + out*6, ~1)];
+          write "H " [(~6 + 75*x, out)]; write "V " [(75*y, ~1)]))
       val _ = write "H " [(~75, 1)];
       val _ = on_ports 0 (#width g) (fn i => (~1, 2*(#width g - 1 - i)))
         (fn (x,y) => fn (v, out) => (
-          write "V " [(6 + 75*y, ~out)];
-          write "H " [(75*x - out*6, 1)];
-          write "V " [(~6 + 75*y, out)];
-          write "H " [(75*x, 1)]))
+          write "V " [(6 + 75*y, ~out)]; write "H " [(75*x - out*6, 1)];
+          write "V " [(~6 + 75*y, out)]; write "H " [(75*x, 1)]))
       in (String.concat $ rev (!outer), String.concat $ rev (!inner)) end
     val margin = 10.0
     val grid_rows = Vector.length grid
@@ -418,6 +410,7 @@ fun grid_to_svg (g: gate) filename =
            "\" fill=\"", color, "\" stroke=\"black\" stroke-width=\"1\" />\n"])
       end *)
     (* val _ = fold_grid output_cell *)
+    val depth = map (fn (_,_,Var (_, i)) => Real.fromInt i | _ => raise Match) (#inputs g)
     val _ = for_loop 0 (Vector.length grid) (fn y => let
       val row = Vector.sub (grid, y)
       val _ = for_loop 0 (Vector.length row) (fn x => let
@@ -425,9 +418,14 @@ fun grid_to_svg (g: gate) filename =
           TextIO.output(f, String.concat [
             "  <rect x=\"", intToString (x-85), "\" y=\"", intToString (y-85),
             "\" width=\"1\" height=\"1\" fill=\"", color, "\" />\n"])
+        fun oklab n depth (a, b) = String.concat [
+          "oklab(", realToString (~0.25 + 1.5 * Real.fromInt n / depth),
+          " ", realToString a, " ", realToString b, ")"]
         val _ = case Vector.sub (row, x) of
             False => ()
           | True => write "black"
+          (* | Var (0, n) => write $ oklab n (List.nth (depth, 0)) (0.15, 0.1)
+          | Var (1, n) => write $ oklab n (List.nth (depth, 0)) (~0.1, ~0.2) *)
           | Var (0, n) => write "red"
           | Var (1, n) => write "blue"
           | _ => write "purple"
@@ -444,5 +442,6 @@ fun grid_to_svg (g: gate) filename =
   in () end;
 
 val _ = grid_to_svg and_en_e "and-en-e.svg";
+val _ = grid_to_svg half_adder_ee_ee "half-adder-ee-ee.svg";
 
 val _ = export_theory();

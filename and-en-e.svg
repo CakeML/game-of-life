@@ -203,7 +203,7 @@
   <rect x="13" y="70" width="1" height="1" fill="black" />
   <rect x="14" y="70" width="1" height="1" fill="black" />
   <path fill="none" style="stroke-width: .1; stroke: black" d="
-    M -75 -75 H 75 V -6 H 81 V 6 H 75 V 75 H 6 V 69 H -6 V 75 H -75 V 6 H -81 V -6 H -75 Z" />
+    M -75 -75 H 75 V -6 H 69 V 6 H 75 V 75 H 6 V 69 H -6 V 75 H -75 V 6 H -81 V -6 H -75 Z" />
   <path fill="url(#grid)" style="stroke-width: .1; stroke: url(#grid)" d="
-    M -74 -74 H 74 V -5 H 80 V 5 H 74 V 74 H 7 V 68 H -7 V 74 H -74 V 5 H -80 V -5 H -74 Z" />
+    M -74 -74 H 74 V -7 H 68 V 7 H 74 V 74 H 7 V 68 H -7 V 74 H -74 V 5 H -80 V -5 H -74 Z" />
 </svg>
