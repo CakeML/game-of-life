@@ -875,6 +875,29 @@ Proof
   \\ eq_tac \\ rw [] \\ ARITH_TAC
 QED
 
+Theorem IN_io_box_io_box:
+  (a0,a1) ∈ io_box (x,y) ⇒ ((a0,a1) ∈ io_box (x1,y1) ⇔ x = x1 ∧ y = y1)
+Proof
+  gvs [io_box_def,box_def] \\ intLib.COOPER_TAC
+QED
+
+Theorem in_dir_test_not:
+  x ∈ dir_test (~b) ⇔ x ∉ dir_test b
+Proof
+  PairCases_on ‘x’ \\ gvs [dir_test_def] \\ rw []
+  \\ Cases_on ‘x1’ \\ gvs [is_ns_def,is_ew_def,IN_DEF]
+QED
+
+Theorem io_box_11:
+  a ∈ io_box x ∧ a ∈ io_box y ⇒ x = y
+Proof
+  PairCases_on ‘x’
+  \\ PairCases_on ‘y’
+  \\ gvs [io_box_def,box_def]
+  \\ strip_tac \\ gvs []
+  \\ COOPER_TAC
+QED
+
 Theorem io_gate_lenth:
   LENGTH (io_gate d) = 10 ∧
   ∀row. MEM row (io_gate d) ⇒ LENGTH row = 10
@@ -894,12 +917,6 @@ Proof
   \\ rename [‘io_gate d’]
   \\ strip_assume_tac io_gate_lenth
   \\ gvs [MEM_EL,PULL_EXISTS]
-QED
-
-Theorem IN_io_box_io_box:
-  (a0,a1) ∈ io_box (x,y) ⇒ ((a0,a1) ∈ io_box (x1,y1) ⇔ x = x1 ∧ y = y1)
-Proof
-  gvs [io_box_def,box_def] \\ intLib.COOPER_TAC
 QED
 
 Theorem mods_wf_circ_mod:
@@ -1026,6 +1043,13 @@ Proof
   \\ pop_assum $ irule_at Any \\ gvs []
 QED
 
+
+Triviality diff_inter:
+  (s DIFF t) ∩ y = (s ∩ y) DIFF (t ∩ y)
+Proof
+  gvs [EXTENSION] \\ metis_tac []
+QED
+
 Definition list_disjoint_def:
   list_disjoint xs ys ⇔ EVERY (λx. ~ MEM x ys) xs
 End
@@ -1060,6 +1084,38 @@ Definition no_overlap_def:
       io_compatible area outs ins
 End
 
+Theorem both_ins_outs_IMP_base_area:
+  circ_mod_wf area ins outs as ∧
+  m ⊆ ins ∧
+  m ⊆ outs ∧
+  (p0,p1) ∈ circ_io_area m ⇒
+  (p0,p1) ∈ base_area area
+Proof
+  gvs [circ_io_area_def] \\ rw []
+  \\ PairCases_on ‘r’
+  \\ gvs [SUBSET_DEF]
+  \\ first_x_assum drule \\ strip_tac
+  \\ first_x_assum drule \\ strip_tac
+  \\ ‘add_pt (x,y) (dir_to_xy r0) ∈ area ∧
+      sub_pt (x,y) (dir_to_xy r0) ∈ area’ by
+    (gvs [circ_mod_wf_def] \\ res_tac \\ gvs [])
+  \\ Cases_on ‘r0’ \\ gvs [dir_to_xy_def]
+  \\ gvs [base_area_def,PULL_EXISTS]
+  \\ gvs [box_def,PULL_EXISTS,io_box_def, GSYM int_sub]
+  >- (Cases_on ‘j < 6’
+      >- (qexists_tac ‘x’ \\ qexists_tac ‘y - 1’ \\ gvs [] \\ COOPER_TAC)
+      >- (qexists_tac ‘x’ \\ qexists_tac ‘y + 1’ \\ gvs [] \\ COOPER_TAC))
+  >- (Cases_on ‘j < 6’
+      >- (qexists_tac ‘x’ \\ qexists_tac ‘y - 1’ \\ gvs [] \\ COOPER_TAC)
+      >- (qexists_tac ‘x’ \\ qexists_tac ‘y + 1’ \\ gvs [] \\ COOPER_TAC))
+  >- (Cases_on ‘i < 6’
+      >- (qexists_tac ‘x - 1’ \\ qexists_tac ‘y’ \\ gvs [] \\ COOPER_TAC)
+      >- (qexists_tac ‘x + 1’ \\ qexists_tac ‘y’ \\ gvs [] \\ COOPER_TAC))
+  >- (Cases_on ‘i < 6’
+      >- (qexists_tac ‘x - 1’ \\ qexists_tac ‘y’ \\ gvs [] \\ COOPER_TAC)
+      >- (qexists_tac ‘x + 1’ \\ qexists_tac ‘y’ \\ gvs [] \\ COOPER_TAC))
+QED
+
 Theorem circ_area_diff:
   circ_mod_wf area ins outs as ∧
   m ⊆ ins ∧
@@ -1072,7 +1128,41 @@ Proof
   \\ rw [] \\ eq_tac
   \\ strip_tac \\ gvs []
   \\ gvs [io_cutout_def]
-  \\ cheat
+  \\ qabbrev_tac ‘b = (x MOD 60 < 30)’
+  >- (disj1_tac \\ gvs [circ_io_area_def] \\ metis_tac [])
+  >-
+   (match_mp_tac (METIS_PROVE [] “(~c ⇒ b) ⇒ (b ∨ c)”)
+    \\ strip_tac
+    \\ rename [‘p ∈ base_area area’] \\ PairCases_on ‘p’
+    \\ ‘(p0,p1) ∈ circ_io_area m’ by (gvs [circ_io_area_def] \\ metis_tac [])
+    \\ reverse conj_tac
+    >-
+     (gvs [diff_inter]
+      \\ ‘(ins ∩ dir_test b DIFF m ∩ dir_test b ∪
+               (outs ∩ dir_test (¬b) DIFF m ∩ dir_test (¬b))) =
+          (ins ∩ dir_test b ∪ outs ∩ dir_test (¬b)) DIFF m’ by
+        (gvs [EXTENSION,in_dir_test_not] \\ metis_tac [])
+      \\ gvs [] \\ qabbrev_tac ‘s = ins ∩ dir_test b ∪ outs ∩ dir_test (¬b)’
+      \\ qpat_x_assum ‘(p0,p1) ∈ circ_io_area m’ mp_tac
+      \\ simp [circ_io_area_def]
+      \\ gvs [METIS_PROVE [] “~b ∨ c ⇔ b ⇒ c”,PULL_FORALL,PULL_EXISTS]
+      \\ rpt strip_tac
+      \\ dxrule_then dxrule io_box_11
+      \\ strip_tac \\ gvs []
+      \\ rename [‘((x,y),r) ∈ m’]
+      \\ qsuff_tac ‘r = r'’ >- gvs []
+      \\ unabbrev_all_tac \\ gvs []
+      \\ gvs [circ_mod_wf_def]
+      \\ metis_tac [SUBSET_DEF])
+    \\ drule_all both_ins_outs_IMP_base_area \\ gvs [])
+  >- (CCONTR_TAC \\ gvs []
+      \\ gvs [circ_io_area_def]
+      \\ gvs [METIS_PROVE [] “~b ∨ c ⇔ b ⇒ c”,PULL_FORALL]
+      \\ ntac 2 $ first_x_assum drule \\ rpt strip_tac
+      \\ rename [‘((x,y),r) ∈ dir_test _’]
+      \\ ‘((x,y),r) ∈ m’ by metis_tac []
+      \\ metis_tac [SUBSET_DEF])
+  >- (disj2_tac \\ gvs [circ_io_area_def] \\ metis_tac [])
 QED
 
 Theorem circ_io_area_empty:
@@ -1097,6 +1187,15 @@ Proof
   \\ metis_tac []
 QED
 
+Theorem lwss_at_io_box:
+  x ∈ lwss_at n (p,r) ∧ x ∈ io_box q ⇒ p = q
+Proof
+  PairCases_on ‘x’
+  \\ PairCases_on ‘p’ \\ rw []
+  \\ imp_res_tac lwss_at_imp_io_box
+  \\ imp_res_tac io_box_11 \\ gvs []
+QED
+
 Theorem lwss_at_circ_io_area:
   m ⊆ s1 ∧ m ⊆ s2 ∧
   (∀p r1 r2. (p,r1) ∈ s1 ∧ (p,r2) ∈ s1 ⇒ r1 = r2) ∧
@@ -1110,17 +1209,9 @@ Proof
   \\ gvs [circ_io_area_def]
   \\ rename [‘x ∈ lwss_at n z’] \\ PairCases_on ‘z’ \\ gvs []
   \\ gvs [PULL_EXISTS]
-  \\ cheat
-QED
-
-Theorem io_box_11:
-  a ∈ io_box x ∧ a ∈ io_box y ⇒ x = y
-Proof
-  PairCases_on ‘x’
-  \\ PairCases_on ‘y’
-  \\ gvs [io_box_def,box_def]
+  \\ drule_all lwss_at_io_box
   \\ strip_tac \\ gvs []
-  \\ COOPER_TAC
+  \\ metis_tac [SUBSET_DEF]
 QED
 
 Theorem circ_io_area_disjoint:
