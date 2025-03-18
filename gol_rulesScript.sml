@@ -50,11 +50,11 @@ QED
 
 Definition gol_in_gol_def:
   gol_in_gol encode step_count extract ⇔
-    ∀ n s0 sN t0 tN .
+    ∀ n s0 s1 t0 t1 .
        t0 = encode s0 ∧
-       tN = FUNPOW step (n * step_count) t0 ∧
-       sN = FUNPOW step n s0 ⇒
-       sN = extract tN
+       t1 = FUNPOW step (n * step_count) t0 ∧
+       s1 = FUNPOW step n s0 ⇒
+       s1 = extract t1
 End
 
 val _ = export_theory();
