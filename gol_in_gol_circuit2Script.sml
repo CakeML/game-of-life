@@ -1907,9 +1907,10 @@ Theorem nextCell_correct:
   step s (x0,x1) ⇔ r_eval (s ∘ add_pt (x0,x1)) nextCell
 Proof
   fn g as (_, thm_stmt) => let
+    val step_th = gol_rulesTheory.IN_step |> SRULE [IN_DEF]
     val lem = thm_stmt
-      |> SCONV [nextCell_def,gol_rulesTheory.step_def,IN_DEF,LET_THM]
-      |> SRULE [GSYM int_sub,gol_rulesTheory.live_adj_def]
+      |> (SCONV [nextCell_def,step_th,IN_DEF,LET_THM])
+      |> SRULE [GSYM int_sub,gol_lemmasTheory.live_adj_eq]
     val tm = lem |> concl |> rand |> subst [
       “(s:state) (x0,x1)”     |-> “a00:bool”,
       “(s:state) (x0,x1-1)”   |-> “a01:bool”,
@@ -1929,7 +1930,7 @@ Proof
                   (EL 3 xs) (EL 4 xs) (EL 5 xs)
                   (EL 6 xs) (EL 7 xs) (EL 8 xs)’
       (WF_REL_TAC ‘measure (λxs. 9 - LENGTH xs)’ \\ gvs [])
-    val _ = cv_transLib.cv_auto_trans gol_rulesTheory.b2n_def
+    val _ = cv_transLib.cv_auto_trans gol_lemmasTheory.b2n_def
     val _ = cv_transLib.cv_trans calc_def
     val _ = cv_transLib.cv_trans_rec calc_all_def (
       WF_REL_TAC ‘measure (λxs. 9 - cv_right_depth xs)’ \\ rw []

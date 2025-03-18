@@ -4,7 +4,7 @@
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
-     gol_simTheory gol_circuitTheory;
+     gol_lemmasTheory gol_simTheory gol_circuitTheory;
 
 val _ = new_theory "gol_sim_ok";
 
@@ -540,7 +540,7 @@ Theorem IN_step_lemma:
      (x-1,y)   ∈ s,              (x+1,y  ) ∈ s,
      (x-1,y+1) ∈ s, (x,y+1) ∈ s, (x+1,y+1) ∈ s)
 Proof
-  gvs [step_def,IN_DEF,live_adj_def,decide_step_def]
+  gvs [IN_step,live_adj_eq,decide_step_def] \\ gvs [IN_DEF]
 QED
 
 Theorem y_SUB_IN_from_rows:
@@ -873,17 +873,6 @@ Proof
   \\ rpt gen_tac \\ AP_TERM_TAC
   \\ first_x_assum $ qspecl_then [‘x’,‘y+1’] mp_tac
   \\ gvs [AC integerTheory.INT_ADD_COMM integerTheory.INT_ADD_ASSOC]
-QED
-
-Theorem IN_COMPL_infl_COMPL:
-  (x,y) ∈ COMPL (infl (COMPL s)) ⇔
-  { (x-1,y-1); (x,y-1); (x+1,y-1);
-    (x-1,y  ); (x,y  ); (x+1,y  );
-    (x-1,y+1); (x,y+1); (x+1,y+1) } ⊆ s
-Proof
-  gvs [] \\ simp [IN_DEF,infl_def]
-  \\ gvs [live_adj_def,IN_DEF]
-  \\ eq_tac \\ rw []
 QED
 
 Triviality from_row_cons_imp:

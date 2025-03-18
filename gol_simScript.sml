@@ -2,7 +2,7 @@
   A formalisation of the rules of Conway's Game of Life (GOL).
 *)
 open HolKernel bossLib boolLib Parse;
-open arithmeticTheory alistTheory gol_rulesTheory;
+open arithmeticTheory alistTheory gol_rulesTheory gol_lemmasTheory;
 
 val _ = new_theory "gol_sim";
 
