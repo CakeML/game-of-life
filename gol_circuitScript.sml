@@ -1043,7 +1043,6 @@ Proof
   \\ pop_assum $ irule_at Any \\ gvs []
 QED
 
-
 Triviality diff_inter:
   (s DIFF t) ∩ y = (s ∩ y) DIFF (t ∩ y)
 Proof
@@ -1230,6 +1229,103 @@ Proof
   \\ metis_tac []
 QED
 
+Theorem to_dir_test:
+  is_ns = dir_test T ∧
+  is_ew = dir_test F
+Proof
+  gvs [dir_test_def]
+QED
+
+Theorem circ_io_area_eq_empty_lemma:
+  circ_io_area m ∩ circ_io_area (outs ∩ dir_test b) = ∅ ∧
+  m ≠ {} ∧ m ⊆ dir_test c ∧ m ⊆ outs ⇒
+  c ≠ b
+Proof
+  CCONTR_TAC \\ gvs []
+  \\ last_x_assum mp_tac
+  \\ gvs [] \\ gvs [EXTENSION]
+  \\ gvs [circ_io_area_def,PULL_EXISTS]
+  \\ gvs [SUBSET_DEF] \\ res_tac
+  \\ PairCases_on ‘x’
+  \\ rpt $ last_assum $ irule_at Any
+  \\ gvs [io_box_def]
+  \\ qexists_tac ‘(75 * x0 − 6,75 * x1 − 6)’
+  \\ gvs [box_def]
+  \\ qexists_tac ‘0’
+  \\ qexists_tac ‘0’
+  \\ gvs []
+QED
+
+Theorem circ_io_area_neq_empty_lemma:
+  circ_io_area m ∩ circ_io_area (outs ∩ dir_test b) ≠ ∅ ∧
+  circ_mod_wf area ins outs ∅ ∧
+  m ⊆ dir_test c ∧ m ⊆ outs ⇒
+  c = b
+Proof
+  gvs [EXTENSION]
+  \\ gvs [circ_io_area_def]
+  \\ strip_tac \\ gvs []
+  \\ imp_res_tac io_box_11
+  \\ fs [] \\ gvs []
+  \\ gvs [SUBSET_DEF]
+  \\ res_tac
+  \\ ‘r = r'’ by (gvs [circ_mod_wf_def] \\ res_tac)
+  \\ gvs []
+  \\ CCONTR_TAC \\ gvs []
+  \\ ‘b = ~c’ by metis_tac [] \\ gvs []
+  \\ gvs [in_dir_test_not]
+QED
+
+Theorem subset_dir_test_imp:
+  m ⊆ dir_test b ⇒
+  (m ∩ dir_test (~b) = {}) ∧
+  (m ∩ dir_test b = m)
+Proof
+  gvs [SUBSET_DEF,EXTENSION,in_dir_test_not] \\ metis_tac []
+QED
+
+Theorem lwss_at_diff_lemma:
+  m ⊆ s ∧ (∀p r1 r2. (p,r1) ∈ s ∧ (p,r2) ∈ s ⇒ r1 = r2)
+  ⇒
+  U (IMAGE (lwss_at x) s) DIFF circ_io_area m =
+  U (IMAGE (lwss_at x) (s DIFF m))
+Proof
+  rw [] \\ simp [Once EXTENSION,PULL_EXISTS]
+  \\ rw [] \\ eq_tac \\ rw []
+  \\ rpt $ first_assum $ irule_at $ Pos hd
+  \\ gvs [METIS_PROVE [] “~b ∨ c ⇔ b ⇒ c”,PULL_FORALL]
+  \\ CCONTR_TAC \\ gvs []
+  \\ gvs [circ_io_area_def]
+  \\ rename [‘a ∈ lwss_at x b’]
+  \\ PairCases_on ‘a’
+  \\ PairCases_on ‘b’
+  \\ drule lwss_at_imp_io_box \\ strip_tac
+  >- (gvs [METIS_PROVE [] “~b ∨ c ⇔ b ⇒ c”,PULL_FORALL])
+  \\ dxrule_then dxrule io_box_11
+  \\ strip_tac
+  \\ gvs [SUBSET_DEF]
+  \\ metis_tac []
+QED
+
+Theorem circ_area_diff_distrib:
+  m ⊆ s ∧ (∀p r1 r2. (p,r1) ∈ s ∧ (p,r2) ∈ s ⇒ r1 = r2)
+  ⇒
+  circ_io_area s DIFF circ_io_area m =
+  circ_io_area (s DIFF m)
+Proof
+  rw [EXTENSION] \\ eq_tac \\ rw []
+  \\ gvs [circ_io_area_def,PULL_EXISTS]
+  \\ gvs [METIS_PROVE [] “~b ∨ c ⇔ b ⇒ c”,PULL_FORALL]
+  \\ rpt $ first_assum $ irule_at $ Pos hd
+  \\ rw []
+  \\ dxrule_then dxrule io_box_11
+  \\ strip_tac \\ gvs []
+  \\ CCONTR_TAC
+  \\ gvs [SUBSET_DEF]
+  \\ res_tac
+  \\ metis_tac []
+QED
+
 Triviality circuit_run_internalise_lemma:
   ∀m area ins outs init.
     circuit_run area ins outs {} init ∧ m ⊆ ins ∧ m ⊆ outs ∧
@@ -1283,14 +1379,34 @@ Proof
   \\ gvs [fetch "-" "modifier_component_equality"]
   \\ irule_at Any circ_area_diff
   \\ first_assum $ irule_at $ Pos hd \\ simp []
+  \\ ‘∃c. m ⊆ dir_test c’ by metis_tac [to_dir_test]
   >-
-   (pop_assum mp_tac
+   (qpat_x_assum ‘_ = {}’ mp_tac
+    \\ Cases_on ‘m = {}’ >- gvs []
     \\ simp [Once circ_output_area_def]
-    \\ reverse $ rpt (IF_CASES_TAC \\ gvs [])
+    \\ reverse $ rpt (IF_CASES_TAC \\ gvs [circ_io_area_empty])
+    >- simp [circ_io_lwss_def,circ_output_area_def]
     \\ simp [circ_output_area_def]
     \\ simp [circ_io_lwss_def]
-    \\ cheat)
-  \\ cheat
+    \\ gvs [to_dir_test]
+    \\ strip_tac
+    \\ drule_all circ_io_area_eq_empty_lemma
+    \\ strip_tac \\ gvs []
+    \\ gvs [diff_inter]
+    \\ drule subset_dir_test_imp \\ gvs [])
+  \\ qpat_x_assum ‘_ ≠ {}’ mp_tac
+  \\ simp [Once circ_output_area_def]
+  \\ reverse $ rpt (IF_CASES_TAC \\ gvs [circ_io_area_empty])
+  \\ simp [circ_io_lwss_def,circ_output_area_def]
+  \\ strip_tac
+  \\ gvs [to_dir_test]
+  \\ drule_all circ_io_area_neq_empty_lemma \\ strip_tac \\ gvs []
+  \\ gvs [diff_inter]
+  \\ imp_res_tac subset_dir_test_imp
+  \\ simp [] \\ pop_assum kall_tac
+  \\ DEP_REWRITE_TAC [lwss_at_diff_lemma,circ_area_diff_distrib]
+  \\ gvs [SUBSET_DEF]
+  \\ gvs [circ_mod_wf_def,SF SFY_ss]
 QED
 
 Theorem circuit_run_internalise:
