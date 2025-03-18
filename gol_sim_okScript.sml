@@ -4,7 +4,7 @@
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
-     gol_lemmasTheory gol_simTheory gol_circuitTheory;
+     gol_lemmasTheory gol_simTheory gol_circuitTheory gol_mod_stepTheory;
 
 val _ = new_theory "gol_sim_ok";
 

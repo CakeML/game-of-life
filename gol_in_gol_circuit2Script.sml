@@ -2,7 +2,7 @@ open HolKernel bossLib boolLib Parse;
 open gol_simTheory gol_sim_okTheory listTheory gol_circuitTheory pred_setTheory
      pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
      dep_rewrite intLib combinTheory rich_listTheory quantHeuristicsTheory
-     gol_in_gol_paramsLib;
+     gol_in_gol_paramsLib gol_mod_stepTheory;
 
 val _ = new_theory "gol_in_gol_circuit2";
 
