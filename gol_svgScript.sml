@@ -3,124 +3,129 @@ open gol_simLib gol_diagramLib gol_in_gol_paramsLib gol_in_gol_circuitLib;
 
 val _ = new_theory "gol_svg";
 
-fun toString (s: unit frag list) = let
-  val lines = case s of [QUOTE s] => s | _ => raise Bind
-  val lines = String.fields (fn x => x = #"\n") lines
-  in String.concatWith "\n" (tl lines) end
+fun dropUntil tk s = let
+  val lines = String.fields (fn x => x = tk) s
+  in String.concatWith (String.str tk) (tl lines) end
+
+fun toString (s: string frag list) = let
+  val lines = String.concat (map (fn QUOTE s => dropUntil #")" s | ANTIQUOTE s => s) s)
+  in dropUntil #"\n" lines end
 
 fun intToString i = if i < 0 then "-"^(Int.toString (~i)) else Int.toString i
 fun realToString r = if r < 0.0 then "-"^Real.toString (~r) else Real.toString r
 
 (* circuit diagrams *)
 
-Quote svg_header = toString:
+fun svg_header main_color = let
+Quote s = toString:
   <style>
     text {
       font-family: Arial, sans-serif;
     }
   </style>
   <defs>
-    <path id="wire" style="fill: var(--main-color)" d="
+    <path id='wire' style='fill: ^main_color;' d='
       M -.51 .1 H -.1 L 0 0 -.1 -.1 H -.51
-      M 0 .1 H .51 V -.1 H 0 L .1 0" />
-    <g id="slow-wire">
-      <line x1="-.51" y1="0" x2=".51" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <rect x="-.4" y="-.15" width=".8" height=".3" style="fill: white" />
-      <path style="stroke-width: .07; stroke: var(--main-color); fill: none" d="
-        M -.4 -.1 V .15 H .25 V 0 H -.25 V -.15 H .4 V .1" />
+      M 0 .1 H .51 V -.1 H 0 L .1 0' />
+    <g id='slow-wire'>
+      <line x1='-.51' y1='0' x2='.51' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <rect x='-.4' y='-.15' width='.8' height='.3' style='fill: white' />
+      <path style='stroke-width: .07; stroke: ^main_color; fill: none' d='
+        M -.4 -.1 V .15 H .25 V 0 H -.25 V -.15 H .4 V .1' />
     </g>
-    <path id="cross" style="stroke-width: .2; stroke: var(--main-color)" d="
-      M -.51 0 H .51 M 0 -.51 V -.15 M 0 .15 V .51" />
-    <g id="terminator">
-      <line x1="-.51" y1="0" x2="0" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <line x1="0" y1="-.3" x2="0" y2=".3" style="stroke-width: .1; stroke: var(--main-color)" />
+    <path id='cross' style='stroke-width: .2; stroke: ^main_color;' d='
+      M -.51 0 H .51 M 0 -.51 V -.15 M 0 .15 V .51' />
+    <g id='terminator'>
+      <line x1='-.51' y1='0' x2='0' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <line x1='0' y1='-.3' x2='0' y2='.3' style='stroke-width: .1; stroke: ^main_color;' />
     </g>
-    <g id="and-en-e">
-      <line x1="-.51" y1="0" x2=".51" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <line x1="0" y1=".51" x2="0" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <path id="and-base" style="stroke-width: .07; stroke: var(--main-color); fill: white" d="
-        M -.3 -.25 L .05 -.25 A .25 .25 180 0 1 .05 .25 L .05 .25 L -.3 .25 Z" />
+    <g id='and-en-e'>
+      <line x1='-.51' y1='0' x2='.51' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <line x1='0' y1='.51' x2='0' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <path id='and-base' style='stroke-width: .07; stroke: ^main_color; fill: white' d='
+        M -.3 -.25 L .05 -.25 A .25 .25 180 0 1 .05 .25 L .05 .25 L -.3 .25 Z' />
     </g>
-    <use id="and-es-e" href="#and-en-e" transform="scale(1 -1)" />
-    <g id="and-ew-n">
-      <line x1="-.51" y1="0" x2=".51" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <line x1="0" y1="-.51" x2="0" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <use href="#and-base" transform="rotate(-90)" />
+    <use id='and-es-e' href='#and-en-e' transform='scale(1 -1)' />
+    <g id='and-ew-n'>
+      <line x1='-.51' y1='0' x2='.51' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <line x1='0' y1='-.51' x2='0' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <use href='#and-base' transform='rotate(-90)' />
     </g>
-    <text id="and-text" text-anchor="middle" dominant-baseline="central" font-size=".4">&amp;</text>
-    <g id="or-en-e">
-      <line x1="-.51" y1="0" x2=".51" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <line x1="0" y1=".51" x2="0" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <path style="stroke-width: .07; stroke: var(--main-color); fill: white" d="
-        M 0 -.25 Q .25 -.25 .4 0 Q .25 .25 .0 .25 L -.3 .25 A .5 .5 0 0 0 -.3 -.25 Z" />
+    <text id='and-text' text-anchor='middle' dominant-baseline='central' font-size='.4'>&amp;</text>
+    <g id='or-en-e'>
+      <line x1='-.51' y1='0' x2='.51' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <line x1='0' y1='.51' x2='0' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <path style='stroke-width: .07; stroke: ^main_color; fill: white' d='
+        M 0 -.25 Q .25 -.25 .4 0 Q .25 .25 .0 .25 L -.3 .25 A .5 .5 0 0 0 -.3 -.25 Z' />
     </g>
-    <text id="or-text" text-anchor="middle" dominant-baseline="central" font-size=".4">∨</text>
-    <g id="not">
-      <line x1="-.51" y1="0" x2="0" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <line x1=".3" y1="0" x2=".51" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <path style="stroke-width: .07; stroke: var(--main-color); fill: white" d="
-        M -.25 -.3 L .25 0 -.25 .3 Z" />
-      <circle cx=".3" cy="0" r=".1" style="stroke-width: .04; stroke: var(--main-color); fill: white" />
+    <text id='or-text' text-anchor='middle' dominant-baseline='central' font-size='.4'>∨</text>
+    <g id='not'>
+      <line x1='-.51' y1='0' x2='0' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <line x1='.3' y1='0' x2='.51' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <path style='stroke-width: .07; stroke: ^main_color; fill: white' d='
+        M -.25 -.3 L .25 0 -.25 .3 Z' />
+      <circle cx='.3' cy='0' r='.1' style='stroke-width: .04; stroke: ^main_color; fill: white' />
       <!--
-      <text x="-.07" text-anchor="middle" dominant-baseline="central" font-size=".4">¬</text>
+      <text x='-.07' text-anchor='middle' dominant-baseline='central' font-size='.4'>¬</text>
       -->
     </g>
-    <path id="turn-e-s" style="stroke-width: .2; stroke: var(--main-color); fill: none" d="
-      M -.51 0 H -.4 A .4 .4 90 0 1 0 .4 V .51" />
-    <use id="turn-e-n" href="#turn-e-s" transform="scale(1 -1)" />
-    <g id="slow-turn-e-s">
-      <path style="stroke-width: .2; stroke: var(--main-color); fill: none" d="
-        M -.51 0 H -.5 C -.3 0 -.05 -.45 .2 -.2 S 0 .3 0 .5 V .51" />
+    <path id='turn-e-s' style='stroke-width: .2; stroke: ^main_color; fill: none' d='
+      M -.51 0 H -.4 A .4 .4 90 0 1 0 .4 V .51' />
+    <use id='turn-e-n' href='#turn-e-s' transform='scale(1 -1)' />
+    <g id='slow-turn-e-s'>
+      <path style='stroke-width: .2; stroke: ^main_color; fill: none' d='
+        M -.51 0 H -.5 C -.3 0 -.05 -.45 .2 -.2 S 0 .3 0 .5 V .51' />
       <!--
-      <use href="#turn-e-s" />
-      <path style="stroke-width: .05; stroke: var(- -main-color); fill: white" d="
-        M -.4 -.15 A .55 .55 90 0 1 .15 .4 H -.15 A .25 .25 90 0 0 -.4 .15 Z" />
-      <path style="stroke-width: .05; stroke: var(- -main-color); fill: none" d="M 0 -.15 L .15 .03 0 .15"
-        transform="translate(-.4 .4) rotate(30) translate(-.05 -.4)" />
-      <path style="stroke-width: .05; stroke: var(- -main-color); fill: none" d="M 0 -.15 L .15 .03 0 .15"
-        transform="translate(-.4 .4) rotate(60) translate(-.05 -.4)" />
+      <use href='#turn-e-s' />
+      <path style='stroke-width: .05; stroke: var(- -main-color); fill: white' d='
+        M -.4 -.15 A .55 .55 90 0 1 .15 .4 H -.15 A .25 .25 90 0 0 -.4 .15 Z' />
+      <path style='stroke-width: .05; stroke: var(- -main-color); fill: none' d='M 0 -.15 L .15 .03 0 .15'
+        transform='translate(-.4 .4) rotate(30) translate(-.05 -.4)' />
+      <path style='stroke-width: .05; stroke: var(- -main-color); fill: none' d='M 0 -.15 L .15 .03 0 .15'
+        transform='translate(-.4 .4) rotate(60) translate(-.05 -.4)' />
       -->
     </g>
-    <g id="fork-e-es">
-      <use href="#turn-e-s" />
-      <path id="wire" style="fill: var(--main-color)" d="
+    <g id='fork-e-es'>
+      <use href='#turn-e-s' />
+      <path id='wire' style='fill: ^main_color;' d='
         M -.51 .1 H .05 L .15 0 .05 -.1 H -.51
-        M .15 .1 H .51 V -.1 H .15 L .25 0" />
+        M .15 .1 H .51 V -.1 H .15 L .25 0' />
     </g>
-    <use id="fork-e-en" href="#fork-e-es" transform="scale(1 -1)" />
-    <g id="half-adder-ee-ee">
-      <path style="stroke-width: .2; stroke: var(--main-color)" d="
+    <use id='fork-e-en' href='#fork-e-es' transform='scale(1 -1)' />
+    <g id='half-adder-ee-ee'>
+      <path style='stroke-width: .2; stroke: ^main_color;' d='
         M -1.01 .5 H -.5 M .5 .5 H 1.01
-        M -1.01 -.5 H -.5 M .5 -.5 H 1.01" />
-      <rect x="-.8" y="-.8" width="1.6" height="1.6" style="stroke-width: .07; stroke: var(--main-color); fill: white" />
-      <text x=".5" y="-.5" text-anchor="middle" dominant-baseline="central" font-size=".4">⊕</text>
+        M -1.01 -.5 H -.5 M .5 -.5 H 1.01' />
+      <rect x='-.8' y='-.8' width='1.6' height='1.6' style='stroke-width: .07; stroke: ^main_color; fill: white' />
+      <text x='.5' y='-.5' text-anchor='middle' dominant-baseline='central' font-size='.4'>⊕</text>
       <!--
-      <text x=".5" y=".5" text-anchor="middle" dominant-baseline="central" font-size=".4">&amp;</text>
+      <text x='.5' y='.5' text-anchor='middle' dominant-baseline='central' font-size='.4'>&amp;</text>
       -->
     </g>
-    <g id="half-adder-ee-es">
-      <path style="stroke-width: .2; stroke: var(--main-color)" d="
+    <g id='half-adder-ee-es'>
+      <path style='stroke-width: .2; stroke: ^main_color;' d='
         M -1.01 .5 H -.5 M .5 .5 V 1.01
-        M -1.01 -.5 H -.5 M .5 -.5 H 1.01" />
-      <rect x="-.8" y="-.8" width="1.6" height="1.6" style="stroke-width: .07; stroke: var(--main-color); fill: white" />
-      <text x=".5" y="-.5" text-anchor="middle" dominant-baseline="central" font-size=".4">⊕</text>
+        M -1.01 -.5 H -.5 M .5 -.5 H 1.01' />
+      <rect x='-.8' y='-.8' width='1.6' height='1.6' style='stroke-width: .07; stroke: ^main_color; fill: white' />
+      <text x='.5' y='-.5' text-anchor='middle' dominant-baseline='central' font-size='.4'>⊕</text>
       <!--
-      <text x=".5" y=".5" text-anchor="middle" dominant-baseline="central" font-size=".4">&amp;</text>
+      <text x='.5' y='.5' text-anchor='middle' dominant-baseline='central' font-size='.4'>&amp;</text>
       -->
     </g>
-    <text id="half-adder-text" text-anchor="middle" dominant-baseline="central" font-size=".4">H-A</text>
-    <g id="teleport-out">
-      <line x1="-.51" y1="0" x2="-.4" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <path id="wire" style="fill: var(--main-color); stroke-width: .07; stroke: var(--main-color)" d="
-        M -.4 0 L -.45 .2 -.1 0 -.45 -.2 Z" />
+    <text id='half-adder-text' text-anchor='middle' dominant-baseline='central' font-size='.4'>H-A</text>
+    <g id='teleport-out'>
+      <line x1='-.51' y1='0' x2='-.4' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <path id='wire' style='fill: ^main_color; stroke-width: .07; stroke: ^main_color;' d='
+        M -.4 0 L -.45 .2 -.1 0 -.45 -.2 Z' />
     </g>
-    <g id="teleport-in">
-      <line x1=".51" y1="0" x2=".05" y2="0" style="stroke-width: .2; stroke: var(--main-color)" />
-      <path id="wire" style="fill: var(--main-color); stroke-width: .07; stroke: var(--main-color)" d="
-        M -.2 0 L -.25 .2 .1 0 -.25 -.2 Z" transform="translate(0.45 0)" />
+    <g id='teleport-in'>
+      <line x1='.51' y1='0' x2='.05' y2='0' style='stroke-width: .2; stroke: ^main_color;' />
+      <path id='wire' style='fill: ^main_color; stroke-width: .07; stroke: ^main_color;' d='
+        M -.2 0 L -.25 .2 .1 0 -.25 -.2 Z' transform='translate(0.45 0)' />
     </g>
   </defs>
 End
+in s end
 
 type diag_opts = {
   period: real, speed: real,
@@ -128,30 +133,28 @@ type diag_opts = {
 
 val (gates, teleports) = recognize diag
 
-fun diag_to_svg (wires:diag_opts option) filename = let
+fun diag_to_svg (wires:diag_opts option) callout_back filename = let
   val cell_size = 50
   val margin = 0.5
   val f = TextIO.openOut filename
   val _ = TextIO.output (f, String.concat [
-    "<svg viewBox=\"", realToString (~margin - 0.5),
-      " ", realToString (~margin - 0.5),
-      " ", realToString (Real.fromInt tile + 2.0 * margin),
+    "<svg viewBox=\"0 0 ", realToString (Real.fromInt tile + 2.0 * margin),
       " ", realToString (Real.fromInt tile + 2.0 * margin),
       "\" xmlns=\"http://www.w3.org/2000/svg\"",
-      " width=\"100%\" height=\"100%\"",
+      " width=\"1600\" height=\"1600\"",
       " style=\"stroke-width: 0px; background-color: white\">\n",
-      "  <style>:root { --main-color: ",
-      case wires of NONE => "black" | SOME _ => "#ccc",
-      "; }</style>\n",
-      svg_header,
-      "  <rect x=\"-.5\" y=\"-.5\" width=\"",
+      svg_header (case wires of NONE => "black" | SOME _ => "#ccc"),
+      "  <g transform=\"translate(", realToString (margin + 0.5),
+      " ", realToString (margin + 0.5), ")\">\n",
+      "    <rect x=\"-.5\" y=\"-.5\" width=\"",
       Int.toString tile, "\" height=\"",
       Int.toString tile, "\" fill=\"white\"",
       " stroke-dashoffset=\".09\" stroke-dasharray=\".18 .32\"",
-      " style=\"stroke-width: .05; stroke: black\" />\n"])
+      " style=\"stroke-width: .05; stroke: black\" />\n",
+      callout_back])
   fun use_obj name (tx, ty) rot =
     TextIO.output (f, String.concat
-      ["  <use href=\"#", name,
+      ["    <use href=\"#", name,
       "\" transform=\"translate(", realToString tx,
       " ", realToString ty,
       ") rotate(", Int.toString (rot * 90), ")\" />\n"])
@@ -196,16 +199,16 @@ fun diag_to_svg (wires:diag_opts option) filename = let
     NONE => ()
   | SOME {speed, period, wires} => C app wires (fn ((wx, wy), vs) =>
     TextIO.output (f, String.concat [
-      "  <circle cx=\"", realToString (Real.fromInt wx / 2.0),
+      "    <circle cx=\"", realToString (Real.fromInt wx / 2.0),
       "\" cy=\"", realToString (Real.fromInt wy / 2.0),
       "\" r=\".11\" style=\"stroke-width: .01; stroke: black\">\n",
-      "    <animate attributeName=\"fill\"",
+      "      <animate attributeName=\"fill\"",
       " values=\"", String.concatWith ";" (map fst vs), "\"",
       " dur=\"", realToString (period / speed), "s\" keyTimes=\"",
       String.concatWith ";" (map (fn (_, r) => realToString (Real.fromInt r / period)) vs),
       "\" repeatCount=\"indefinite\" />\n",
-      "  </circle>\n"]))
-  val _ = TextIO.output (f,"</svg>\n")
+      "    </circle>\n"]))
+  val _ = TextIO.output (f,"  </g>\n</svg>\n")
   in TextIO.closeOut f end
 
 fun diag_to_svg_with_wires {speed, fade, offset} filename = let
@@ -258,10 +261,22 @@ fun diag_to_svg_with_wires {speed, fade, offset} filename = let
   val w = {period = Real.fromInt dur, speed = speed, wires = wires}
   in diag_to_svg (SOME w) filename end
 
-val _ = diag_to_svg NONE "diag.svg";
-val _ = diag_to_svg_with_wires {speed = 25.0, fade = 4, offset = ~4} "propagation.svg";
+
+Quote callout = toString:
+    <rect x='10.5' y='3.5' width='2' height='2' rx='.3' fill='#ff6' style='stroke-width: .05; stroke: grey' />
+End
+val _ = diag_to_svg NONE callout "mega-cell.svg";
+val _ = diag_to_svg_with_wires {speed = 25.0, fade = 4, offset = ~4} "" "propagation.svg";
 
 (* gate diagrams *)
+
+val red = "#a00"
+val yellow = "#aa0"
+val blue = "#00c"
+val purple = "#c0c"
+val lightred = "#fcc"
+val lightblue = "#ccf"
+val lightpurple = "#faf"
 
 (*
 fun fun_to_svg (rows, cols, g) filename =
@@ -335,6 +350,20 @@ Quote svg_header = toString:
     <pattern id="grid" viewBox="0 0 1 1" x="-.05" y="-.05" width="1" height="1" patternUnits="userSpaceOnUse">
       <path style="stroke-width: .1; stroke: #ccc; fill: none" d="M .05 1.1 V .05 H 1.1" />
     </pattern>
+    <linearGradient id="grad0" gradientUnits="userSpaceOnUse" x1="-5" y1="0" x2="15" y2="0">
+      <stop offset="0" style='stop-color:^lightred; stop-opacity:0' />
+      <stop offset="1" style='stop-color:^lightred; stop-opacity:1' />
+    </linearGradient>
+    <linearGradient id="grad1" gradientUnits="userSpaceOnUse" x1="-5" y1="0" x2="15" y2="0">
+      <stop offset="0" style='stop-color:^lightblue; stop-opacity:0' />
+      <stop offset="1" style='stop-color:^lightblue; stop-opacity:1' />
+    </linearGradient>
+    <linearGradient id="gradO" gradientUnits="userSpaceOnUse" x1="-5" y1="0" x2="15" y2="0">
+      <stop offset="0" style='stop-color:^lightpurple; stop-opacity:0' />
+      <stop offset="1" style='stop-color:^lightpurple; stop-opacity:1' />
+    </linearGradient>
+    <path id="arrow-in" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" />
+    <path id="arrow-out" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" transform="translate(-25 0)" />
   </defs>
 End
 
@@ -370,46 +399,23 @@ fun grid_to_svg (g: gate) env filename =
           write "V " [(6 + 75*y, ~out)]; write "H " [(75*x - out*6, 1)];
           write "V " [(~6 + 75*y, out)]; write "H " [(75*x, 1)]))
       in (String.concat $ rev (!outer), String.concat $ rev (!inner)) end
-    val margin = 10.0
-    val grid_rows = Vector.length grid
-    val grid_cols = Vector.length (Vector.sub (grid,0))
+    val margin = 7.0
     val f = TextIO.openOut filename
-    (* fun every_col row_arr row_index col_index h =
-      if col_index < Vector.length row_arr then
-        (h col_index row_index (Vector.sub (row_arr, col_index));
-         every_col row_arr row_index (col_index+1) h)
-      else ()
-    fun every_row row_index h =
-      if row_index < Vector.length grid then
-        (every_col (Vector.sub(grid,row_index)) row_index 0 h;
-         every_row (row_index+1) h)
-      else ();
-    fun fold_grid h = every_row 0 h *)
     val _ = TextIO.output(f, String.concat [
-      "<svg viewBox=\"", realToString (~margin - 75.0),
-        " ", realToString (~margin - 75.0),
-        " ", realToString (150.0 * Real.fromInt (#width g) + 2.0 * margin),
+      "<svg viewBox=\"0 0 ", realToString (150.0 * Real.fromInt (#width g) + 2.0 * margin),
         " ", realToString (150.0 * Real.fromInt (#height g) + 2.0 * margin),
         "\" xmlns=\"http://www.w3.org/2000/svg\"",
         " width=\"100%\" height=\"100%\"",
         " style=\"stroke-width: 0px; background-color: white\">\n",
-        svg_header])
-    (* fun output_cell col row cell =
-      let
-        val color = if cell = False then "black" else
-                    if cell = True then "white" else "purple"
-        val x = Int.toString (col * cell_size)
-        val y = Int.toString (row * cell_size)
-        val cell_size_str = Int.toString cell_size
-      in
-        TextIO.output(f,String.concat
-          ["<rect x=\"", x,
-           "\" y=\"", y,
-           "\" width=\"", cell_size_str,
-           "\" height=\"", cell_size_str,
-           "\" fill=\"", color, "\" stroke=\"black\" stroke-width=\"1\" />\n"])
-      end *)
-    (* val _ = fold_grid output_cell *)
+        svg_header,
+        "  <g transform='translate(", realToString (margin + 75.0),
+        " ", realToString (margin + 75.0), ")'>"])
+    val _ = C app io (fn (((x, y), d, v), out) =>
+      TextIO.output(f, String.concat [
+        "    <use href='#", if out then "arrow-out" else "arrow-in",
+        "' fill='url(#grad", case v of Var (i, _) => intToString i | _ => "O",
+        ")' transform='translate(", intToString (75 * x), " ", intToString (75 * y),
+        ") rotate(", intToString (90 * dirToRot d), ")' />\n"]))
     val depth = map (fn (_,_,Var (_, i)) => Real.fromInt i | _ => raise Match) (#inputs g)
     val env = Option.map (fn ls => fn (n, _) => List.nth (ls, n) <> 0) env
     val _ = for_loop 0 (Vector.length grid) (fn y => let
@@ -418,10 +424,13 @@ fun grid_to_svg (g: gate) env filename =
         val cell = Vector.sub (row, x)
         val cell = case env of
           NONE => cell
-        | SOME env => if eval_bexp cell env then True else False
+        | SOME env =>
+          if eval_bexp cell env then
+            subst_bexp cell (fn v => if env v then Var v else False)
+          else False
         fun write color =
           TextIO.output(f, String.concat [
-            "  <rect x=\"", intToString (x-85), "\" y=\"", intToString (y-85),
+            "    <rect x=\"", intToString (x-85), "\" y=\"", intToString (y-85),
             "\" width=\"1\" height=\"1\" fill=\"", color, "\" />\n"])
         fun oklab n depth (a, b) = String.concat [
           "oklab(", realToString (~0.25 + 1.5 * Real.fromInt n / depth),
@@ -431,17 +440,19 @@ fun grid_to_svg (g: gate) env filename =
         | True => write "black"
         (* | Var (0, n) => write $ oklab n (List.nth (depth, 0)) (0.15, 0.1)
         | Var (1, n) => write $ oklab n (List.nth (depth, 0)) (~0.1, ~0.2) *)
-        | Var (0, n) => write "red"
-        | Var (1, n) => write "blue"
-        | _ => write "purple"
+        | Var (0, _) => write red
+        | Not (Var (1, _)) => write yellow
+        | Var (1, _) => write blue
+        | _ => write purple
         in () end)
       in () end)
     val (outer, inner) = mk_paths false
     val _ = TextIO.output(f, String.concat [
-      "  <path fill=\"none\" style=\"stroke-width: .1; stroke: black\" d=\"\n",
+      "    <path fill=\"none\" style=\"stroke-width: .1; stroke: black\" d=\"\n",
       "    ", outer, "Z\" />\n",
-      "  <path fill=\"url(#grid)\" style=\"stroke-width: .1; stroke: url(#grid)\" d=\"\n",
-      "    ", inner, "Z\" />\n",
+      (* "  <path fill=\"url(#grid)\" style=\"stroke-width: .1; stroke: url(#grid)\" d=\"\n",
+      "    ", inner, "Z\" />\n", *)
+      "  </g>\n",
       "</svg>\n"])
     val _ = TextIO.closeOut(f)
   in () end;
@@ -451,6 +462,109 @@ val _ = grid_to_svg and_en_e (SOME [0, 0]) "and-en-e-00.svg";
 val _ = grid_to_svg and_en_e (SOME [0, 1]) "and-en-e-01.svg";
 val _ = grid_to_svg and_en_e (SOME [1, 0]) "and-en-e-10.svg";
 val _ = grid_to_svg and_en_e (SOME [1, 1]) "and-en-e-11.svg";
+val _ = grid_to_svg cross_es_es NONE "cross-es-es.svg";
 val _ = grid_to_svg half_adder_ee_ee NONE "half-adder-ee-ee.svg";
+
+fun new_grid cols rows =
+  Array.tabulate (rows, fn row => Array.tabulate (cols, fn col => False))
+
+fun simple_sim rows cols color filename (init: string list) =
+  let
+    val grid = Array.fromList $ C map init (fn s =>
+      Array.fromList $ C map (String.explode s) (fn
+          #" " => False
+        | #"." => True
+        | #"a" => Var(0,0)
+        | #"b" => Var(1,0)
+        | _ => raise Bind))
+    val height = Array.length grid
+    val width = Array.length (Array.sub (grid, 0))
+    val spacing = 1.5
+    val margin = 1.0
+    val f = TextIO.openOut filename
+    val diffW = Real.fromInt width + spacing
+    val diffH = Real.fromInt height + spacing
+    val imgWidth = Real.fromInt cols * diffW - spacing + 2.0 * margin
+    val imgHeight = Real.fromInt rows * diffH - spacing + 2.0 * margin
+    val scale = 1600.0 / imgWidth
+    val path = String.concatWith " " $
+      List.tabulate (width - 1, fn i => String.concat [
+        "M ", intToString (i+1), " 0 V ", intToString height]) @
+      List.tabulate (height - 1, fn i => String.concat [
+        "M 0 ", intToString (i+1), " H ", intToString width])
+    val _ = TextIO.output(f, String.concat [
+      "<svg viewBox=\"0 0 ", realToString imgWidth, " ", realToString imgHeight,
+        "\" xmlns=\"http://www.w3.org/2000/svg\"",
+        " width=\"", realToString (scale * imgWidth),
+        "\" height=\"", realToString (scale * imgHeight),
+        "\">\n",
+        "  <defs>\n",
+        "    <g id='box'>\n",
+        "      <path style='stroke-width: .1; stroke: #ccc; fill: none' d='", path, "' />\n",
+        "      <rect width='", intToString width, "' height='", intToString height,
+        "' style='stroke-width: .1; stroke: black; fill: none' />\n",
+        "    </g>\n",
+        "  </defs>\n"])
+    val grids = ref (grid, new_grid width height)
+    val _ = for_loop 0 rows (fn j => for_loop 0 cols (fn i => let
+      val grid = fst (!grids)
+      val _ = TextIO.output(f, String.concat [
+        "  <g transform=\"translate(", realToString (Real.fromInt i * diffW + margin),
+        " ", realToString (Real.fromInt j * diffH + margin), ")\">\n"])
+      val _ = for_loop 0 height (fn y => let
+        val row = Array.sub (grid, y)
+        val _ = for_loop 0 width (fn x => let
+          val cell = Array.sub (row, x)
+          fun write color =
+            TextIO.output(f, String.concat [
+              "    <rect x=\"", intToString x, "\" y=\"", intToString y,
+              "\" width=\"1\" height=\"1\" fill=\"", color, "\" />\n"])
+          fun oklab n depth (a, b) = String.concat [
+            "oklab(", realToString (~0.25 + 1.5 * Real.fromInt n / depth),
+            " ", realToString a, " ", realToString b, ")"]
+          val _ = case cell of
+            False => ()
+          | True => write (case color of SOME f => f (x, y) | _ => "black")
+          (* | Var (0, n) => write $ oklab n (List.nth (depth, 0)) (0.15, 0.1)
+          | Var (1, n) => write $ oklab n (List.nth (depth, 0)) (~0.1, ~0.2) *)
+          | Var (0, _) => write red
+          | Var (1, _) => write blue
+          | _ => write purple
+          in () end)
+        in () end)
+      val _ = TextIO.output(f, String.concat [
+        "    <use href=\"#box\" />\n",
+        "  </g>\n"])
+      in grids := (fn (old, new) => (raw_step old new; (new, old))) (!grids) end))
+    val _ = TextIO.output(f, String.concat [
+      "</svg>\n"])
+    val _ = TextIO.closeOut(f)
+  in () end;
+
+fun spaceshipColor (x, _) = if x < 6 then red else blue
+val _ = simple_sim 1 5 (SOME spaceshipColor) "spaceships.svg" [
+  "            ",
+  "            ",
+  "            ",
+  "       ...  ",
+  "      .  .  ",
+  "         .  ",
+  " ...     .  ",
+  "   .  . .   ",
+  "  .         ",
+  "            "]
+
+val _ = simple_sim 1 5 (SOME spaceshipColor) "collision.svg" [
+  "            ",
+  "            ",
+  "            ",
+  "       ...  ",
+  "      .  .  ",
+  "         .  ",
+  "         .  ",
+  "  ... . .   ",
+  "    .       ",
+  "   .        ",
+  "            "]
 
 val _ = export_theory();

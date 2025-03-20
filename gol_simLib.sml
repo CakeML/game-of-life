@@ -61,6 +61,13 @@ fun build_If x y z =
   if y = False then And(z,build_Not x) else
     Or(And(x,y),And(build_Not(x),z))
 
+fun subst_bexp False env = False
+  | subst_bexp True env = True
+  | subst_bexp (Not x) env = build_Not (subst_bexp x env)
+  | subst_bexp (And (x,y)) env = build_If (subst_bexp x env) (subst_bexp y env) False
+  | subst_bexp (Or (x,y)) env = build_If (subst_bexp x env) True (subst_bexp y env)
+  | subst_bexp (Var (s,g)) env = env (s,g)
+
 fun get_bvars8 ({ y1,y2,y3,y4,y5,y6,y7,y8 }:bexp8) =
   (get_bvars y1 o get_bvars y2 o get_bvars y3 o get_bvars y4 o
    get_bvars y5 o get_bvars y6 o get_bvars y7 o get_bvars y8) []
@@ -244,60 +251,64 @@ datatype state = STATE of {
   the_next_grid: bexp array array ref
 }
 
+fun raw_step grid next_grid = let
+  val (cols,rows) = get_width_height grid
+  val _ = for_loop 0 rows (fn row =>
+    for_loop 0 cols (fn col =>
+      update_cell row col next_grid
+        (gol_cell (get_cell row col grid)
+          { y1 = get_cell (row-1) (col-1) grid ,
+            y2 = get_cell (row-1) (col  ) grid ,
+            y3 = get_cell (row-1) (col+1) grid ,
+            y4 = get_cell (row  ) (col-1) grid ,
+            y5 = get_cell (row  ) (col+1) grid ,
+            y6 = get_cell (row+1) (col-1) grid ,
+            y7 = get_cell (row+1) (col  ) grid ,
+            y8 = get_cell (row+1) (col+1) grid })))
+  in () end
+
 fun compute_next_state
   (STATE {step_count, gen_count, inputs, outputs, the_grid, the_next_grid, ...})
   ignore_input =
   let
     val grid = !the_grid
     val next_grid = !the_next_grid
-    val (cols,rows) = get_width_height grid
-    val _ = for_loop 0 rows (fn row =>
-      for_loop 0 cols (fn col =>
-        update_cell row col next_grid
-          (gol_cell (get_cell row col grid)
-            { y1 = get_cell (row-1) (col-1) grid ,
-              y2 = get_cell (row-1) (col  ) grid ,
-              y3 = get_cell (row-1) (col+1) grid ,
-              y4 = get_cell (row  ) (col-1) grid ,
-              y5 = get_cell (row  ) (col+1) grid ,
-              y6 = get_cell (row+1) (col-1) grid ,
-              y7 = get_cell (row+1) (col  ) grid ,
-              y8 = get_cell (row+1) (col+1) grid })))
+    val _ = raw_step grid next_grid
 
-     val _ = if !step_count <> 59 then () else (
-        List.app (fn (((x,y),dir,_),r) =>
-          if dir = E orelse dir = W then
-            r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
-          else ()) outputs;
+    val _ = if !step_count <> 59 then () else (
+      List.app (fn (((x,y),dir,_),r) =>
+        if dir = E orelse dir = W then
+          r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
+        else ()) outputs;
+      if ignore_input then () else
+        appi (fn i => fn ((x,y),dir,_) =>
+          if dir = E then
+            init_from_rle "$5bo2bo$9bo$5bo3bo$6b4o!"
+              (toY(75*y-5)) (toX(75*x-5))
+              (Var (i, !gen_count)) next_grid
+          else if dir = W then
+            init_from_rle "5$4o$o3bo$o$bo2bo!"
+              (toY(75*y-5)) (toX(75*x-5))
+              (Var (i, !gen_count)) next_grid
+          else ()) inputs;
+      gen_count := !gen_count + 1)
+
+    val _ = if !step_count <> 29 then () else (
+      List.app (fn (((x,y),dir,_),r) =>
+        if dir = N orelse dir = S then
+          r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
+        else ()) outputs;
         if ignore_input then () else
           appi (fn i => fn ((x,y),dir,_) =>
-            if dir = E then
-              init_from_rle "$5bo2bo$9bo$5bo3bo$6b4o!"
+            if dir = N then
+              init_from_rle "2b3o$bo2bo$4bo$4bo$bobo!"
                 (toY(75*y-5)) (toX(75*x-5))
                 (Var (i, !gen_count)) next_grid
-            else if dir = W then
-              init_from_rle "5$4o$o3bo$o$bo2bo!"
+            else if dir = S then
+              init_from_rle "5$6bobo$5bo$5bo$5bo2bo$5b3o!"
                 (toY(75*y-5)) (toX(75*x-5))
                 (Var (i, !gen_count)) next_grid
-            else ()) inputs;
-        gen_count := !gen_count + 1)
-
-     val _ = if !step_count <> 29 then () else (
-        List.app (fn (((x,y),dir,_),r) =>
-          if dir = N orelse dir = S then
-            r := delete_box (75*x-6) (75*y-6) 12 12 next_grid
-          else ()) outputs;
-          if ignore_input then () else
-            appi (fn i => fn ((x,y),dir,_) =>
-              if dir = N then
-                init_from_rle "2b3o$bo2bo$4bo$4bo$bobo!"
-                  (toY(75*y-5)) (toX(75*x-5))
-                  (Var (i, !gen_count)) next_grid
-              else if dir = S then
-                init_from_rle "5$6bobo$5bo$5bo$5bo2bo$5b3o!"
-                  (toY(75*y-5)) (toX(75*x-5))
-                  (Var (i, !gen_count)) next_grid
-              else ()) inputs)
+            else ()) inputs)
 
     val _ = step_count := ((!step_count) + 1) mod 60
   in

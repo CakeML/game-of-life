@@ -380,7 +380,7 @@ Proof
            SUBSET_DEF,FORALL_PROD,PULL_EXISTS,EXISTS_PROD]
   \\ rewrite_tac [GSYM AND_IMP_INTRO]
   \\ rpt gen_tac
-  \\ rpt $ disch_then assume_tac
+  \\ rpt disch_tac
   \\ pop_assum $ irule_at Any
   \\ pop_assum $ irule_at Any
   \\ imp_res_tac lwss_at_imp_io_box \\ gvs []

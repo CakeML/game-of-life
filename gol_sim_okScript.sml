@@ -1199,7 +1199,7 @@ Proof
   \\ rename [‘((x,y),d,r)::_’]
   \\ simp [GSYM AND_IMP_INTRO,or_lwss_def,CaseEq"option"]
   \\ Cases_on ‘set ins ⊆ set ins1 ∪ set outs1’ \\ gvs []
-  \\ disch_then assume_tac
+  \\ disch_tac
   \\ drule_all simple_checks_io_bounded
   \\ qpat_x_assum ‘_ ∨ _’ kall_tac
   \\ rw [] \\ gvs []
@@ -1319,8 +1319,7 @@ Proof
   \\ Induct_on ‘outs’
   \\ gvs [or_io_areas_def]
   >- (irule from_rows_EMPTY \\ gvs [])
-  \\ gen_tac
-  \\ disch_then assume_tac
+  \\ gen_tac \\ disch_tac
   \\ PairCases_on ‘h'’
   \\ rename [‘(((x,y),d,r)::outs)’]
   \\ ‘-1 ≤ x ∧ -1 ≤ y ∧ x ≤ 2 * &w - 1 ∧ y ≤ 2 * &h - 1 ∧

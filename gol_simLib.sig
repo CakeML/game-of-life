@@ -10,12 +10,16 @@ datatype bexp = False
               | And of bexp * bexp
               | Or of bexp * bexp
 
+val subst_bexp: bexp -> (int * int -> bexp) -> bexp
 val eval_bexp: bexp -> (int * int -> bool) -> bool
 
 datatype dir = N | S | W | E
 
 val dirToXY: dir -> int * int
 val dirToRot: dir -> int
+
+val raw_step: bexp array array -> bexp array array -> unit
+val new_grid: int -> int -> bexp array array
 
 type io_port = (int * int) * dir * bexp
 
