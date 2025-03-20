@@ -18,9 +18,19 @@ End
 Theorem gol_in_gol_thm:
   gol_in_gol build_mega_cells (^periodN * 60) read_mega_cells
 Proof
-  REWRITE_TAC [build_mega_cells_def]
+  rewrite_tac [build_mega_cells_def]
   \\ irule floodfill_finish \\ simp [floodfill_result]
   \\ CONV_TAC cv_eval
+QED
+
+Theorem gol_in_gol_circuit_thm:
+  ∀n s.
+    FUNPOW step n s =
+    read_mega_cells (FUNPOW step (n * ^periodN * 60) (build_mega_cells s))
+Proof
+  mp_tac gol_in_gol_thm
+  \\ rewrite_tac [gol_in_gol_def]
+  \\ metis_tac [arithmeticTheory.MULT_ASSOC]
 QED
 
 val _ = export_theory();
