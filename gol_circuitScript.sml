@@ -5,7 +5,7 @@ open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
      integerTheory intLib gol_simTheory gol_lemmasTheory
-     gol_mod_stepTheory;
+     gol_io_stepTheory;
 
 val _ = new_theory "gol_circuit";
 
@@ -407,14 +407,14 @@ Definition circuit_def:
     ALL_DISTINCT (MAP FST as)
 End
 
-Theorem mod_steps_add:
+Theorem io_steps_add:
   ∀k c n s1 s2.
-    mod_steps (l + k) c n s1 s2 ⇔
-    ∃s3. mod_steps k c n s1 s3 ∧ mod_steps l c (n + k) s3 s2
+    io_steps (l + k) c n s1 s2 ⇔
+    ∃s3. io_steps k c n s1 s3 ∧ io_steps l c (n + k) s3 s2
 Proof
   Induct_on ‘k’ \\ gvs []
-  \\ once_rewrite_tac [mod_steps_def] \\ gvs [ADD_CLAUSES]
-  \\ gvs [mod_steps_def] \\ gvs [PULL_EXISTS,ADD1]
+  \\ once_rewrite_tac [io_steps_def] \\ gvs [ADD_CLAUSES]
+  \\ gvs [io_steps_def] \\ gvs [PULL_EXISTS,ADD1]
   \\ metis_tac []
 QED
 
@@ -424,7 +424,7 @@ Proof
   rw [] \\ gvs [LESS_EQ_EXISTS,run_to_def]
   \\ pop_assum mp_tac
   \\ once_rewrite_tac [ADD_COMM]
-  \\ rewrite_tac [mod_steps_add] \\ rw []
+  \\ rewrite_tac [io_steps_add] \\ rw []
   \\ first_x_assum $ irule_at Any
 QED
 
@@ -1366,28 +1366,28 @@ Proof
   simp [EXTENSION, FORALL_PROD]
 QED
 
-Theorem mod_step_translate_mod:
-  mod_step mod s t ⇒
-  mod_step (translate_mod p mod) (translate_set p s) (translate_set p t)
+Theorem io_step_translate_mod:
+  io_step mod s t ⇒
+  io_step (translate_mod p mod) (translate_set p s) (translate_set p t)
 Proof
-  simp [mod_step_def, translate_mod_def, GSYM translate_set_inter,
+  simp [io_step_def, translate_mod_def, GSYM translate_set_inter,
     GSYM translate_set_union, GSYM translate_set_diff]
 QED
 
-Theorem mod_steps_translate_mods:
-  mod_steps k mod n s t ⇒
-  mod_steps k (translate_mods p mod) n (translate_set p s) (translate_set p t)
+Theorem io_steps_translate_mods:
+  io_steps k mod n s t ⇒
+  io_steps k (translate_mods p mod) n (translate_set p s) (translate_set p t)
 Proof
   MAP_EVERY qid_spec_tac [`n`,`s`] \\ Induct_on `k`
-  \\ simp [mod_steps_def, translate_mods_def]
-  \\ metis_tac [mod_step_translate_mod]
+  \\ simp [io_steps_def, translate_mods_def]
+  \\ metis_tac [io_step_translate_mod]
 QED
 
 Theorem run_to_translate_mods:
   run_to k mod s t ⇒
   run_to k (translate_mods p mod) (translate_set p s) (translate_set p t)
 Proof
-  rw [run_to_def, mod_steps_translate_mods]
+  rw [run_to_def, io_steps_translate_mods]
 QED
 
 Theorem run_translate_mods:

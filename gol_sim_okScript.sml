@@ -4,7 +4,7 @@
 open HolKernel bossLib boolLib Parse;
 open pred_setTheory pairTheory dep_rewrite arithmeticTheory listTheory
      alistTheory rich_listTheory combinTheory gol_rulesTheory
-     gol_lemmasTheory gol_simTheory gol_circuitTheory gol_mod_stepTheory;
+     gol_lemmasTheory gol_simTheory gol_circuitTheory gol_io_stepTheory;
 
 val _ = new_theory "gol_sim_ok";
 
@@ -32,11 +32,11 @@ Proof
   Induct_on ‘ins’ \\ gvs [eval_io_def,FORALL_PROD]
 QED
 
-Theorem mod_steps_age:
-  ∀k c n s t. mod_steps k c n s t ⇔ mod_steps k (λl. c (l + n)) 0 s t
+Theorem io_steps_age:
+  ∀k c n s t. io_steps k c n s t ⇔ io_steps k (λl. c (l + n)) 0 s t
 Proof
   Induct
-  \\ once_rewrite_tac [mod_steps_def] >- simp []
+  \\ once_rewrite_tac [io_steps_def] >- simp []
   \\ pop_assum $ once_rewrite_tac o single \\ gvs []
 QED
 
@@ -106,13 +106,13 @@ Proof
   \\ pop_assum kall_tac
   \\ qid_spec_tac ‘env’
   \\ Induct_on ‘n’
-  >- gvs [run_to_def,mod_steps_def]
+  >- gvs [run_to_def,io_steps_def]
   \\ rpt strip_tac
-  \\ gvs [run_to_def,mod_steps_def,MULT_CLAUSES]
-  \\ simp [mod_steps_add]
+  \\ gvs [run_to_def,io_steps_def,MULT_CLAUSES]
+  \\ simp [io_steps_add]
   \\ last_x_assum $ qspec_then ‘env’ $ irule_at Any
   \\ first_x_assum $ qspec_then ‘age 1 env’ strip_assume_tac
-  \\ once_rewrite_tac [mod_steps_age]
+  \\ once_rewrite_tac [io_steps_age]
   \\ qsuff_tac
      ‘circ_mod (set area) (set (eval_io (age 1 env) ins))
         (set (eval_io (age 1 env) outs)) ∅  =
@@ -335,7 +335,7 @@ Definition steps_def:
     ∀n. n < 30 ⇒ infl (FUNPOW step n s1) ⊆ t
 End
 
-Theorem mod_steps_FUNPOW:
+Theorem io_steps_FUNPOW:
   ∀k n s cc.
     (∀i. i < k ⇒
          infl (FUNPOW step i s) ⊆ (cc (i + n)).area ∧
@@ -343,13 +343,13 @@ Theorem mod_steps_FUNPOW:
          (cc (i + n)).assert_content = {} ∧
          (cc (i + n)).deletions = {} ∧
          (cc (i + n)).insertions = {}) ⇒
-    mod_steps k cc n s (FUNPOW step k s)
+    io_steps k cc n s (FUNPOW step k s)
 Proof
-  Induct \\ gvs [mod_steps_def] \\ rw [] \\ gvs [FUNPOW]
+  Induct \\ gvs [io_steps_def] \\ rw [] \\ gvs [FUNPOW]
   \\ last_x_assum $ irule_at Any \\ conj_tac
   >- (gen_tac \\ strip_tac
       \\ last_x_assum $ qspec_then ‘SUC i’ mp_tac \\ gvs [FUNPOW,ADD1])
-  \\ gvs [mod_step_def]
+  \\ gvs [io_step_def]
   \\ pop_assum $ qspec_then ‘0’ assume_tac \\ gvs []
 QED
 
@@ -377,20 +377,20 @@ Proof
   strip_tac
   \\ gvs [run_to_def]
   \\ rewrite_tac [EVAL “30 + 30:num” |> GSYM]
-  \\ rewrite_tac [mod_steps_add] \\ gvs []
+  \\ rewrite_tac [io_steps_add] \\ gvs []
   \\ qexists_tac ‘circ_io_lwss ins 29 ∪ (s1 DIFF circ_output_area outs 29)’
   \\ conj_tac
   >-
    (ntac 2 (pop_assum kall_tac) \\ gvs [steps_def]
-    \\ simp [mod_steps_def]
+    \\ simp [io_steps_def]
     \\ rewrite_tac [EVAL “1 + 29:num” |> GSYM]
-    \\ rewrite_tac [mod_steps_add] \\ gvs []
+    \\ rewrite_tac [io_steps_add] \\ gvs []
     \\ qexists_tac ‘FUNPOW step 29 s’
     \\ conj_tac
-    >- (irule mod_steps_FUNPOW \\ gvs [circ_mod_def,circ_area_def]
+    >- (irule io_steps_FUNPOW \\ gvs [circ_mod_def,circ_area_def]
         \\ gvs [circ_output_area_def,circ_io_lwss_empty,circ_io_area_def])
-    \\ ntac 2 $ simp [Once (oneline mod_steps_def)]
-    \\ gvs [mod_step_def,circ_mod_def,SF SFY_ss]
+    \\ ntac 2 $ simp [Once (oneline io_steps_def)]
+    \\ gvs [io_step_def,circ_mod_def,SF SFY_ss]
     \\ ‘step (FUNPOW step 29 s) = FUNPOW step 30 s’
          by rewrite_tac [EVAL “SUC 29” |> GSYM, FUNPOW_SUC]
     \\ gvs [] \\ gvs [circ_area_def])
@@ -399,14 +399,14 @@ Proof
   \\ qabbrev_tac ‘t5 = circ_io_lwss ins 29 ∪ (s1 DIFF circ_output_area outs 29)’
   \\ pop_assum kall_tac
   \\ rewrite_tac [EVAL “1 + 29:num” |> GSYM]
-  \\ rewrite_tac [mod_steps_add] \\ gvs []
+  \\ rewrite_tac [io_steps_add] \\ gvs []
   \\ qexists_tac ‘FUNPOW step 29 t5’
   \\ gvs [steps_def]
   \\ conj_tac
-  >- (irule mod_steps_FUNPOW \\ gvs [circ_mod_def,circ_area_def]
+  >- (irule io_steps_FUNPOW \\ gvs [circ_mod_def,circ_area_def]
       \\ gvs [circ_output_area_def,circ_io_lwss_empty,circ_io_area_def])
-  \\ ntac 2 $ simp [Once (oneline mod_steps_def)]
-  \\ gvs [mod_step_def,circ_mod_def,SF SFY_ss]
+  \\ ntac 2 $ simp [Once (oneline io_steps_def)]
+  \\ gvs [io_step_def,circ_mod_def,SF SFY_ss]
   \\ ‘step (FUNPOW step 29 t5) = FUNPOW step 30 t5’
     by rewrite_tac [EVAL “SUC 29” |> GSYM, FUNPOW_SUC]
   \\ gvs [] \\ gvs [circ_area_def]

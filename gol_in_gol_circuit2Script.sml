@@ -2,7 +2,7 @@ open HolKernel bossLib boolLib Parse;
 open gol_simTheory gol_sim_okTheory listTheory gol_circuitTheory pred_setTheory
      pairTheory alistTheory arithmeticTheory sortingTheory integerTheory numLib
      dep_rewrite intLib combinTheory rich_listTheory quantHeuristicsTheory
-     gol_in_gol_paramsLib gol_mod_stepTheory;
+     gol_in_gol_paramsLib gol_io_stepTheory;
 
 val _ = new_theory "gol_in_gol_circuit2";
 
@@ -1676,13 +1676,13 @@ Theorem run_to_clear_mods:
 Proof
   gvs [run_to_def] \\ gen_tac
   \\ qsuff_tac ‘∀k n m s t.
-       mod_steps k (clear_mods m) n s t ⇒
+       io_steps k (clear_mods m) n s t ⇒
        FUNPOW step k s = t ∧
        (k ≠ 0 ⇒ t ∩ (m (n + k − 1)).assert_area = (m (n + k − 1)).assert_content)’
   >- (rw [] \\ res_tac \\ gvs [])
-  \\ Induct \\ gvs [mod_steps_def]
+  \\ Induct \\ gvs [io_steps_def]
   \\ rpt gen_tac \\ strip_tac
-  \\ gvs [mod_step_def,clear_mods_def,clear_mod_def]
+  \\ gvs [io_step_def,clear_mods_def,clear_mod_def]
   \\ last_x_assum drule
   \\ gvs [FUNPOW] \\ strip_tac
   \\ gvs [ADD1] \\ Cases_on ‘k’ \\ gvs []
