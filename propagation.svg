@@ -106,7 +106,7 @@
     </g>
   </defs>
   <g transform="translate(1.0 1.0)">
-    <rect x="-.5" y="-.5" width="21" height="21" fill="white" stroke-dashoffset=".09" stroke-dasharray=".18 .32" style="stroke-width: .05; stroke: black" />
+    <rect x="-.5" y="-.5" width="21" height="21" fill="none" stroke-dashoffset=".09" stroke-dasharray=".18 .32" style="stroke-width: .05; stroke: black" />
     <use href="#turn-e-s" transform="translate(20.0 20.0) rotate(90)" />
     <use href="#cross" transform="translate(19.0 20.0) rotate(90)" />
     <use href="#cross" transform="translate(18.0 20.0) rotate(90)" />

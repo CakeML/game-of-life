@@ -133,25 +133,39 @@ type diag_opts = {
 
 val (gates, teleports) = recognize diag
 
-fun diag_to_svg (wires:diag_opts option) callout_back filename = let
+fun diag_to_svg (wires:diag_opts option) grid callout_back filename = let
   val cell_size = 50
   val margin = 0.5
   val f = TextIO.openOut filename
   val _ = TextIO.output (f, String.concat [
     "<svg viewBox=\"0 0 ", realToString (Real.fromInt tile + 2.0 * margin),
-      " ", realToString (Real.fromInt tile + 2.0 * margin),
-      "\" xmlns=\"http://www.w3.org/2000/svg\"",
-      " width=\"1600\" height=\"1600\"",
-      " style=\"stroke-width: 0px; background-color: white\">\n",
-      svg_header (case wires of NONE => "black" | SOME _ => "#ccc"),
-      "  <g transform=\"translate(", realToString (margin + 0.5),
-      " ", realToString (margin + 0.5), ")\">\n",
-      "    <rect x=\"-.5\" y=\"-.5\" width=\"",
-      Int.toString tile, "\" height=\"",
-      Int.toString tile, "\" fill=\"white\"",
-      " stroke-dashoffset=\".09\" stroke-dasharray=\".18 .32\"",
-      " style=\"stroke-width: .05; stroke: black\" />\n",
-      callout_back])
+    " ", realToString (Real.fromInt tile + 2.0 * margin),
+    "\" xmlns=\"http://www.w3.org/2000/svg\"",
+    " width=\"1600\" height=\"1600\"",
+    " style=\"stroke-width: 0px; background-color: white\">\n",
+    svg_header (case wires of NONE => "black" | SOME _ => "#ccc"),
+    "  <g transform=\"translate(", realToString (margin + 0.5),
+    " ", realToString (margin + 0.5), ")\">\n",
+    callout_back])
+  val _ = if grid then let
+    val path = String.concatWith " " $
+      List.tabulate (tile - 1, fn i => String.concat [
+        "M ", intToString (i+1), " 0 V ", intToString tile]) @
+      List.tabulate (tile - 1, fn i => String.concat [
+        "M 0 ", intToString (i+1), " H ", intToString tile])
+    val _ = TextIO.output (f, String.concat [
+        "      <path",
+        " stroke-dashoffset=\".09\" stroke-dasharray=\".18 .82\"",
+        " style='stroke-width: .05; stroke: black; stroke-opacity: 0.2; fill: none'",
+        " transform='translate(-0.5 -0.5)' d='", path, "' />\n"])
+    in () end
+  else ()
+  val _ = TextIO.output (f, String.concat [
+    "    <rect x=\"-.5\" y=\"-.5\" width=\"",
+    Int.toString tile, "\" height=\"",
+    Int.toString tile, "\" fill=\"none\"",
+    " stroke-dashoffset=\".09\" stroke-dasharray=\".18 .32\"",
+    " style=\"stroke-width: .05; stroke: black\" />\n"])
   fun use_obj name (tx, ty) rot =
     TextIO.output (f, String.concat
       ["    <use href=\"#", name,
@@ -259,13 +273,13 @@ fun diag_to_svg_with_wires {speed, fade, offset} filename = let
     | ThisCellNotClock => (blue (0,0), "white", red (0,0), "white")
     in clock (off, on, off', on') (n + offset) end))
   val w = {period = Real.fromInt dur, speed = speed, wires = wires}
-  in diag_to_svg (SOME w) filename end
+  in diag_to_svg (SOME w) false filename end
 
 
 Quote callout = toString:
     <rect x='10.5' y='3.5' width='2' height='2' rx='.3' fill='#ff6' style='stroke-width: .05; stroke: grey' />
 End
-val _ = diag_to_svg NONE callout "mega-cell.svg";
+val _ = diag_to_svg NONE true callout "mega-cell.svg";
 val _ = diag_to_svg_with_wires {speed = 25.0, fade = 4, offset = ~4} "" "propagation.svg";
 
 (* gate diagrams *)
