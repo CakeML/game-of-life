@@ -73,35 +73,33 @@ Proof
 QED
 
 Definition circ_mod_wf_def:
-  circ_mod_wf area ins outs as ⇔
+  circ_mod_wf area ins outs ⇔
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
     (∀p r1 r2. (p,r1) ∈ ins ∧ (p,r2) ∈ ins ⇒ r1 = r2) ∧
-    (∀p r1 r2. (p,r1) ∈ outs ∪ as ∧ (p,r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
+    (∀p r1 r2. (p,r1) ∈ outs ∧ (p,r2) ∈ outs ⇒ r1 = r2) ∧
     (∀p d1 r1 d2 r2. (p,d1,r1) ∈ ins ∧ (p,d2,r2) ∈ outs ⇒ d1 = d2) ∧
-    (∀p d r. (p,d,r) ∈ ins ∪ as ⇒ add_pt p (dir_to_xy d) ∈ area) ∧
-    (∀p d r. (p,d,r) ∈ outs ∪ as ⇒ sub_pt p (dir_to_xy d) ∈ area) ∧
+    (∀p d r. (p,d,r) ∈ ins ⇒ add_pt p (dir_to_xy d) ∈ area) ∧
+    (∀p d r. (p,d,r) ∈ outs ⇒ sub_pt p (dir_to_xy d) ∈ area) ∧
     (∀p d r. (p,d,r) ∈ ins ∧ sub_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ outs) ∧
-    (∀p d r. (p,d,r) ∈ outs ∧ add_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ ins) ∧
-    (∀p r. (p,r) ∈ as ⇒ ∀q. (p,q) ∉ ins ∧ (p,q) ∉ outs)
+    (∀p d r. (p,d,r) ∈ outs ∧ add_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ ins)
 End
 
 Theorem circ_mod_wf_def_old:
-  circ_mod_wf area ins outs as ⇔
+  circ_mod_wf area ins outs ⇔
     (∀x y. (x,y) ∈ area ⇒ x % 2 = 0 ∧ y % 2 = 0) ∧
     (∀x y r1 r2. ((x,y),r1) ∈ ins ∧ ((x,y),r2) ∈ ins ⇒ r1 = r2) ∧
-    (∀x y r1 r2. ((x,y),r1) ∈ outs ∪ as ∧ ((x,y),r2) ∈ outs ∪ as ⇒ r1 = r2) ∧
+    (∀x y r1 r2. ((x,y),r1) ∈ outs ∧ ((x,y),r2) ∈ outs ⇒ r1 = r2) ∧
     (∀p d1 r1 d2 r2. (p,d1,r1) ∈ ins ∧ (p,d2,r2) ∈ outs ⇒ d1 = d2) ∧
-    (∀x y r. ((x,y),N,r) ∈ ins ∪ as ⇒ (x,y-1) ∈ area) ∧
-    (∀x y r. ((x,y),S,r) ∈ ins ∪ as ⇒ (x,y+1) ∈ area) ∧
-    (∀x y r. ((x,y),E,r) ∈ ins ∪ as ⇒ (x+1,y) ∈ area) ∧
-    (∀x y r. ((x,y),W,r) ∈ ins ∪ as ⇒ (x-1,y) ∈ area) ∧
-    (∀x y r. ((x,y),N,r) ∈ outs ∪ as ⇒ (x,y+1) ∈ area) ∧
-    (∀x y r. ((x,y),S,r) ∈ outs ∪ as ⇒ (x,y-1) ∈ area) ∧
-    (∀x y r. ((x,y),E,r) ∈ outs ∪ as ⇒ (x-1,y) ∈ area) ∧
-    (∀x y r. ((x,y),W,r) ∈ outs ∪ as ⇒ (x+1,y) ∈ area) ∧
+    (∀x y r. ((x,y),N,r) ∈ ins ⇒ (x,y-1) ∈ area) ∧
+    (∀x y r. ((x,y),S,r) ∈ ins ⇒ (x,y+1) ∈ area) ∧
+    (∀x y r. ((x,y),E,r) ∈ ins ⇒ (x+1,y) ∈ area) ∧
+    (∀x y r. ((x,y),W,r) ∈ ins ⇒ (x-1,y) ∈ area) ∧
+    (∀x y r. ((x,y),N,r) ∈ outs ⇒ (x,y+1) ∈ area) ∧
+    (∀x y r. ((x,y),S,r) ∈ outs ⇒ (x,y-1) ∈ area) ∧
+    (∀x y r. ((x,y),E,r) ∈ outs ⇒ (x-1,y) ∈ area) ∧
+    (∀x y r. ((x,y),W,r) ∈ outs ⇒ (x+1,y) ∈ area) ∧
     (∀p d r. (p,d,r) ∈ ins ∧ sub_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ outs) ∧
-    (∀p d r. (p,d,r) ∈ outs ∧ add_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ ins) ∧
-    (∀x y r. ((x,y),r) ∈ as ⇒ ∀q. ((x,y),q) ∉ ins ∧ ((x,y),q) ∉outs)
+    (∀p d r. (p,d,r) ∈ outs ∧ add_pt p (dir_to_xy d) ∈ area ⇒ (p,d,r) ∈ ins)
 Proof
   simp [circ_mod_wf_def] \\ rpt AP_TERM_TAC
   \\ qabbrev_tac ‘b = ∀p d1 r1 d2 r2. (p,d1,r1) ∈ ins ∧ (p,d2,r2) ∈ outs ⇒ d1 = d2’
@@ -213,16 +211,16 @@ Definition circ_io_lwss_def:
 End
 
 Definition circ_mod_def:
-  circ_mod area ins outs as n =
+  circ_mod area ins outs n =
     <| area           := circ_area area ins outs n ;
        deletions      := circ_output_area outs n ;
        insertions     := circ_io_lwss ins n ;
-       assert_area    := circ_output_area (outs ∪ as) n ;
-       assert_content := circ_io_lwss (outs ∪ as) n |>
+       assert_area    := circ_output_area outs n ;
+       assert_content := circ_io_lwss outs n |>
 End
 
 Theorem circ_mod_empty[simp]:
-  circ_mod ∅ ∅ ∅ ∅ = empty_mod
+  circ_mod ∅ ∅ ∅ = empty_mod
 Proof
   rw [empty_mod_def, Once FUN_EQ_THM, circ_mod_def]
   \\ simp [EXTENSION, circ_mod_def, circ_area_def, base_area_def,
@@ -316,8 +314,8 @@ Proof
 QED
 
 Theorem mods_wf_circ_mod:
-  circ_mod_wf area ins outs as ⇒
-  mods_wf (circ_mod area ins outs as)
+  circ_mod_wf area ins outs ⇒
+  mods_wf (circ_mod area ins outs)
 Proof
   rw [circ_mod_wf_def_old]
   \\ gvs [mods_wf_def,mod_wf_def,circ_mod_def] \\ rw []
@@ -331,50 +329,7 @@ Proof
     \\ gvs [circ_io_area_def,SUBSET_DEF,PULL_EXISTS]
     \\ rpt gen_tac \\ strip_tac
     \\ PairCases_on ‘r’ \\ gvs []
-    >- (gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD] \\ metis_tac [])
-    >-
-     (disj1_tac
-      \\ first_x_assum drule \\ strip_tac \\ gvs []
-      \\ rename [‘a ∈ io_box (x,y)’] \\ PairCases_on ‘a’
-      \\ ‘(x,y − 1) ∈ area ∧ (x,y + 1) ∈ area’ by
-        (gvs [IN_DEF,is_ns_def,SF DNF_ss] \\ res_tac \\ gvs [])
-      \\ drule IN_io_box_io_box
-      \\ disch_then (fn th => rewrite_tac [th])
-      \\ reverse conj_tac >- metis_tac []
-      \\ gvs [base_area_def,PULL_EXISTS,box_def,io_box_def]
-      \\ Cases_on ‘j < 6’
-      >-
-       (qexists_tac ‘x’ \\ qexists_tac ‘y-1’ \\ gvs []
-        \\ qexists_tac ‘75 - 6 + i’
-        \\ qexists_tac ‘150 - 6 + j’
-        \\ intLib.COOPER_TAC)
-      >-
-       (qexists_tac ‘x’ \\ qexists_tac ‘y+1’ \\ gvs []
-        \\ qexists_tac ‘75 - 6 + i’
-        \\ qexists_tac ‘j - 6’
-        \\ intLib.COOPER_TAC))
-    >- (gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD] \\ metis_tac [])
-    >-
-     (disj1_tac
-      \\ first_x_assum drule \\ strip_tac \\ gvs []
-      \\ rename [‘a ∈ io_box (x,y)’] \\ PairCases_on ‘a’
-      \\ ‘(x − 1,y) ∈ area ∧ (x + 1,y) ∈ area’ by
-        (gvs [IN_DEF,is_ew_def,SF DNF_ss] \\ res_tac \\ gvs [])
-      \\ drule IN_io_box_io_box
-      \\ disch_then (fn th => rewrite_tac [th])
-      \\ reverse conj_tac >- metis_tac []
-      \\ gvs [base_area_def,PULL_EXISTS,box_def,io_box_def]
-      \\ Cases_on ‘i < 6’
-      >-
-       (qexists_tac ‘x-1’ \\ qexists_tac ‘y’ \\ gvs []
-        \\ qexists_tac ‘150 - 6 + i’
-        \\ qexists_tac ‘75 - 6 + j’
-        \\ intLib.COOPER_TAC)
-      >-
-       (qexists_tac ‘x+1’ \\ qexists_tac ‘y’ \\ gvs []
-        \\ qexists_tac ‘i - 6’
-        \\ qexists_tac ‘75 - 6 + j’
-        \\ intLib.COOPER_TAC)))
+    \\ gvs [IN_DEF,is_ns_def,is_ew_def,EXISTS_PROD,FORALL_PROD] \\ metis_tac [])
   \\ rw [circ_io_lwss_def]
   \\ simp [circ_io_area_def,circ_output_area_def,
            SUBSET_DEF,FORALL_PROD,PULL_EXISTS,EXISTS_PROD]
@@ -387,24 +342,23 @@ Proof
 QED
 
 Definition circuit_run_def:
-  circuit_run area ins outs as init ⇔
-    run (circ_mod area ins outs as) init ∧
-    circ_mod_wf area ins outs as
+  circuit_run area ins outs init ⇔
+    run (circ_mod area ins outs) init ∧
+    circ_mod_wf area ins outs
 End
 
 Theorem circuit_run_empty:
-  circuit_run ∅ ∅ ∅ ∅ ∅
+  circuit_run ∅ ∅ ∅ ∅
 Proof
   simp [circuit_run_def, run_empty_mod, circ_mod_wf_def]
 QED
 
 Definition circuit_def:
-  circuit area ins outs as init ⇔
-    circuit_run (set area) (set ins) (set outs) (set as) init ∧
+  circuit area ins outs init ⇔
+    circuit_run (set area) (set ins) (set outs) init ∧
     ALL_DISTINCT area ∧
     ALL_DISTINCT (MAP FST ins) ∧
-    ALL_DISTINCT (MAP FST outs) ∧
-    ALL_DISTINCT (MAP FST as)
+    ALL_DISTINCT (MAP FST outs)
 End
 
 Theorem io_steps_add:
@@ -480,7 +434,7 @@ Definition no_overlap_def:
 End
 
 Theorem both_ins_outs_IMP_base_area:
-  circ_mod_wf area ins outs as ∧
+  circ_mod_wf area ins outs ∧
   m ⊆ ins ∧
   m ⊆ outs ∧
   (p0,p1) ∈ circ_io_area m ⇒
@@ -512,7 +466,7 @@ Proof
 QED
 
 Theorem circ_area_diff:
-  circ_mod_wf area ins outs as ∧
+  circ_mod_wf area ins outs ∧
   m ⊆ ins ∧
   m ⊆ outs ⇒
   circ_area area ins outs x =
@@ -610,7 +564,7 @@ Proof
 QED
 
 Theorem circ_io_area_disjoint:
-  m ⊆ outs ∧ DISJOINT m p ∧ circ_mod_wf area ins outs as ⇒
+  m ⊆ outs ∧ DISJOINT m p ∧ circ_mod_wf area ins outs ⇒
   circ_io_area m ∩ circ_io_area (outs ∩ p) = ∅
 Proof
   gvs [circ_io_area_def]
@@ -654,7 +608,7 @@ QED
 
 Theorem circ_io_area_neq_empty_lemma:
   circ_io_area m ∩ circ_io_area (outs ∩ dir_test b) ≠ ∅ ∧
-  circ_mod_wf area ins outs ∅ ∧
+  circ_mod_wf area ins outs ∧
   m ⊆ dir_test c ∧ m ⊆ outs ⇒
   c = b
 Proof
@@ -724,9 +678,9 @@ QED
 
 Triviality circuit_run_internalise_lemma:
   ∀m area ins outs init.
-    circuit_run area ins outs {} init ∧ m ⊆ ins ∧ m ⊆ outs ∧
+    circuit_run area ins outs init ∧ m ⊆ ins ∧ m ⊆ outs ∧
     (¬ (m ⊆ is_ns) ⇒ m ⊆ is_ew) ⇒
-    circuit_run area (ins DIFF m) (outs DIFF m) {} init
+    circuit_run area (ins DIFF m) (outs DIFF m) init
 Proof
   gvs [circuit_run_def] \\ rpt gen_tac \\ strip_tac
   \\ dxrule to_del_io_run
@@ -767,8 +721,8 @@ Proof
       \\ gvs [circ_mod_wf_def,SF SFY_ss])
     \\ gvs [circ_io_area_empty])
   \\ qsuff_tac
-     ‘del_io (circ_io_area m) (circ_mod area ins outs {}) =
-      circ_mod area (ins DIFF m) (outs DIFF m) {}’
+     ‘del_io (circ_io_area m) (circ_mod area ins outs) =
+      circ_mod area (ins DIFF m) (outs DIFF m)’
   >- (gvs [] \\ rw [] \\ gvs [circ_mod_wf_def, SF SFY_ss, SF DNF_ss])
   \\ gvs [FUN_EQ_THM] \\ gvs [del_io_def,del_io_mod_def,circ_mod_def]
   \\ gen_tac \\ IF_CASES_TAC
@@ -807,8 +761,8 @@ QED
 
 Theorem circuit_run_internalise:
   ∀m area ins outs init.
-    circuit_run area ins outs {} init ∧ m ⊆ ins ∧ m ⊆ outs ⇒
-    circuit_run area (ins DIFF m) (outs DIFF m) {} init
+    circuit_run area ins outs init ∧ m ⊆ ins ∧ m ⊆ outs ⇒
+    circuit_run area (ins DIFF m) (outs DIFF m) init
 Proof
   rpt strip_tac
   \\ ‘∃m1 m2. m = m1 ∪ m2 ∧ DISJOINT m1 m2 ∧ m1 ⊆ is_ns ∧ m2 ⊆ is_ew’ by
@@ -893,7 +847,7 @@ Proof
 QED
 
 Theorem circ_mod_wf_imp_even:
-  circ_mod_wf a ins outs as ∧ (x,y) ∈ a ⇒ ∃i j. x = 2 * i ∧ y = 2 * j
+  circ_mod_wf a ins outs ∧ (x,y) ∈ a ⇒ ∃i j. x = 2 * i ∧ y = 2 * j
 Proof
   rw [circ_mod_wf_def, SF SFY_ss]
   \\ res_tac \\ COOPER_TAC
@@ -901,7 +855,7 @@ QED
 
 Theorem in_io_box_base_area_y:
   (z0,z1) ∈ base_area a1 ∧
-  circ_mod_wf a1 ins1 outs as1 ∧
+  circ_mod_wf a1 ins1 outs ∧
   (z0,z1) ∈ io_box (2 * i,2 * m + 1) ⇒
   (2 * i, 2 * m) ∈ a1 ∨
   (2 * i, 2 * m + 2) ∈ a1
@@ -917,7 +871,7 @@ QED
 
 Theorem in_io_box_base_area_x:
   (z0,z1) ∈ base_area a1 ∧
-  circ_mod_wf a1 ins1 outs as1 ∧
+  circ_mod_wf a1 ins1 outs ∧
   (z0,z1) ∈ io_box (2 * i + 1,2 * m) ⇒
   (2 * i, 2 * m) ∈ a1 ∨
   (2 * i + 2, 2 * m) ∈ a1
@@ -937,8 +891,8 @@ Theorem sub_pt_in_area:
   DISJOINT a1 a2 ∧
   (d = N ∨ d = S ⇒ ∃n m. x1 = 2 * n ∧ y1 = 2 * m + 1) ∧
   (d = E ∨ d = W ⇒ ∃n m. x1 = 2 * n + 1 ∧ y1 = 2 * m) ∧
-  circ_mod_wf a1 ins1 (outs1:(int # int) # dir # β -> bool) as1 ∧
-  circ_mod_wf a2 ins2 (outs2:(int # int) # dir # β -> bool) as2 ∧
+  circ_mod_wf a1 ins1 (outs1:(int # int) # dir # β -> bool) ∧
+  circ_mod_wf a2 ins2 (outs2:(int # int) # dir # β -> bool) ∧
   add_pt (x1,y1) (dir_to_xy d) ∈ a2 ⇒
   sub_pt (x1,y1) (dir_to_xy d) ∈ a1
 Proof
@@ -967,7 +921,7 @@ Proof
 QED
 
 Theorem circ_mod_wf_imp:
-  circ_mod_wf a ins outs as ⇒
+  circ_mod_wf a ins outs ⇒
   (∀p d r. (p,d,r) ∈ ins ⇒ add_pt p (dir_to_xy d) ∈ a) ∧
   (∀p d r. (p,d,r) ∈ outs ⇒ sub_pt p (dir_to_xy d) ∈ a)
 Proof
@@ -975,7 +929,7 @@ Proof
 QED
 
 Theorem port_locations:
-  circ_mod_wf area ins outs a ⇒
+  circ_mod_wf area ins outs ⇒
   ((x1,y1),d,rest) ∈ ins ∪ outs ⇒
   (d = E ∨ d = W ⇒ ∃n m. x1 = 2 * n + 1 ∧ y1 = 2 * m) ∧
   (d = N ∨ d = S ⇒ ∃n m. x1 = 2 * n ∧ y1 = 2 * m + 1)
@@ -992,8 +946,8 @@ QED
 
 Theorem in_io_cutout_lemma:
   DISJOINT (area x) (area y) ∧
-  circ_mod_wf (area x) (ins x) (outs x) {} ∧
-  circ_mod_wf (area y) (ins y) (outs y) {} ∧
+  circ_mod_wf (area x) (ins x) (outs x) ∧
+  circ_mod_wf (area y) (ins y) (outs y) ∧
   (∀p d r. (p,d,r) ∈ ins x ∧ sub_pt p (dir_to_xy d) ∈ area y ⇒ (p,d,r) ∈ outs y) ∧
   (∀p d r. (p,d,r) ∈ outs x ∧ add_pt p (dir_to_xy d) ∈ area y ⇒ (p,d,r) ∈ ins y) ∧
   (∀p d r. (p,d,r) ∈ ins y ∧ sub_pt p (dir_to_xy d) ∈ area x ⇒ (p,d,r) ∈ outs x) ∧
@@ -1044,9 +998,9 @@ Proof
 QED
 
 Theorem circ_mod_wf_imp_dir_test:
-  circ_mod_wf a ins outs as ⇒
-  (∀p d r. (p,d,r) ∈ ins ⇒  (p,d,r) ∈ dir_test (FST p % 2 = 0)) ∧
-  (∀p d r. (p,d,r) ∈ outs ⇒  (p,d,r) ∈ dir_test (FST p % 2 = 0))
+  circ_mod_wf a ins outs ⇒
+  (∀p d r. (p,d,r) ∈ ins ⇒ (p,d,r) ∈ dir_test (FST p % 2 = 0)) ∧
+  (∀p d r. (p,d,r) ∈ outs ⇒ (p,d,r) ∈ dir_test (FST p % 2 = 0))
 Proof
   rw [circ_mod_wf_def, SF DNF_ss]
   \\ PairCases_on ‘p’ \\ gvs []
@@ -1105,7 +1059,7 @@ QED
 Theorem circuit_run_compose_bigunion:
   ∀area ins outs init.
   (* each element in the family must be a circuit_run *)
-  (∀x. circuit_run (area x) (ins x) (outs x) {} (init x)) ∧
+  (∀x. circuit_run (area x) (ins x) (outs x) (init x)) ∧
   (∀x1 x2. x1 ≠ x2 ⇒
     (* all areas must be disjoint *)
     DISJOINT (area x1) (area x2) ∧
@@ -1114,7 +1068,7 @@ Theorem circuit_run_compose_bigunion:
       ((p,d,r) ∈ ins x1 ∧ sub_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ outs x2) ∧
       ((p,d,r) ∈ outs x1 ∧ add_pt p (dir_to_xy d) ∈ area x2 ⇒ (p,d,r) ∈ ins x2))
   ⇒
-  circuit_run (iunion area) (iunion ins) (iunion outs) {} (iunion init)
+  circuit_run (iunion area) (iunion ins) (iunion outs) (iunion init)
 Proof
   rw [] \\ gvs [circuit_run_def]
   \\ reverse conj_asm2_tac
@@ -1164,7 +1118,7 @@ Proof
         \\ gvs [GSYM dir_to_xy_opposite]
         \\ metis_tac [IN_DISJOINT])
     \\ metis_tac [])
-  \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x) {}’,
+  \\ qspecl_then [‘UNIV’,‘λx. circ_mod (area x) (ins x) (outs x)’,
                   ‘init’] mp_tac run_compose_bigunion
   \\ simp []
   \\ reverse $ impl_tac
@@ -1251,8 +1205,8 @@ QED
 Theorem circuit_run_compose_union:
   ∀a1 a2 ins1 ins2 outs1 outs2 init1 init2.
   (* each element in the family must be a circuit_run *)
-  circuit_run a1 ins1 outs1 {} init1 ∧
-  circuit_run a2 ins2 outs2 {} init2 ∧
+  circuit_run a1 ins1 outs1 init1 ∧
+  circuit_run a2 ins2 outs2 init2 ∧
   DISJOINT a1 a2 ∧
   (∀p d r.
      ((p,d,r) ∈ ins1  ∧ sub_pt p (dir_to_xy d) ∈ a2 ⇒ (p,d,r) ∈ outs2) ∧
@@ -1260,7 +1214,7 @@ Theorem circuit_run_compose_union:
      ((p,d,r) ∈ ins2  ∧ sub_pt p (dir_to_xy d) ∈ a1 ⇒ (p,d,r) ∈ outs1) ∧
      ((p,d,r) ∈ outs2 ∧ add_pt p (dir_to_xy d) ∈ a1 ⇒ (p,d,r) ∈ ins1))
   ⇒
-  circuit_run (a1 ∪ a2) (ins1 ∪ ins2) (outs1 ∪ outs2) {} (init1 ∪ init2)
+  circuit_run (a1 ∪ a2) (ins1 ∪ ins2) (outs1 ∪ outs2) (init1 ∪ init2)
 Proof
   rpt gen_tac \\ strip_tac
   \\ qspecl_then [‘λb. if b then a1 else a2’,
@@ -1321,7 +1275,7 @@ QED
 Theorem live_adj_translate:
   live_adj (translate_set (p0,p1) s) x0 x1 = live_adj s (x0-p0) (x1-p1)
 Proof
-  REWRITE_TAC [live_adj_eq, translate_set_def, IN_DEF, sub_pt_def]
+  rewrite_tac [live_adj_eq, translate_set_def, IN_DEF, sub_pt_def]
   \\ rpt (reverse (cong_tac 1)
     >- (simp [] \\ cong_tac 2 \\ simp [] \\ ARITH_TAC))
 QED
@@ -1471,7 +1425,7 @@ Theorem circ_io_area_translate:
 Proof
   rw [Once EXTENSION, PULL_EXISTS, EXISTS_PROD, circ_io_area_def]
   \\ PairCases_on `p`
-  \\ REWRITE_TAC [GSYM mem_translate_set, io_box_translate] \\ simp []
+  \\ rewrite_tac [GSYM mem_translate_set, io_box_translate] \\ simp []
   \\ metis_tac [ARITH_PROVE ``∀x p:int. x + p - p = x ∧ x - p + p = x``]
 QED
 
@@ -1488,7 +1442,7 @@ Theorem base_area_translate:
 Proof
   rw [Once EXTENSION, PULL_EXISTS, base_area_def]
   \\ PairCases_on `p`
-  \\ REWRITE_TAC [GSYM mem_translate_set, box_translate] \\ simp []
+  \\ rewrite_tac [GSYM mem_translate_set, box_translate] \\ simp []
   \\ metis_tac [ARITH_PROVE ``∀x p:int. x + p - p = x ∧ x - p + p = x ∧
     75 * x − 75 + 75 * p = 75 * (x + p) - 75``]
 QED
@@ -1516,9 +1470,8 @@ Proof
 QED
 
 Theorem translate_circ_mod:
-  translate_mods (mul_pt 75 p) (circ_mod area ins outs as) =
-  circ_mod (translate_set p area) (translate_port p ins)
-    (translate_port p outs) (translate_port p as)
+  translate_mods (mul_pt 75 p) (circ_mod area ins outs) =
+  circ_mod (translate_set p area) (translate_port p ins) (translate_port p outs)
 Proof
   rw [FUN_EQ_THM, circ_mod_def, translate_mods_def, translate_mod_def,
     circ_io_lwss_translate, circ_output_area_translate, circ_area_translate]
@@ -1526,9 +1479,9 @@ QED
 
 Theorem circuit_run_translate:
   FST p % 2 = 0 ∧ SND p % 2 = 0 ∧
-  circuit_run area ins outs as init ⇒
+  circuit_run area ins outs init ⇒
   circuit_run (translate_set p area)
-    (translate_port p ins) (translate_port p outs) (translate_port p as)
+    (translate_port p ins) (translate_port p outs)
     (translate_set (mul_pt 75 p) init)
 Proof
   rw [circuit_run_def]

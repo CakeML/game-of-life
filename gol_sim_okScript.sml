@@ -82,21 +82,19 @@ Theorem imp_circuit:
     run_to 60
       (circ_mod (set area)
                 (set (eval_io env ins))
-                (set (eval_io env outs))
-                {})
+                (set (eval_io env outs)))
       (from_rows (x,y) (MAP (MAP (eval env)) rows))
       (from_rows (x,y) (MAP (MAP (eval (age 1 env))) rows)))
   ⇒
   ALL_DISTINCT (MAP FST ins) ∧
   ALL_DISTINCT (MAP FST outs) ∧
   ALL_DISTINCT area ∧
-  circ_mod_wf (set area) (set (eval_io env ins)) (set (eval_io env outs)) ∅
+  circ_mod_wf (set area) (set (eval_io env ins)) (set (eval_io env outs))
   ⇒
   circuit
     area
     (eval_io env ins)
     (eval_io env outs)
-    []
     (from_rows (x,y) (MAP (MAP (eval env)) rows))
 Proof
   rpt strip_tac
@@ -115,9 +113,9 @@ Proof
   \\ once_rewrite_tac [io_steps_age]
   \\ qsuff_tac
      ‘circ_mod (set area) (set (eval_io (age 1 env) ins))
-        (set (eval_io (age 1 env) outs)) ∅  =
+        (set (eval_io (age 1 env) outs)) =
       λl. circ_mod (set area) (set (eval_io env ins))
-                   (set (eval_io env outs)) ∅  (l + 60)’
+                   (set (eval_io env outs)) (l + 60)’
   >- (rw [] \\ qexists_tac ‘t’ \\ gvs [])
   \\ gvs [FUN_EQ_THM,circ_mod_def]
   \\ gvs [circ_area_def,circ_io_lwss_age,circ_area_age,circ_output_area_age]
@@ -366,13 +364,13 @@ QED
 Triviality run_to_60_lemma:
   (∃s1 s2 s3.
     steps s (circ_area area ins outs 0) s1 ∧
-    s1 ∩ circ_output_area (outs ∪ as) 29 = circ_io_lwss (outs ∪ as) 29 ∧
+    s1 ∩ circ_output_area outs 29 = circ_io_lwss outs 29 ∧
     s2 = circ_io_lwss ins 29 ∪ (s1 DIFF circ_output_area outs 29) ∧
     steps s2 (circ_area area ins outs 30) s3 ∧
-    s3 ∩ circ_output_area (outs ∪ as) 59 = circ_io_lwss (outs ∪ as) 59 ∧
+    s3 ∩ circ_output_area outs 59 = circ_io_lwss outs 59 ∧
     t = circ_io_lwss ins 59 ∪ (s3 DIFF circ_output_area outs 59))
   ⇒
-  run_to 60 (circ_mod area ins outs as) s t
+  run_to 60 (circ_mod area ins outs) s t
 Proof
   strip_tac
   \\ gvs [run_to_def]
@@ -1650,8 +1648,7 @@ Theorem simulation_ok_thm:
     run_to 60
       (circ_mod (set (make_area w h))
                 (set (eval_io env ins))
-                (set (eval_io env outs))
-                {})
+                (set (eval_io env outs)))
       (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
       (from_rows (-85,-85) (MAP (MAP (eval (age 1 env))) rows)))
 Proof
@@ -1732,7 +1729,7 @@ Theorem simulation_ok_IMP_circuit:
   ∀env.
     circuit (make_area w h)
             (eval_io env ins)
-            (eval_io env outs) []
+            (eval_io env outs)
             (from_rows (-85,-85) (MAP (MAP (eval env)) rows))
 Proof
   strip_tac \\ gen_tac

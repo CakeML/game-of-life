@@ -117,8 +117,8 @@ fun prove_steps_sim_step policy_def n th zs = let
   set_goal([],policy_tm)
 *)
   val policy_th = prove(policy_tm,
-    ONCE_REWRITE_TAC [policy_rw]
-    \\ REWRITE_TAC [check_mask_def,check_mask_rows_def,TL,check_mask_row_simp])
+    once_rewrite_tac [policy_rw]
+    \\ rewrite_tac [check_mask_def,check_mask_rows_def,TL,check_mask_row_simp])
     handle HOL_ERR e => let
       val (tm,y) = dest_comb (policy_rw |> concl |> rand)
       val (_,tm) = dest_comb tm
