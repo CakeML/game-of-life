@@ -107,7 +107,7 @@
   </defs>
   <g transform="translate(1.0 1.0)">
     <rect x='10.5' y='3.5' width='2' height='2' rx='.3' fill='#ff6' style='stroke-width: .05; stroke: grey' />
-      <path stroke-dashoffset=".09" stroke-dasharray=".18 .82" style='stroke-width: .05; stroke: black; stroke-opacity: 0.2; fill: none' transform='translate(-0.5 -0.5)' d='M 1 0 V 21 M 2 0 V 21 M 3 0 V 21 M 4 0 V 21 M 5 0 V 21 M 6 0 V 21 M 7 0 V 21 M 8 0 V 21 M 9 0 V 21 M 10 0 V 21 M 11 0 V 21 M 12 0 V 21 M 13 0 V 21 M 14 0 V 21 M 15 0 V 21 M 16 0 V 21 M 17 0 V 21 M 18 0 V 21 M 19 0 V 21 M 20 0 V 21 M 0 1 H 21 M 0 2 H 21 M 0 3 H 21 M 0 4 H 21 M 0 5 H 21 M 0 6 H 21 M 0 7 H 21 M 0 8 H 21 M 0 9 H 21 M 0 10 H 21 M 0 11 H 21 M 0 12 H 21 M 0 13 H 21 M 0 14 H 21 M 0 15 H 21 M 0 16 H 21 M 0 17 H 21 M 0 18 H 21 M 0 19 H 21 M 0 20 H 21' />
+    <path stroke-dashoffset=".09" stroke-dasharray=".18 .82" style='stroke-width: .05; stroke: black; stroke-opacity: 0.2; fill: none' transform='translate(-0.5 -0.5)' d='M 1 0 V 21 M 2 0 V 21 M 3 0 V 21 M 4 0 V 21 M 5 0 V 21 M 6 0 V 21 M 7 0 V 21 M 8 0 V 21 M 9 0 V 21 M 10 0 V 21 M 11 0 V 21 M 12 0 V 21 M 13 0 V 21 M 14 0 V 21 M 15 0 V 21 M 16 0 V 21 M 17 0 V 21 M 18 0 V 21 M 19 0 V 21 M 20 0 V 21 M 0 1 H 21 M 0 2 H 21 M 0 3 H 21 M 0 4 H 21 M 0 5 H 21 M 0 6 H 21 M 0 7 H 21 M 0 8 H 21 M 0 9 H 21 M 0 10 H 21 M 0 11 H 21 M 0 12 H 21 M 0 13 H 21 M 0 14 H 21 M 0 15 H 21 M 0 16 H 21 M 0 17 H 21 M 0 18 H 21 M 0 19 H 21 M 0 20 H 21' />
     <rect x="-.5" y="-.5" width="21" height="21" fill="none" stroke-dashoffset=".09" stroke-dasharray=".18 .32" style="stroke-width: .05; stroke: black" />
     <use href="#turn-e-s" transform="translate(20.0 20.0) rotate(90)" />
     <use href="#cross" transform="translate(19.0 20.0) rotate(90)" />

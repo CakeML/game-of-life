@@ -18,7 +18,8 @@
     <path id="arrow-in" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" />
     <path id="arrow-out" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" transform="translate(-25 0)" />
   </defs>
-  <g transform='translate(82.0 82.0)'>    <use href='#arrow-in' fill='url(#grad0)' transform='translate(-75 0) rotate(0)' />
+  <g transform='translate(82.0 82.0)'>
+    <use href='#arrow-in' fill='url(#grad0)' transform='translate(-75 0) rotate(0)' />
     <use href='#arrow-in' fill='url(#grad1)' transform='translate(-75 150) rotate(0)' />
     <use href='#arrow-out' fill='url(#gradO)' transform='translate(225 0) rotate(0)' />
     <use href='#arrow-out' fill='url(#gradO)' transform='translate(225 150) rotate(0)' />

@@ -1,0 +1,95 @@
+<svg viewBox="0 0 10.2 15.2" xmlns="http://www.w3.org/2000/svg" width="612.0" height="912.0">
+  <style>
+    text {
+      font-family: Arial, sans-serif;
+    }
+  </style>
+  <defs>
+    <linearGradient id="grad" gradientUnits="userSpaceOnUse" x1="-5" y1="0" x2="15" y2="0">
+      <stop offset="0" style='stop-color:#ccc; stop-opacity:0' />
+      <stop offset="1" style='stop-color:#ccc; stop-opacity:1' />
+    </linearGradient>
+    <path id="lwss" d="M 0 -3 L 6 0 L 0 3 Z" />
+    <path id="glider" d="M -1 2 L 3 4 L -1 6 Z" />
+    <g id="and-pop">
+      <use href="#lwss" fill="#a00" transform="translate(-75 0)" />
+      <use href="#lwss" fill="#a00" transform="translate(-45 0)" />
+      <use href="#lwss" fill="#a00" transform="translate(-15 0)" />
+      <use href="#lwss" fill="#00c" transform="translate(0 60) rotate(-90)" />
+      <use href="#lwss" fill="#00c" transform="translate(0 30) rotate(-90)" />
+      <use href="#lwss" fill="#c0c" transform="translate(15 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(45 0)" />
+      <use href="#glider" fill="#aa0" transform="translate(-10 5) rotate(-135)" />
+      <use href="#glider" fill="black" transform="translate(5 20) rotate(-135)" />
+      <use href="#glider" fill="black" transform="translate(20 35) rotate(-135)" />
+    </g>
+    <g id="wire-pop">
+      <use href="#lwss" fill="#c0c" transform="translate(-75 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(-45 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(-15 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(15 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(45 0)" />
+    </g>
+    <path id="arrow-in" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" />
+    <path id="arrow-out" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" transform="translate(-25 0)" />
+    <g id="and-gate">
+      <path fill="none" style="stroke-width: .05; stroke: black" d="
+        M -2 -2 H 2 V -.5 H 1.5 V .5 H 2 V 2 H .5 V 1.5 H -.5 V 2 H -2 V .5 H -2.5 V -.5 H -2 Z" />
+      <g id="and-gate-arrows">
+        <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+          <use href='#arrow-in' fill='url(#grad)' transform='translate(-75 0) rotate(0) scale(2 2)' />
+          <use href='#arrow-in' fill='url(#grad)' transform='translate(0 75) rotate(270) scale(2 2)' />
+          <use href='#arrow-out' fill='url(#grad)' transform='translate(75 0) rotate(0) scale(2 2)' />
+          <use href='#and-pop' />
+        </g>
+        <text x="0" y="-1" id='and-text' text-anchor='middle' dominant-baseline='central' font-size='1'>&amp;</text>
+      </g>
+    </g>
+    <g id="comp1" transform="translate(2 2)">
+      <use href="#and-gate" />
+      <g transform="translate(5 0)">
+        <path fill="none" style="stroke-width: .05; stroke: black" d="
+          M -2 -2 H 2 V -.5 H 1.5 V .5 H 2 V 2 H -2 V .5 H -2.5 V -.5 H -2 Z" />
+        <g id="wire-arrows">
+          <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+            <use href='#arrow-in' fill='url(#grad)' transform='translate(-75 0) rotate(0) scale(2 2)' />
+            <use href='#arrow-out' fill='url(#grad)' transform='translate(75 0) rotate(0) scale(2 2)' />
+            <use href='#wire-pop' />
+          </g>
+          <path id="wire-sym" style='fill: black;' transform="translate(0 -1) scale(.8 .8)" d='
+            M -.51 .1 H -.1 L 0 0 -.1 -.1 H -.51
+            M 0 .1 H .51 V -.1 H 0 L .1 0' />
+        </g>
+      </g>
+    </g>
+    <g id="comp2" transform="translate(2.5 2)">
+      <ellipse cx='2' cy='0' rx='1.53' ry='.8' fill='#ff6' style='stroke-width: .02; stroke: grey' />
+      <path fill="none" style="stroke-width: .03; stroke: #ccc" d="M 2 -2 V -.5 H 1.5 V .5 H 2 V 2" />
+      <path id="merged" fill="none" style="stroke-width: .05; stroke: black" d="
+        M -2 -2 H 6 V -.5 H 5.5 V .5 H 6 V 2 H .5 V 1.5 H -.5 V 2 H -2 V .5 H -2.5 V -.5 H -2 Z" />
+      <use href="#and-gate-arrows" />
+      <use href="#wire-arrows" transform="translate(4 0)" />
+    </g>
+    <g id="comp3" transform="translate(2.5 2)">
+      <use href="#merged" />
+      <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+        <use href='#arrow-in' fill='url(#grad)' transform='translate(-75 0) rotate(0) scale(2 2)' />
+        <use href='#arrow-in' fill='url(#grad)' transform='translate(0 75) rotate(270) scale(2 2)' />
+        <use href='#and-pop' />
+      </g>
+      <use href='#and-text' />
+      <g transform="translate(4 0)">
+        <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+          <use href='#arrow-out' fill='url(#grad)' transform='translate(75 0) rotate(0) scale(2 2)' />
+          <use href='#wire-pop' />
+        </g>
+        <use href='#wire-sym' />
+      </g>
+    </g>
+  </defs>
+  <g transform='translate(0.6 0.6)'>
+    <use href='#comp1' />
+    <use href='#comp2' transform='translate(0 5.0)' />
+    <use href='#comp3' transform='translate(0 10.0)' />
+  </g>
+</svg>

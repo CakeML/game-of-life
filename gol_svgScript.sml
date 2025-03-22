@@ -154,7 +154,7 @@ fun diag_to_svg (wires:diag_opts option) grid callout_back filename = let
       List.tabulate (tile - 1, fn i => String.concat [
         "M 0 ", intToString (i+1), " H ", intToString tile])
     val _ = TextIO.output (f, String.concat [
-        "      <path",
+        "    <path",
         " stroke-dashoffset=\".09\" stroke-dasharray=\".18 .82\"",
         " style='stroke-width: .05; stroke: black; stroke-opacity: 0.2; fill: none'",
         " transform='translate(-0.5 -0.5)' d='", path, "' />\n"])
@@ -423,7 +423,7 @@ fun grid_to_svg (g: gate) env filename =
         " style=\"stroke-width: 0px; background-color: white\">\n",
         svg_header,
         "  <g transform='translate(", realToString (margin + 75.0),
-        " ", realToString (margin + 75.0), ")'>"])
+        " ", realToString (margin + 75.0), ")'>\n"])
     val _ = C app io (fn (((x, y), d, v), out) =>
       TextIO.output(f, String.concat [
         "    <use href='#", if out then "arrow-out" else "arrow-in",
@@ -481,6 +481,8 @@ val _ = grid_to_svg half_adder_ee_ee NONE "half-adder-ee-ee.svg";
 
 fun new_grid cols rows =
   Array.tabulate (rows, fn row => Array.tabulate (cols, fn col => False))
+
+(* gol simulation diagrams *)
 
 fun simple_sim rows cols color filename (init: string list) =
   let
@@ -580,5 +582,131 @@ val _ = simple_sim 1 5 (SOME spaceshipColor) "collision.svg" [
   "    .       ",
   "   .        ",
   "            "]
+
+Quote svg_header = toString:
+  <style>
+    text {
+      font-family: Arial, sans-serif;
+    }
+  </style>
+  <defs>
+    <linearGradient id="grad" gradientUnits="userSpaceOnUse" x1="-5" y1="0" x2="15" y2="0">
+      <stop offset="0" style='stop-color:#ccc; stop-opacity:0' />
+      <stop offset="1" style='stop-color:#ccc; stop-opacity:1' />
+    </linearGradient>
+    <path id="lwss" d="M 0 -3 L 6 0 L 0 3 Z" />
+    <path id="glider" d="M -1 2 L 3 4 L -1 6 Z" />
+    <g id="and-pop">
+      <use href="#lwss" fill="#a00" transform="translate(-75 0)" />
+      <use href="#lwss" fill="#a00" transform="translate(-45 0)" />
+      <use href="#lwss" fill="#a00" transform="translate(-15 0)" />
+      <use href="#lwss" fill="#00c" transform="translate(0 60) rotate(-90)" />
+      <use href="#lwss" fill="#00c" transform="translate(0 30) rotate(-90)" />
+      <use href="#lwss" fill="#c0c" transform="translate(15 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(45 0)" />
+      <use href="#glider" fill="#aa0" transform="translate(-10 5) rotate(-135)" />
+      <use href="#glider" fill="black" transform="translate(5 20) rotate(-135)" />
+      <use href="#glider" fill="black" transform="translate(20 35) rotate(-135)" />
+    </g>
+    <g id="wire-pop">
+      <use href="#lwss" fill="#c0c" transform="translate(-75 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(-45 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(-15 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(15 0)" />
+      <use href="#lwss" fill="#c0c" transform="translate(45 0)" />
+    </g>
+    <path id="arrow-in" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" />
+    <path id="arrow-out" d="M -5 -5 H 15 V -8 L 28 0 15 8 V 5 H -5 Z" transform="translate(-25 0)" />
+    <g id="and-gate">
+      <path fill="none" style="stroke-width: .05; stroke: black" d="
+        M -2 -2 H 2 V -.5 H 1.5 V .5 H 2 V 2 H .5 V 1.5 H -.5 V 2 H -2 V .5 H -2.5 V -.5 H -2 Z" />
+      <g id="and-gate-arrows">
+        <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+          <use href='#arrow-in' fill='url(#grad)' transform='translate(-75 0) rotate(0) scale(2 2)' />
+          <use href='#arrow-in' fill='url(#grad)' transform='translate(0 75) rotate(270) scale(2 2)' />
+          <use href='#arrow-out' fill='url(#grad)' transform='translate(75 0) rotate(0) scale(2 2)' />
+          <use href='#and-pop' />
+        </g>
+        <text x="0" y="-1" id='and-text' text-anchor='middle' dominant-baseline='central' font-size='1'>&amp;</text>
+      </g>
+    </g>
+    <g id="comp1" transform="translate(2 2)">
+      <use href="#and-gate" />
+      <g transform="translate(5 0)">
+        <path fill="none" style="stroke-width: .05; stroke: black" d="
+          M -2 -2 H 2 V -.5 H 1.5 V .5 H 2 V 2 H -2 V .5 H -2.5 V -.5 H -2 Z" />
+        <g id="wire-arrows">
+          <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+            <use href='#arrow-in' fill='url(#grad)' transform='translate(-75 0) rotate(0) scale(2 2)' />
+            <use href='#arrow-out' fill='url(#grad)' transform='translate(75 0) rotate(0) scale(2 2)' />
+            <use href='#wire-pop' />
+          </g>
+          <path id="wire-sym" style='fill: black;' transform="translate(0 -1) scale(.8 .8)" d='
+            M -.51 .1 H -.1 L 0 0 -.1 -.1 H -.51
+            M 0 .1 H .51 V -.1 H 0 L .1 0' />
+        </g>
+      </g>
+    </g>
+    <g id="comp2" transform="translate(2.5 2)">
+      <ellipse cx='2' cy='0' rx='1.53' ry='.8' fill='#ff6' style='stroke-width: .02; stroke: grey' />
+      <path fill="none" style="stroke-width: .03; stroke: #ccc" d="M 2 -2 V -.5 H 1.5 V .5 H 2 V 2" />
+      <path id="merged" fill="none" style="stroke-width: .05; stroke: black" d="
+        M -2 -2 H 6 V -.5 H 5.5 V .5 H 6 V 2 H .5 V 1.5 H -.5 V 2 H -2 V .5 H -2.5 V -.5 H -2 Z" />
+      <use href="#and-gate-arrows" />
+      <use href="#wire-arrows" transform="translate(4 0)" />
+    </g>
+    <g id="comp3" transform="translate(2.5 2)">
+      <use href="#merged" />
+      <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+        <use href='#arrow-in' fill='url(#grad)' transform='translate(-75 0) rotate(0) scale(2 2)' />
+        <use href='#arrow-in' fill='url(#grad)' transform='translate(0 75) rotate(270) scale(2 2)' />
+        <use href='#and-pop' />
+      </g>
+      <use href='#and-text' />
+      <g transform="translate(4 0)">
+        <g transform="translate(-2 -2) scale(.02666 .02666) translate(75 75)">
+          <use href='#arrow-out' fill='url(#grad)' transform='translate(75 0) rotate(0) scale(2 2)' />
+          <use href='#wire-pop' />
+        </g>
+        <use href='#wire-sym' />
+      </g>
+    </g>
+  </defs>
+End
+
+fun composition_diag d filename =
+  let
+    val margin = 0.6
+    val spacing = 1.0
+    val f = TextIO.openOut filename
+    val imgWidth = 8.0 + spacing + 2.0 * margin
+    val diff = 4.0 + spacing
+    val imgHeight = diff * (case d of NONE => 3.0 | _ => 1.0) - spacing + 2.0 * margin
+    val scale = 60.0
+    val _ = TextIO.output(f, String.concat [
+      "<svg viewBox=\"0 0 ", realToString imgWidth, " ", realToString imgHeight,
+      "\" xmlns=\"http://www.w3.org/2000/svg\"",
+      " width=\"", realToString (scale * imgWidth),
+      "\" height=\"", realToString (scale * imgHeight),
+      "\">\n",
+      svg_header])
+    val _ = case d of
+      SOME d => TextIO.output(f, String.concat [
+      "  <use href='#", d,
+      "' transform='translate(", realToString margin, " ", realToString margin, ")' />\n"])
+    | NONE => TextIO.output(f, String.concat [
+      "  <g transform='translate(", realToString margin, " ", realToString margin, ")'>\n",
+      "    <use href='#comp1' />\n",
+      "    <use href='#comp2' transform='translate(0 ", realToString diff, ")' />\n",
+      "    <use href='#comp3' transform='translate(0 ", realToString (2.0 * diff), ")' />\n",
+      "  </g>\n"])
+    val _ = TextIO.output(f, "</svg>\n")
+    val _ = TextIO.closeOut(f)
+  in () end;
+
+val _ = composition_diag (SOME "comp1") "composition1.svg";
+val _ = composition_diag (SOME "comp2") "composition2.svg";
+val _ = composition_diag (SOME "comp3") "composition3.svg";
+val _ = composition_diag NONE "composition.svg";
 
 val _ = export_theory();
