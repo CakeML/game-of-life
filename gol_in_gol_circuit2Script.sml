@@ -1756,21 +1756,26 @@ Proof
 QED
 
 Definition union_blist_def[induction=union_blist_ind]:
-  union_blist _ Nil ls = ls ∧
-  union_blist m (Falses n ls1) ls = union_blist (m + n) ls1 ls ∧
-  union_blist m (Cell a ls1) ls = union_blist' m a ls1 ls ∧
-  union_blist' m a ls1 Nil = Nil ∧
-  union_blist' m a ls1 (Falses n ls) = (
-    if m < n then mk_Falses m (Cell a (union_blist 0 ls1 (Falses (n - (m + 1)) ls)))
-    else mk_Falses n (union_blist' (m - n) a ls1 ls)) ∧
-  union_blist' m a ls1 (Cell b ls) = (
-    if m = 0 then Cell (build_Or a b) (union_blist 0 ls1 ls)
-    else Cell b (union_blist' (m - 1) a ls1 ls))
+  union_blist _ Nil ls acc = blist_rev acc ls ∧
+  union_blist m (Falses n ls1) ls acc = union_blist (m + n) ls1 ls acc ∧
+  union_blist m (Cell a ls1) ls acc = union_blist' m a ls1 ls acc ∧
+  union_blist' m a ls1 Nil acc = blist_rev acc Nil ∧
+  union_blist' m a ls1 (Falses n ls) acc = (
+    if m < n then union_blist 0 ls1 (Falses (n - (m + 1)) ls) (Cell a (Falses m acc))
+    else union_blist' (m - n) a ls1 ls (Falses n acc)) ∧
+  union_blist' m a ls1 (Cell b ls) acc = (
+    if m = 0 then union_blist 0 ls1 ls (Cell (build_Or a b) acc)
+    else union_blist' (m - 1) a ls1 ls (Cell b acc))
+Termination
+  WF_REL_TAC `inv_image (measure I LEX measure I)
+    (λx. case x of
+      INL (_,ls1,ls,_) => (blist_size ls1, blist_size ls)
+    | INR (_,_,ls1,ls,_) => (blist_size ls1, blist_size ls))`
 End
 
 Definition union_blists_inner_def:
   union_blists_inner row (a1::ls1) (a::ls) =
-    union_blist row a1 a :: union_blists_inner row ls1 ls ∧
+    union_blist row a1 a Nil :: union_blists_inner row ls1 ls ∧
   union_blists_inner _ _ ls = ls
 End
 
@@ -1779,12 +1784,18 @@ Definition union_blists_def:
     TAKE col ls ++ union_blists_inner row ls1 (DROP col ls)
 End
 
+Theorem blist_rev_length[simp]:
+  blist_length (blist_rev xs acc) = blist_length xs + blist_length acc
+Proof
+  simp [blist_length_thm, blist_rev_thm]
+QED
+
 Theorem blist_length_union_blist[simp]:
-  (∀m ls1 ls. blist_length (union_blist m ls1 ls) = blist_length ls) ∧
-  (∀m a ls1 ls. blist_length (union_blist' m a ls1 ls) = blist_length ls)
+  (∀m ls1 ls acc. blist_length (union_blist m ls1 ls acc) = blist_length ls + blist_length acc) ∧
+  (∀m a ls1 ls acc. blist_length (union_blist' m a ls1 ls acc) = blist_length ls + blist_length acc)
 Proof
   HO_MATCH_MP_TAC union_blist_ind
-  \\ rw [union_blist_def, blist_length_def, blist_length_mk_Falses]
+  \\ rw [union_blist_def, blist_length_def]
 QED
 
 Theorem length_union_blists_inner[simp]:
@@ -1814,7 +1825,7 @@ Proof
   \\ pop_assum mp_tac
   \\ qid_spec_tac `ls'` \\ Induct_on `ls1` \\ simp [union_blists_inner_def]
   \\ Cases_on `ls'`
-  \\ rw [union_blists_inner_def, DISJ_IMP_THM, FORALL_AND_THM]
+  \\ rw [union_blists_inner_def, DISJ_IMP_THM, FORALL_AND_THM, blist_length_def]
   \\ metis_tac []
 QED
 
@@ -1860,20 +1871,24 @@ Proof
 QED
 
 Theorem from_row_union_blist:
-  (∀m ls1 ls q0.
+  (∀m ls1 ls acc.
     m + blist_length ls1 ≤ blist_length ls ⇒
-    from_row (q0,q1) (MAP (eval env) (from_blist (union_blist m ls1 ls))) =
-    from_row (q0,q1) (MAP (eval env) (from_blist ls)) ∪
-    from_row (q0 + &m,q1) (MAP (eval env) (from_blist ls1))) ∧
-  (∀m a ls1 ls q0.
+    ∃ret. from_blist (union_blist m ls1 ls acc) = REVERSE (from_blist acc) ++ ret ∧
+      ∀q0. from_row (q0,q1) (MAP (eval env) ret) =
+        from_row (q0,q1) (MAP (eval env) (from_blist ls)) ∪
+        from_row (q0 + &m,q1) (MAP (eval env) (from_blist ls1))) ∧
+  (∀m a ls1 ls acc.
     m + blist_length ls1 + 1 ≤ blist_length ls ⇒
-    from_row (q0,q1) (MAP (eval env) (from_blist (union_blist' m a ls1 ls))) =
-    from_row (q0,q1) (MAP (eval env) (from_blist ls)) ∪
-    from_row (q0 + &m,q1) (eval env a :: MAP (eval env) (from_blist ls1)))
+    ∃ret. from_blist (union_blist' m a ls1 ls acc) = REVERSE (from_blist acc) ++ ret ∧
+      ∀q0. from_row (q0,q1) (MAP (eval env) ret) =
+        from_row (q0,q1) (MAP (eval env) (from_blist ls)) ∪
+        from_row (q0 + &m,q1) (eval env a :: MAP (eval env) (from_blist ls1)))
 Proof
   HO_MATCH_MP_TAC union_blist_ind
-  \\ rw [union_blist_def, blist_length_def, from_blist_def,
+  \\ rw [union_blist_def, blist_length_def, from_blist_def, blist_rev_thm,
     from_row_def, INT_ADD_ASSOC, GSYM INT_ADD, from_row_cons]
+  \\ qpat_x_assum `_⇒_` mp_tac \\ impl_tac >- ARITH_TAC \\ rw []
+  \\ simp [from_row_cons, from_row_def, INT_ADD_ASSOC, GSYM INT_ADD] \\ gen_tac
   >- (`q0 + &m + 1 + &(n − (m + 1)) = q0 + &n` by ARITH_TAC
     \\ simp [AC UNION_ASSOC UNION_COMM])
   >- (`q0 + &n + &(m − n) = q0 + &m` by ARITH_TAC
@@ -1902,7 +1917,8 @@ Proof
     \\ simp [ARITH_PROVE ``(x:int) + 1 + &n = x + &SUC n``, UNION_ASSOC])
   \\ Induct_on `ls1` \\ simp [union_blists_inner_def, from_rows_def]
   \\ Cases_on `ls` \\ rw [] \\ fs [from_rows_def, union_blists_inner_def]
-  \\ simp [AC UNION_ASSOC UNION_COMM, from_row_union_blist]
+  \\ mp_tac $ Q.SPECL [`row`,`h''`,`h'`,`Nil`] $ CONJUNCT1 from_row_union_blist
+  \\ simp [from_blist_def, AC UNION_ASSOC UNION_COMM]
 QED
 
 Definition trim_blist_def:
