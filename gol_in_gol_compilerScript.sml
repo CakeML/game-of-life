@@ -1,27 +1,8 @@
 open HolKernel bossLib boolLib Parse;
-open gol_in_gol_circuitTheory;
+open cv_transLib arithmeticTheory listTheory ASCIInumbersTheory
+     gol_in_gol_circuitTheory;
 
 val _ = new_theory "gol_in_gol_compiler";
-
-Definition from_rle_inner_def:
-  from_rle_inner [] count row acc = REVERSE (REVERSE row :: acc) ∧
-  from_rle_inner (c::cs) count row acc =
-    if #"0" ≤ c ∧ c ≤ #"9" then
-      from_rle_inner cs (count * 10 + (ORD c - ORD #"0")) row acc
-    else if c = #"o" then
-      from_rle_inner cs 0 (REPLICATE (MAX 1 count) T ++ row) acc
-    else if c = #"b" then
-      from_rle_inner cs 0 (REPLICATE (MAX 1 count) F ++ row) acc
-    else if c = #"$" then
-      from_rle_inner cs 0 [] (REVERSE row :: acc)
-    else if c = #"\n" then
-      from_rle_inner cs count row acc
-    else REVERSE (REVERSE row :: acc)
-End
-
-Definition from_rle_def:
-  from_rle s = from_rle_inner s 0 [] []
-End
 
 Definition from_rle_inner_def:
   from_rle_inner [] count row acc = REVERSE (REVERSE row :: acc) ∧
@@ -39,13 +20,17 @@ Definition from_rle_inner_def:
     else REVERSE (REVERSE row :: acc)
 End
 
-Definition push_rle_def[compute]:
+Definition from_rle_def:
+  from_rle s = from_rle_inner s 0 [] []
+End
+
+Definition push_rle_def:
   push_rle [] n v = [(n:num,v)] ∧
   push_rle ((m,v)::acc) n v' =
     if v = v' then (n+m,v)::acc else (n,v')::(m,v)::acc
 End
 
-Definition to_rle_row_finish_def[compute]:
+Definition to_rle_row_finish_def:
   to_rle_row_finish [] r = r ∧
   to_rle_row_finish ((m,v)::acc) r =
     to_rle_row_finish acc (
@@ -53,7 +38,7 @@ Definition to_rle_row_finish_def[compute]:
       (if v then #"o" else #"b") :: r)
 End
 
-Definition to_rle_row_def[compute]:
+Definition to_rle_row_def:
   to_rle_row env Nil acc r = to_rle_row_finish acc r ∧
   to_rle_row env (Cell b ls) acc r =
     to_rle_row env ls (push_rle acc 1 (eval env b)) r ∧
@@ -61,7 +46,7 @@ Definition to_rle_row_def[compute]:
     to_rle_row env ls (push_rle acc n F) r
 End
 
-Definition rle_fragments_def[compute]:
+Definition rle_fragments_def:
   rle_fragments =
     MAP (λl. (to_rle_row (λ_. F) l [] "", to_rle_row (λ_. T) l [] "")) main_circuit
 End
@@ -95,10 +80,45 @@ Definition mega_cell_compile_def:
     rev_concat (mega_cell_compile_big_rows rle_fragments (from_rle s) []) "!"
 End
 
-(* val _ = computeLib.add_funs [fetch "gol_in_gol_circuit" "main_circuit_def"]; *)
+Definition digit_def:
+  digit n = CHR (48 + (MIN 9 n))
+End
 
-(*
-val x = EVAL ``mega_cell_compile "o"``;
-*)
+val digit_pre_def = cv_trans_pre digit_def;
+
+Theorem digit_pre[cv_pre]:
+  digit_pre n
+Proof
+  rw[digit_pre_def] \\ rw[MIN_DEF]
+QED
+
+Theorem MAP_HEX_n2l_10:
+  MAP HEX (n2l 10 n) = MAP digit (n2l 10 n)
+Proof
+  rw[MAP_EQ_f]
+  \\ qspec_then`10`mp_tac numposrepTheory.n2l_BOUND
+  \\ rw[EVERY_MEM]
+  \\ first_x_assum drule
+  \\ rw[digit_def, MIN_DEF]
+  \\ Cases_on`e = 10` \\ rw[]
+  \\ `e < 10` by fs[]
+  \\ fs[wordsTheory.NUMERAL_LESS_THM, HEX_def]
+QED
+
+val _ = cv_auto_trans numposrepTheory.n2l_n2lA;
+val _ = cv_auto_trans (num_to_dec_string_def
+  |> SIMP_RULE std_ss [n2s_def, FUN_EQ_THM, MAP_HEX_n2l_10])
+val _ = cv_auto_trans mega_cell_compile_def
+
+fun mega_cell_to_file filename s = let
+  val f = TextIO.openOut filename
+  val th = cv_eval ``mega_cell_compile ^(stringSyntax.fromMLstring s)``
+  val _ = TextIO.output(f, stringSyntax.fromHOLstring $ rhs $ concl th)
+  in TextIO.closeOut f end
+
+val _ = mega_cell_to_file "mega-glider.rle" "\
+    \bob$\
+    \bbo$\
+    \ooo!";
 
 val _ = export_theory();
