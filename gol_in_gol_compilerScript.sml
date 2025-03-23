@@ -110,15 +110,65 @@ val _ = cv_auto_trans (num_to_dec_string_def
   |> SIMP_RULE std_ss [n2s_def, FUN_EQ_THM, MAP_HEX_n2l_10])
 val _ = cv_auto_trans mega_cell_compile_def
 
-fun mega_cell_to_file filename s = let
+fun from_rle_inner [] count row acc = rev (rev row :: acc)
+  | from_rle_inner (c::cs) count row acc =
+    if Char.isDigit c then
+      from_rle_inner cs (count * 10 + (ord c - ord #"0")) row acc
+    else if c = #"o" then
+      from_rle_inner cs 0 (List.tabulate (Int.max (1, count), fn _ => true) @ row) acc
+    else if c = #"b" then
+      from_rle_inner cs 0 (List.tabulate (Int.max (1, count), fn _ => false) @ row) acc
+    else if c = #"$" then
+      from_rle_inner cs 0 [] (List.tabulate (Int.max (0, count - 1), fn _ => []) @ rev row :: acc)
+    else if c = #"\n" then
+      from_rle_inner cs count row acc
+    else
+    rev (rev row :: acc)
+
+fun from_rle s = from_rle_inner (explode s) 0 [] []
+
+val rle_fragments = map (pair_map stringSyntax.fromHOLstring o pairSyntax.dest_pair) $
+  fst $ listSyntax.dest_list $ rhs $ concl $ cv_eval ``rle_fragments``
+
+fun big_row [] frag acc = "$\n" :: acc
+  | big_row (b::row) (fragF, fragT) acc =
+    big_row row (fragF, fragT)
+    ((if b then fragT else fragF) :: acc)
+
+fun small_rows row [] acc = acc
+  | small_rows row (frag::ls) acc =
+    small_rows row ls (big_row row frag acc)
+
+fun big_rows [] acc = acc
+  | big_rows (row::ls) acc =
+    big_rows ls (small_rows row rle_fragments acc)
+
+fun mega_cell_compile s =
+  String.concat (rev ("!" :: big_rows (from_rle s) []))
+
+fun mega_cell_to_file {in_logic, wrap} filename s = let
   val f = TextIO.openOut filename
-  val th = cv_eval ``mega_cell_compile ^(stringSyntax.fromMLstring s)``
-  val _ = TextIO.output(f, stringSyntax.fromHOLstring $ rhs $ concl th)
+  val s = if in_logic then let
+    (* very slow! FIXME *)
+    val th = cv_eval ``mega_cell_compile ^(stringSyntax.fromMLstring s)``
+    in stringSyntax.fromHOLstring $ rhs $ concl th end
+  else mega_cell_compile s
+  val _ = case wrap of
+    SOME (w, h) =>
+    TextIO.output(f, String.concat [
+      "x = -", Int.toString (1575 * w), ", y = -", Int.toString (1575 * w),
+      ", rule = B3/S23:T", Int.toString (3150 * w), ",", Int.toString (3150 * w), "\n"])
+  | NONE => ()
+  val _ = TextIO.output(f, s)
   in TextIO.closeOut f end
 
-val _ = mega_cell_to_file "mega-glider.rle" "\
-    \bob$\
-    \bbo$\
-    \ooo!";
+val _ = mega_cell_to_file
+  {in_logic = false, wrap = SOME (5, 5)}
+  "mega-glider.rle"
+  "bbbbb$\
+  \bbobb$\
+  \bbbob$\
+  \booob$\
+  \bbbbb!";
 
 val _ = export_theory();
