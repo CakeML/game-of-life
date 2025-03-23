@@ -110,6 +110,15 @@ Definition build_Or_def:
       Or x y
 End
 
+Definition subst_def[simp]:
+  subst env True      = True ∧
+  subst env False     = False ∧
+  subst env (Var v n) = env (v,n) ∧
+  subst env (Not x)   = build_Not (subst env x) ∧
+  subst env (And x y) = build_If (subst env x) (subst env y) False ∧
+  subst env (Or x y) = build_Or (subst env x) (subst env y)
+End
+
 Definition get_bvars8_def:
   get_bvars8 (y1,y2,y3,y4,y5,y6,y7,y8) =
     (get_bvars y1 $ get_bvars y2 $ get_bvars y3 $ get_bvars y4 $
@@ -702,12 +711,13 @@ Definition blist_simulation_ok_def:
 End
 
 Datatype:
-  env_kind = Zeros | Pulse num num
+  env_kind = Zeros | Pulse num num | PulseThis num num
 End
 
 Definition eval_env_kind_def:
-  (eval_env_kind Zeros n ⇔ F) ∧
-  (eval_env_kind (Pulse a b) n ⇔ a ≤ n ∧ n < b)
+  (eval_env_kind Zeros n = False) ∧
+  (eval_env_kind (Pulse a b) n = if a ≤ n ∧ n < b then True else False) ∧
+  (eval_env_kind (PulseThis a b) n = if a ≤ n ∧ n < b then Var A 0 else False)
 End
 
 Definition instantiate_var_def:
@@ -716,13 +726,11 @@ Definition instantiate_var_def:
 End
 
 Definition instantiate_row_def:
-  instantiate_row env Nil = End ∧
+  instantiate_row env Nil = Nil ∧
   instantiate_row env (Falses n b) =
-    mk_Forbid n (instantiate_row env b) ∧
+    mk_Falses n (instantiate_row env b) ∧
   instantiate_row env (Cell e b) =
-    if eval (instantiate_var env) e
-    then mk_Allow 1 (instantiate_row env b)
-    else mk_Forbid 1 (instantiate_row env b)
+    mk_Cell (subst (instantiate_var env) e) (instantiate_row env b)
 End
 
 Definition instantiate_def:

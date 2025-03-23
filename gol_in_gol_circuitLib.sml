@@ -297,32 +297,24 @@ fun floodfill diag params = let
     in (lgate, genth, res) end
   val cache = ref $ Redblackmap.mkDict $
     pair_compare (pair_compare (Term.compare, Term.compare), Term.compare)
-  fun instantiate_conv (key as ((ea, eb), init)) =
-    case Redblackmap.peek (!cache, key) of
+  fun instantiate_conv tm = let
+    val ((f, (ea, eb)), init) = apfst (apsnd dest_pair o dest_comb) $ dest_comb tm
+    val key = ((ea, eb), init)
+    val th = case Redblackmap.peek (!cache, key) of
       SOME th => th
     | NONE => let
-      val tm = ``instantiate (^ea, ^eb) ^init``
       val name = get_unused_name $
         "instantiate" ^ extract_name (lhand tm) ^ "__" ^ fst (dest_const init)
       val th = make_abbrev name tm
+      val _ = cv_transLib.cv_auto_trans (SYM th)
       in cache := Redblackmap.insert (!cache, key, th); th end
-  fun instantiate_gate_conv t = let
-    val ((f, ((eaF, eaT), (ebF, ebT))), init) =
-      apfst (apsnd (pair_map dest_pair o dest_pair) o dest_comb) $ dest_comb t
-    val thm = if term_eq eaF eaT andalso term_eq ebF ebT then let
-      val thm = MATCH_MP instantiate_simple (instantiate_conv ((eaF, ebF), init))
-      in PART_MATCH (rator o rator o lhs) thm f end
-    else
-      (PART_MATCH lhs instantiate_gate_def THENC
-        FORK_CONV $ pair_map (K o instantiate_conv)
-          (((eaF, ebF), init), ((eaT, ebT), init))) t
-    in thm end
+    in th end
   fun specGate vs gth = let
     val cths = map2 (fn eq => fn v =>
       EVAL (mk_comb (rator (lhs eq), v))) (strip_conj $ lhand $ concl gth) vs
     val gth = MATCH_MP gth (LIST_CONJ cths)
     handle e => (PolyML.print (gth, cths); raise e)
-    in CONV_RULE (PATH_CONV "llr" instantiate_gate_conv) gth end
+    in CONV_RULE (PATH_CONV "llrr" instantiate_conv) gth end
   val thm = ref floodfill_start
   fun newIn ((_, s, g), (x', y'), _, ins) = let
     val gth = case g of Regular g => g | _ => raise Match
@@ -378,7 +370,7 @@ fun floodfill diag params = let
         val mainth = List.nth ([floodfill_add_crossover_l, floodfill_add_crossover_r], i)
         val thm' = MATCH_MP mainth $ CONJ (!thm) $ CONJ gth permth
         val thm' = MATCH_MP thm' $ EVAL $ lhs $ lhand $ concl thm'
-        val thm' = MATCH_MP thm' $ instantiate_gate_conv $ lhs $ lhand $ concl thm'
+        val thm' = MATCH_MP thm' $ instantiate_conv $ lhs $ lhand $ concl thm'
         val p = mk_pair $ pair_map from_int (x, y)
         val (x', y') = pair_map numSyntax.term_of_int (x', y')
         val thm' = SPECL [p, x', y'] thm'
@@ -411,9 +403,10 @@ fun floodfill diag params = let
     in thm := thm' end
   val _ = build (recognize diag) params
     {gateKey = gateKey, newGate = newGate, newIn = newIn, teleport = teleport, weaken = weaken}
-  val thm = CONV_RULE (COMB2_CONV (LAND_CONV (SCONV []), make_abbrev "main_circuit")) (!thm)
-  val (f, args) = strip_comb (concl thm)
-  val x = mk_var ("area", type_of (hd args))
-  in EXISTS (boolSyntax.mk_exists (x, list_mk_comb (f, x :: tl args)), hd args) thm end
+  val thm = CONV_RULE (RATOR_CONV (LAND_CONV (SCONV []))) (!thm)
+  val thm = MATCH_MP floodfill_finish thm
+  val thm = MATCH_MP thm $ cv_transLib.cv_eval $ lhs $ lhand $ concl thm
+  val thm = CONV_RULE (RAND_CONV $ make_abbrev "main_circuit") thm
+  in thm end
 
 end

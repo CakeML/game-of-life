@@ -405,18 +405,22 @@ Definition classify_this_def[compute]:
     else NONE
 End
 
+Definition and_this_def[compute]:
+  and_this Zeros = Zeros ∧
+  (and_this (Pulse a b) = PulseThis a b) ∧
+  (and_this (PulseThis a b) = PulseThis a b)
+End
+
 Definition classify_def[compute]:
-  classify _ (Reg _ _) = SOME (Zeros, Zeros) ∧
-  classify da (Exact d Clock) =
-    OPTION_MAP (λx. (x, x)) (classify_clock da T (d - &base)) ∧
-  classify da (Exact d NotClock) =
-    OPTION_MAP (λx. (x, x)) (classify_clock da F (d - &base)) ∧
+  classify _ (Reg _ _) = SOME Zeros ∧
+  classify da (Exact d Clock) = classify_clock da T (d - &base) ∧
+  classify da (Exact d NotClock) = classify_clock da F (d - &base) ∧
   classify da (Exact d ThisCell) =
-    OPTION_MAP (λx. (Zeros, x)) (classify_this da (d - &base)) ∧
+    OPTION_MAP and_this (classify_this da (d - &base)) ∧
   classify da (Exact d ThisCellClock) =
-    OPTION_MAP (λx. (Zeros, x)) (classify_clock da T (d - &base)) ∧
+    OPTION_MAP and_this (classify_clock da T (d - &base)) ∧
   classify da (Exact d ThisCellNotClock) =
-    OPTION_MAP (λx. (Zeros, x)) (classify_clock da F (d - &base)) ∧
+    OPTION_MAP and_this (classify_clock da F (d - &base)) ∧
   classify _ Fail = NONE
 End
 
@@ -424,21 +428,20 @@ Definition twice_def:
   twice x = (x, x)
 End
 
-Definition from_masks_def:
-  from_masks env (initF, initT) =
-    from_rows (-85,-85) (MAP from_mask (if env then initT else initF))
+Definition from_init_def:
+  from_init env init =
+    from_rows (-85,-85) (MAP (MAP (eval (λ_. env)) o from_blist) init)
 End
 
 Datatype:
-  gate = <| width: num; height: num; lo: mask list; hi: mask list |>
+  gate = <| width: num; height: num; init: blist list |>
 End
 
 Definition gate_wf_def:
   gate_wf (g:gate) ⇔
     g.width ≠ 0 ∧ g.height ≠ 0 ∧
     g.width < ^tileN ∧ g.height < ^tileN ∧
-    rectangle g.width g.height (MAP from_mask g.lo) ∧
-    rectangle g.width g.height (MAP from_mask g.hi)
+    rectangle g.width g.height (MAP from_blist g.init)
 End
 
 Definition gate_ports_wf_def:
@@ -462,7 +465,7 @@ Definition is_gate_def:
         ∀z. circuit (make_area g.width g.height)
           (MAP2 (λ((p,d),_) v. (p,d,v z)) ins s)
           (MAP2 (λ((p,d),_) v. (p,d,v z)) outs s')
-          (from_masks (env 0 z) (g.lo, g.hi))
+          (from_init (env 0 z) g.init)
 End
 
 Theorem circuit_perm:
@@ -578,11 +581,12 @@ Proof
 QED
 
 Definition delay'_def:
-  delay' (n,env) a i = if i < n then eval_env_kind env i else a (i - n:num)
+  delay' (n,ee,env) a i =
+    if i < n then eval (λ_. env) (eval_env_kind ee i) else a (i - n:num)
 End
 
 Theorem delay'_eq_delay[simp]:
-  delay' (n,Zeros) = delay n
+  delay' (n,Zeros,env) = delay n
 Proof
   rw [FUN_EQ_THM, delay'_def, delay_def, eval_env_kind_def]
 QED
@@ -600,7 +604,7 @@ QED
 Theorem eval_classify_clock:
   classify_clock da b d = SOME ea ∧ n < da ⇒
   &n − (&da + d) < ^periodZ ∧
-  (eval_env_kind ea n ⇔ e_clock (&n − (&da + d)) = b) ∧
+  (eval env (eval_env_kind ea n) ⇔ e_clock (&n − (&da + d)) = b) ∧
   (e_clock (&n − (&da + d)) ∨ ¬b ⇒ 0 ≤ &n − (&da + d))
 Proof
   Cases_on `b` \\ rw [classify_clock_def, e_clock_def] \\ rw [eval_env_kind_def] \\ TRY ARITH_TAC
@@ -609,7 +613,7 @@ QED
 Theorem eval_classify_this:
   classify_this da d = SOME ea ∧ n < da ⇒
   &n − (&da + d) < ^periodZ ∧
-  (eval_env_kind ea n ⇔ 0 ≤ &n − (&da + d))
+  (eval env (eval_env_kind ea n) ⇔ 0 ≤ &n − (&da + d))
 Proof
   rw [classify_this_def] \\ rw [eval_env_kind_def, e_cell_def] \\ ARITH_TAC
 QED
@@ -622,7 +626,7 @@ QED
 
 Theorem v_eval'_v_delay':
   classify da a = SOME ea ∧ v_eval' env a s ∧ k ≤ da ⇒
-  v_eval' env (v_delay (da - k) a) (λi. delay' (da,eval_pair (env 0 (0,0)) ea) s (k + i))
+  v_eval' env (v_delay (da - k) a) (λi. delay' (da,ea,env 0 (0,0)) s (k + i))
 Proof
   gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [FUN_EQ_THM]
   \\ gvs [v_eval_def, delay'_def, base_def]
@@ -631,15 +635,20 @@ Proof
     \\ simp [])
   \\ reverse (rw []) >- (AP_TERM_TAC \\ ARITH_TAC)
   \\ `&n − (&(da − k) + i) = &(k + n) − (&da + i)` by ARITH_TAC
+  \\ `∀ee n. eval (λ_. env 0 (0,0)) (eval_env_kind (and_this ee) n) ⇔
+      env 0 (0,0) ∧ eval (λ_. env 0 (0,0)) (eval_env_kind ee n)` by (
+    Cases \\ rw [and_this_def, eval_env_kind_def])
   \\ Cases_on `e` \\ gvs [classify_def, base_def, eval_pair_def]
-  \\ FIRST (map (drule_then drule) [eval_classify_clock, eval_classify_this]) \\ strip_tac
+  \\ FIRST (map (drule_then $ drule_then $
+      qspec_then `λ_. env 0 (0,0)` strip_assume_tac)
+    [eval_classify_clock, eval_classify_this])
   \\ drule e_cell_init \\ strip_tac \\ fs []
   \\ rw [eval_env_kind_def] \\ metis_tac []
 QED
 
 Theorem v_eval_v_delay':
   classify da a = SOME ea ∧ v_eval env a s ∧ k ≤ da ⇒
-  v_eval env (v_delay (da - k) a) (λz i. delay' (da,eval_pair (env 0 z) ea) (s z) (k + i))
+  v_eval env (v_delay (da - k) a) (λz i. delay' (da,ea,env 0 z) (s z) (k + i))
 Proof
   rw [v_eval_def]
   \\ drule_then (drule_at_then Any $
@@ -754,38 +763,6 @@ Definition out_lookup_def:
   out_lookup outs x = some (z, v). ∃p. MEM (p, v) outs ∧ x = mk_dpt p z
 End
 
-Definition instantiate_gate_def:
-  instantiate_gate w h ((eaF, eaT), (ebF, ebT)) init =
-    gate w h (instantiate (eaF, ebF) init) (instantiate (eaT, ebT) init)
-End
-
-Theorem instantiate_gate_simps[simp]:
-  (instantiate_gate w h ee init).width = w ∧
-  (instantiate_gate w h ee init).height = h
-Proof
-  PairCases_on `ee` \\ simp [instantiate_gate_def]
-QED
-
-Definition simple_gate_def:
-  simple_gate w h init = gate w h init init
-End
-
-Theorem simple_gate_simps[simp]:
-  (simple_gate w h init).width = w ∧
-  (simple_gate w h init).height = h ∧
-  (simple_gate w h init).lo = init ∧
-  (simple_gate w h init).hi = init
-Proof
-  simp [simple_gate_def]
-QED
-
-Theorem instantiate_simple:
-  instantiate (ea, eb) init = res ⇒
-  instantiate_gate w h ((ea, ea), (eb, eb)) init = simple_gate w h res
-Proof
-  simp [instantiate_gate_def, simple_gate_def]
-QED
-
 Theorem blist_simulation_ok_ALL_DISTINCT:
   blist_simulation_ok w h ins outs init ⇒
   ALL_DISTINCT (MAP FST ins ++ MAP FST outs)
@@ -894,7 +871,7 @@ QED
 
 Definition mk_output_env_def:
   mk_output_env env s (da,db) (ea,eb) z = λ(x,n).
-    delay' (var_CASE x da db, eval_pair (env 0n z) (var_CASE x ea eb))
+    delay' (var_CASE x da db, var_CASE x ea eb, env 0n z)
       (EL (var_CASE x 0 1) s z) n
 End
 
@@ -938,32 +915,28 @@ QED
 
 Theorem blist_simulation_ok_gate_wf:
   blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
-  gate_wf (instantiate_gate w h ee init)
+  gate_wf (gate w h (instantiate ee init))
 Proof
-  strip_tac
-  \\ `w ≠ 0 ∧ h ≠ 0 ∧ ∀ee. rectangle w h (MAP from_mask (instantiate ee init))`
-    suffices_by (PairCases_on `ee` \\ simp [gate_wf_def, instantiate_gate_def])
+  strip_tac \\ simp [gate_wf_def]
   \\ qpat_x_assum `_ init` mp_tac \\ rewrite_tac [blist_simulation_ok_def]
   \\ disch_then (mp_tac o CONJUNCT1) \\ rewrite_tac [blist_simple_checks_def]
   \\ simp [rectangle_def, instantiate_def, EVERY_MEM, MEM_MAP, PULL_EXISTS]
   \\ rw [] \\ first_x_assum $ dxrule_then (rw o single o SYM)
   \\ POP_ASSUM_LIST kall_tac
   \\ Induct_on `y'`
-  \\ simp [blist_length_def, instantiate_row_def, from_mask_def, from_mask_mk]
-  \\ rw [] \\ simp [from_mask_mk]
+  \\ simp [blist_length_def, instantiate_row_def, from_blist_def]
 QED
 
 Theorem blist_simulation_ok_imp_circuit:
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
   LIST_REL (λ(_,_,v). v_eval env (vb_eval ((da,a),db,b) v)) ins sin ∧
-  (∀x. db' = SOME x ⇒ x = db) ∧
-  g = instantiate_gate w h (ea,eb) init ⇒
+  (∀x. db' = SOME x ⇒ x = db) ⇒
   circuit (make_area w h)
     (MAP2 (λ(p,d,_) v. (p,d,v z)) ins sin)
     (MAP (λ(p,d,v). (p,d, λn.
       eval (age n (mk_output_env env sin (da,db) (ea,eb) z)) v)) outs)
-    (from_masks (env 0 z) (g.lo,g.hi))
+    (from_init (env 0 z) (instantiate (ea,eb) init))
 Proof
   strip_tac
   \\ qmatch_goalsub_abbrev_tac `age _ env2`
@@ -979,27 +952,19 @@ Proof
   >- (
     fs [eval_io_def, MAP2_self] \\ cong_tac 2
     \\ simp [FUN_EQ_THM, FORALL_PROD])
-  \\ Cases_on `ea` \\ Cases_on `eb` \\ rename [`((eaF,eaT),(ebF,ebT))`]
-  \\ simp [instantiate_gate_def, from_masks_def, MAP_COMPOSE]
-  \\ simp [Abbr`env2`, mk_output_env_def, eval_pair_var_CASE]
-  \\ `∀ea eb.
-        MAP from_mask (instantiate (ea,eb) init) =
-        MAP (MAP (eval (λ(x,n). delay'
-          (var_CASE x da db, var_CASE x ea eb)
-          (EL (var_CASE x 0 1) sin z) n)) ∘ from_blist) init` suffices_by (
-    CASE_TAC \\ simp [eval_pair_def])
-  \\ rw [MAP_COMPOSE, instantiate_def]
+  \\ simp [MAP_COMPOSE, Abbr`env2`, mk_output_env_def, eval_pair_var_CASE]
   \\ qmatch_goalsub_abbrev_tac `eval env3`
+  \\ rw [MAP_COMPOSE, from_init_def, instantiate_def] \\ cong_tac 1
   \\ irule MAP_CONG \\ rw []
   \\ last_x_assum mp_tac \\ rewrite_tac [blist_simulation_ok_def]
   \\ disch_then (mp_tac o CONJUNCT1 o CONJUNCT2) \\ simp [EVERY_MEM]
   \\ disch_then (dxrule o CONJUNCT2)
   \\ `∀v. admissible_bexpr (da,db') v ⇒
-    eval (instantiate_var (ea,eb)) v = eval env3 v` suffices_by (
-    Induct_on `x` \\ simp [admissible_row_def, instantiate_row_def,
-      from_blist_def, from_mask_def, from_mask_mk]
-    \\ rw [from_mask_mk] \\ EVAL_TAC)
-  \\ Induct_on `v` \\ simp [admissible_bexpr_def, instantiate_var_def]
+      eval (λ_. env 0 z) (subst (instantiate_var (ea,eb)) v) =
+      eval env3 v` suffices_by (
+    Induct_on `x` \\ simp [admissible_row_def, instantiate_row_def, from_blist_def])
+  \\ Induct \\ simp [admissible_bexpr_def, instantiate_var_def,
+    subst_def, eval_build_Not, eval_build_If]
   \\ Cases \\ simp [admissible_bexpr_def, instantiate_var_def,
     Abbr`env3`, delay'_def]
   \\ Cases_on `db'` \\ rw []
@@ -1012,7 +977,7 @@ Theorem blist_simulation_ok_imp_gate:
   w < ^tileN ∧ h < ^tileN ∧
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
-  is_gate (instantiate_gate w h (ea, eb) init)
+  is_gate (gate w h (instantiate (ea, eb) init))
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) ins)
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
 Proof
@@ -1050,7 +1015,7 @@ Theorem blist_simulation_ok_imp_gate_1:
   blist_simulation_ok w h [(p1,d1,Var A da)] outs init ⇒
   w < ^tileN ∧ h < ^tileN ⇒
   classify da a = SOME ea ⇒
-  is_gate (instantiate_gate w h (ea, ea) init)
+  is_gate (gate w h (instantiate (ea, ea) init))
     [((p1,d1),a)]
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(da,a)) v)) outs)
 Proof
@@ -1065,7 +1030,7 @@ Theorem blist_simulation_ok_imp_gate_2:
   w < ^tileN ∧ h < ^tileN ⇒
   classify da a = SOME ea ∧
   classify db b = SOME eb ⇒
-  is_gate (instantiate_gate w h (ea, eb) init)
+  is_gate (gate w h (instantiate (ea, eb) init))
     [((p1,d1),a); ((p2,d2),b)]
     (MAP (λ(p,d,v). ((p,d),vb_eval ((da,a),(db,b)) v)) outs)
 Proof
@@ -1113,21 +1078,17 @@ Proof
   \\ irule Reg_mono \\ simp [] \\ metis_tac []
 QED
 
-(* Definition gate_at'_def:
-  gate_at' (x,y) (init:mask list # mask list) =
-    from_rows (75*x-85, 75*y-85) ARB
+Definition to_tiling_def:
+  to_tiling st env0 =
+  iunion (λz:int#int.
+    translate_set (mul_pt (75 * ^tile2Z) z)
+      (st (z ∈ env0)))
 End
 
-Definition gate_at_def:
-  gate_at p init =
-    U {gate_at' (add_pt p (mul_pt (^tile2Z) z)) init | z | T}
-End *)
-
-Definition mega_cell_builder_def:
-  mega_cell_builder (gates: ((int # int) # gate) list) env0 =
-  iunion (λz:int#int. U (set (MAP (λ(p,g).
-    translate_set (mul_pt 75 (mk_pt p z))
-      (from_masks (z ∈ env0) (g.lo,g.hi))) gates)))
+Definition union_gates_def:
+  union_gates (gates: ((int # int) # gate) list) b =
+  U (set (MAP (λ(p,g).
+    translate_set (mul_pt 75 p) (from_init b g.init)) gates))
 End
 
 Definition in_range_def:
@@ -1154,6 +1115,18 @@ Theorem every_gate_at_wf_mono:
 Proof
   rw [EVERY_MEM] \\ first_x_assum dxrule
   \\ Cases_on `e` \\ fs [gate_at_wf_def, SUBSET_DEF]
+QED
+
+Theorem gate_at_wf_bounded:
+  gate_at_wf area ((q0,q1),g) ∧ EVERY in_range area ⇒
+  ∃r0 r1. q0 = 2*r0 ∧ q1 = 2*r1 ∧ 0 ≤ r0 ∧ 0 ≤ r1 ∧
+  r0 + &g.width ≤ ^tileZ ∧ r1 + &g.height ≤ ^tileZ
+Proof
+  rw [gate_at_wf_def, gate_wf_def, EVERY_MEM, FORALL_PROD]
+  \\ `MEM (0,0) (make_area g.width g.height) ∧
+      MEM (2 * &g.width - 2,2 * &g.height - 2) (make_area g.width g.height)` by
+    (simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS] \\ ARITH_TAC)
+  \\ res_tac \\ res_tac \\ fs [in_range_def] \\ ARITH_TAC
 QED
 
 Theorem add_sub_pt_assoc =
@@ -1267,7 +1240,7 @@ Definition floodfill_gate_wf_def:
   (∀z. circuit (make_area g.width g.height)
     (MAP (λ((a,d),v). (a,d,v z)) ins1)
     (MAP (λ((a,d),v). (a,d,v z)) outs1)
-    (from_masks (init z) (g.lo,g.hi)))
+    (from_init (init z) g.init))
 End
 
 Theorem floodfill_run_add_gate:
@@ -1275,10 +1248,10 @@ Theorem floodfill_run_add_gate:
   floodfill_gate_wf g ins1 outs1 init ∧
   (∃x y. p = (&(2*x),&(2*y)) ∧ x + g.width ≤ ^tileN ∧ y + g.height ≤ ^tileN) ∧
   EVERY (λa. ¬MEM (add_pt p a) area) (make_area g.width g.height) ∧
-  floodfill_run area (mega_cell_builder gates init) ins outs
+  floodfill_run area (to_tiling (union_gates gates) init) ins outs
   ⇒
   floodfill_run (MAP (add_pt p) (make_area g.width g.height) ⧺ area)
-    (mega_cell_builder ((p,g)::gates) init)
+    (to_tiling (union_gates ((p,g)::gates)) init)
     (MAP (λ((a,d),v). ((add_pt p a,d),v)) ins1 ++ ins)
     (MAP (λ((a,d),v). ((add_pt p a,d),v)) outs1 ++ outs)
 Proof
@@ -1351,7 +1324,7 @@ Proof
   \\ `∀z. circuit_run (translate_set (mk_pt p z) (set s))
       (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v z)) ins1)))
       (translate_port (mk_pt p z) (set (MAP (λ((a,d),v). (a,d,v z)) outs1)))
-      (translate_set (mul_pt 75 (mk_pt p z)) (from_masks (init z) (g.lo,g.hi)))` by (
+      (translate_set (mul_pt 75 (mk_pt p z)) (from_init (init z) g.init))` by (
     gen_tac
     \\ qpat_x_assum `!z. circuit_run _ _ _ _` $ qspec_then `z` strip_assume_tac
     \\ `FST (mk_pt p z) % 2 = 0 ∧ SND (mk_pt p z) % 2 = 0` by (
@@ -1465,8 +1438,10 @@ Proof
     `∀x y z. x = mk_pt (add_pt p y) z ⇔ y = sub_pt x (mk_pt p z)` by pt_arith_tac
     \\ simp [Once EXTENSION, MEM_MAP, PULL_EXISTS] \\ metis_tac [])
   >>> C NTH_GOAL 3 (
-    simp [mega_cell_builder_def, Once EXTENSION, MEM_MAP, PULL_EXISTS,
-      Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
+    `∀x p z. sub_pt (sub_pt x (mul_pt (75 * ^tile2Z) z)) (mul_pt 75 p) =
+      sub_pt x (mul_pt 75 (mk_pt p z))` by pt_arith_tac
+    \\ fs [to_tiling_def, union_gates_def, Once EXTENSION, MEM_MAP,
+      PULL_EXISTS, Q.INST_TYPE [`:α` |-> `:γ#δ`] EXISTS_PROD]
     \\ rw [IN_DEF] \\ metis_tac [])
   \\ simp [Once EXTENSION, MEM_MAP, PULL_EXISTS, translate_port_def,
     Q.INST_TYPE [`:α` |-> `:γ#δ`] FORALL_PROD,
@@ -1545,9 +1520,9 @@ Definition floodfill_def:
       ∀scross.
         LENGTH crosses = LENGTH scross ∧
         (∀s. MEM s scross ⇒ ∃v.
-          classify 5 v = SOME (Zeros, Zeros) ∧
+          classify 5 v = SOME Zeros ∧
           v_eval env v s) ⇒
-        floodfill_run area (mega_cell_builder gates (env 0))
+        floodfill_run area (to_tiling (union_gates gates) (env 0))
           (ZIP (MAP FST ins, sin) ++
            MAP2 (λ(p,_,d) v. ((p,d),v)) crosses scross)
           (ZIP (MAP FST outs, sout) ++
@@ -1557,7 +1532,7 @@ End
 Theorem floodfill_start:
   floodfill [] [] [] [] []
 Proof
-  rw [floodfill_def, floodfill_run_def, mega_cell_builder_def, circuit_run_empty]
+  rw [floodfill_def, floodfill_run_def, to_tiling_def, union_gates_def, circuit_run_empty]
 QED
 
 Theorem floodfill_add_ins:
@@ -1712,11 +1687,21 @@ Proof
   \\ metis_tac [from_row_lower_bound]
 QED
 
-Theorem from_rows_rectangle:
-  rectangle w h rows ∧ (a,b) ∈ from_rows (x,y) rows ⇒
-  x ≤ a ∧ a < x + &(150 * w + 20) ∧ y ≤ b ∧ b < y + &(150 * h + 20)
+Definition rectangle'_def:
+  rectangle' w h rows ⇔ LENGTH rows = h ∧ EVERY (λrow. LENGTH row = w) rows
+End
+
+Theorem rectangle_eq_rectangle':
+  rectangle w h rows ⇔ rectangle' (150 * w + 20) (150 * h + 20) rows
 Proof
-  simp [rectangle_def] \\ strip_tac
+  simp [rectangle_def, rectangle'_def]
+QED
+
+Theorem from_rows_rectangle':
+  rectangle' w h rows ∧ (a,b) ∈ from_rows (x,y) rows ⇒
+  x ≤ a ∧ a < x + &w ∧ y ≤ b ∧ b < y + &h
+Proof
+  simp [rectangle'_def] \\ strip_tac
   \\ last_x_assum (simp o single o SYM)
   \\ rpt $ pop_assum mp_tac
   \\ qid_spec_tac `y` \\ Induct_on `rows` \\ simp [from_rows_def]
@@ -1730,131 +1715,342 @@ Proof
   \\ Cases_on `h'` \\ simp [from_row_def] \\ metis_tac []
 QED
 
-Definition test_mask_def:
-  test_mask i End = F ∧
-  test_mask i (Allow n m) = (i < n ∨ test_mask (i - n) m) ∧
-  test_mask i (Forbid n m) = (n ≤ i ∧ test_mask (i - n) m)
+Definition test_blist_def:
+  test_blist i Nil = False ∧
+  test_blist i (Cell b m) = (if i = 0 then b else test_blist (i - 1) m) ∧
+  test_blist i (Falses n m) = (if i < n then False else test_blist (i - n) m)
 End
 
-Definition test_masks_def:
-  test_masks (row,col) ls = case oEL col ls of
-    | NONE => F
-    | SOME l => test_mask row l
+Definition test_blists_def:
+  test_blists (row,col) ls = case oEL col ls of
+    | NONE => False
+    | SOME l => test_blist row l
 End
 
-Definition test_masks'_def:
-  test_masks' (x,y) ls =
-    if 0 ≤ x ∧ 0 ≤ y then test_masks (Num x, Num y) ls else F
-End
-
-Theorem from_row_iff_test_mask:
-  (q0 + &i,q1) ∈ from_row (q0,q1) (from_mask m) ⇔ test_mask i m
+Theorem from_row_iff_test_blist:
+  (q0 + &i,q1) ∈ from_row (q0,q1) (MAP (eval env) (from_blist m)) ⇔
+  eval env (test_blist i m)
 Proof
   MAP_EVERY qid_spec_tac [`i`,`q0`]
-  \\ Induct_on `m` \\ rw [from_row_def, from_mask_def, test_mask_def]
-  \\ MAP_EVERY qid_spec_tac [`i`,`q0`]
-  \\ Induct_on `n` \\ rw [REPLICATE, from_row_def]
-  \\ Cases_on `i` \\ rw [ARITH_PROVE ``(q:int) + &(SUC n) = q + 1 + &n``]
-  \\ pop_assum $ qspecl_then [`q0 + 1`, `n'`] (rw o single o SYM)
+  \\ Induct_on `m` \\ simp [from_row_def, from_blist_def, test_blist_def]
+  THENL [
+    Induct \\ simp [from_row_def]
+    \\ Cases_on `i` \\ simp [ARITH_PROVE ``(q:int) + &(SUC n) = q + 1 + &n``]
+    \\ pop_assum $ qspecl_then [`q0 + 1`, `n'`] (rw o single o SYM),
+    rpt gen_tac \\ Cases_on `eval env b0` \\ simp [from_row_def]
+    \\ Cases_on `i` \\ simp [ARITH_PROVE ``(q:int) + &(SUC n) = q + 1 + &n``]]
   \\ metis_tac [from_row_lower_bound, ARITH_PROVE ``¬((q:int) + 1 ≤ q)``]
 QED
 
-Theorem from_rows_iff_test_masks':
-  p ∈ from_rows q (MAP from_mask ls) ⇔ test_masks' (sub_pt p q) ls
+Theorem from_rows_iff_test_blists:
+  (q0 + &i,q1 + &j) ∈ from_rows (q0,q1) (MAP (MAP (eval env) ∘ from_blist) ls) ⇔
+  eval env (test_blists (i,j) ls)
 Proof
-  MAP_EVERY PairCases_on [`p`,`q`]
-  \\ simp [test_masks'_def]
-  \\ irule $ METIS_PROVE [] ``(a ⇒ b) ∧ (b ⇒ (a ⇔ c)) ⇒ (a ⇔ b ∧ c)``
-  \\ ntac 2 strip_tac
-  >- (drule from_rows_lower_bound \\ ARITH_TAC)
-  \\ imp_res_tac $ ARITH_PROVE ``0 ≤ p - q ⇒ ∃x. p = q + &x ∧ Num (p - q) = x``
-  \\ gvs [test_masks_def]
-  \\ MAP_EVERY qid_spec_tac [`q1`,`x`]
+  MAP_EVERY qid_spec_tac [`q1`,`j`] \\ simp [test_blists_def]
   \\ Induct_on `ls` \\ reverse (rw [from_rows_def, oEL_def])
   >- metis_tac [from_row_lower_bound,
     ARITH_PROVE ``x ≠ 0 ⇒ (q:int) + 1 + &(x-1) = q + &x ∧ q + &x ≠ q``]
   \\ irule $ METIS_PROVE [] ``¬b ∧ (a ⇔ c) ⇒ (a ∨ b ⇔ c)`` \\ conj_tac
   >- metis_tac [from_rows_lower_bound, ARITH_PROVE ``¬((q:int) + 1 ≤ q)``]
-  \\ irule from_row_iff_test_mask
+  \\ irule from_row_iff_test_blist
 QED
 
-Definition majority_def:
-  majority a b c = if a then b ∨ c else b ∧ c
+Definition union_blist_def[induction=union_blist_ind]:
+  union_blist _ Nil ls = ls ∧
+  union_blist m (Falses n ls1) ls = union_blist (m + n) ls1 ls ∧
+  union_blist m (Cell a ls1) ls = union_blist' m a ls1 ls ∧
+  union_blist' m a ls1 Nil = Nil ∧
+  union_blist' m a ls1 (Falses n ls) = (
+    if m < n then mk_Falses m (Cell a (union_blist 0 ls1 (Falses (n - (m + 1)) ls)))
+    else mk_Falses n (union_blist' (m - n) a ls1 ls)) ∧
+  union_blist' m a ls1 (Cell b ls) = (
+    if m = 0 then Cell (build_Or a b) (union_blist 0 ls1 ls)
+    else Cell b (union_blist' (m - 1) a ls1 ls))
 End
 
-(*
-- lo <= hi  <  q   <  q+w   0          |
-+ lo <= q   <= hi  <  q+w   q..hi      | lo
-+ lo <= q   <  q+w <= hi    q..q+w-1   | lo
-+ hi  <= lo <= q   <  q+w   q..q+w-1   | lo
-- q   <  q+w <= lo <= hi    0          |
-- hi  <  q   <  q+w <= lo   0          |
-+ q   <  lo <= hi  <  q+w   lo..hi     | lo
-+ q   <  lo <  q+w <= hi    lo..q+w-1  | lo
-+ q   <= hi  <  q+w <= lo   q..hi      | lo+1
-+ q   <  q+w <= hi  <= lo   q..q+w-1   | lo+1
-+ hi  <= q   <  lo <  q+w   lo..q+w-1  | lo
-*)
-Definition test_pt_def:
-  test_pt gates s (p1:int,p2:int) =
-    let lo1 = (p1 + 65) / 150; lo2 = (p2 + 65) / 150 in
-    let hi1 = (p1 + 85) / 150; hi2 = (p2 + 85) / 150 in
-    let lo1r = lo1 % ^tileZ; lo2r = lo2 % ^tileZ in
-    let hi1r = hi1 % ^tileZ; hi2r = hi2 % ^tileZ in
-    EXISTS (λ((q1,q2),g).
-      majority (q1 ≤ hi1r) (lo1r < q1 + &g.width) (hi1r < lo1r) ∧
-      majority (q2 ≤ hi2r) (lo2r < q2 + &g.height) (hi2r < lo2r) ∧
-      let q1d = lo1 / ^tileZ + (if lo1r < q1 + &g.width then 0 else 1) in
-      let q2d = lo2 / ^tileZ + (if lo2r < q2 + &g.height then 0 else 1) in
-      let masks = if s (q1d, q2d) then g.hi else g.lo in
-      let row = Num (p1 - (150 * (q1d * ^tileZ + q1) - 85)) in
-      let col = Num (p2 - (150 * (q2d * ^tileZ + q2) - 85)) in
-      test_masks (row,col) masks
-    ) gates
+Definition union_blists_inner_def:
+  union_blists_inner row (a1::ls1) (a::ls) =
+    union_blist row a1 a :: union_blists_inner row ls1 ls ∧
+  union_blists_inner _ _ ls = ls
 End
 
-Definition test_pt_slow_def:
-  test_pt_slow b gates p =
-    EXISTS (λ(q,g).
-      test_masks' (sub_pt (sub_pt p (mul_pt 75 q)) (-85,-85))
-        (if b then g.hi else g.lo)
-    ) gates
+Definition union_blists_def:
+  union_blists (row,col) ls1 ls =
+    TAKE col ls ++ union_blists_inner row ls1 (DROP col ls)
 End
+
+Theorem blist_length_union_blist[simp]:
+  (∀m ls1 ls. blist_length (union_blist m ls1 ls) = blist_length ls) ∧
+  (∀m a ls1 ls. blist_length (union_blist' m a ls1 ls) = blist_length ls)
+Proof
+  HO_MATCH_MP_TAC union_blist_ind
+  \\ rw [union_blist_def, blist_length_def, blist_length_mk_Falses]
+QED
+
+Theorem length_union_blists_inner[simp]:
+  LENGTH (union_blists_inner row ls1 ls) = LENGTH ls
+Proof
+  qid_spec_tac `ls` \\ Induct_on `ls1` \\ simp [union_blists_inner_def]
+  \\ Cases_on `ls` \\ simp [union_blists_inner_def]
+QED
+
+Theorem length_union_blists[simp]:
+  LENGTH (union_blists rc ls1 ls) = LENGTH ls
+Proof
+  PairCases_on `rc` \\ simp [union_blists_def]
+  \\ Cases_on `rc1 ≤ LENGTH ls` \\ simp [TAKE_LENGTH_TOO_LONG]
+QED
+
+Theorem every_length_union_blists:
+  EVERY (λr. blist_length r = n) ls ⇒
+  EVERY (λr. blist_length r = n) (union_blists rc ls1 ls)
+Proof
+  PairCases_on `rc` \\ simp [union_blists_def, EVERY_MEM,
+    MEM_MAP, PULL_EXISTS, DISJ_IMP_THM, FORALL_AND_THM]
+  \\ ntac 2 strip_tac >- metis_tac [MEM_TAKE]
+  \\ `∀y. MEM y (DROP rc1 ls) ⇒ blist_length y = n` by
+    metis_tac [MEM_DROP_IMP]
+  \\ rename [`union_blists_inner _ _ ls'`]
+  \\ pop_assum mp_tac
+  \\ qid_spec_tac `ls'` \\ Induct_on `ls1` \\ simp [union_blists_inner_def]
+  \\ Cases_on `ls'`
+  \\ rw [union_blists_inner_def, DISJ_IMP_THM, FORALL_AND_THM]
+  \\ metis_tac []
+QED
+
+Theorem union_blists_inner_nil[simp]:
+  union_blists_inner rc ls1 [] = []
+Proof
+  Cases_on `ls1` \\ simp [union_blists_inner_def]
+QED
+
+Theorem union_blists_nil[simp]:
+  union_blists rc ls1 [] = []
+Proof
+  PairCases_on `rc` \\ simp [union_blists_def]
+QED
+
+Theorem union_blists_rectangle:
+  rectangle w h (MAP from_blist ls) ⇒
+  rectangle w h (MAP from_blist (union_blists rc ls1 ls))
+Proof
+  simp [rectangle_def, EVERY_MAP, GSYM blist_length_thm]
+  \\ metis_tac [every_length_union_blists]
+QED
+
+Theorem from_row_append[simp]:
+  from_row (q0,q1) (l1 ++ l2) =
+    from_row (q0,q1) l1 ∪ from_row (q0 + &LENGTH l1,q1) l2
+Proof
+  qid_spec_tac `q0` \\ Induct_on `l1` \\ rw [from_row_def]
+  \\ Cases_on `h` \\ simp [from_row_def,
+    ARITH_PROVE ``(x:int) + 1 + &n = x + &SUC n``, UNION_ASSOC]
+QED
+
+Theorem from_row_replicate_F[simp]:
+  from_row (q0,q1) (REPLICATE n F) = ∅
+Proof
+  qid_spec_tac `q0` \\ Induct_on `n` \\ rw [from_row_def]
+QED
+
+Theorem from_row_cons:
+  from_row (q0,q1) (a :: l) = (if a then {(q0,q1)} else ∅) ∪ from_row (q0+1,q1) l
+Proof
+  Cases_on`a` \\ simp [from_row_def]
+QED
+
+Theorem from_row_union_blist:
+  (∀m ls1 ls q0.
+    m + blist_length ls1 ≤ blist_length ls ⇒
+    from_row (q0,q1) (MAP (eval env) (from_blist (union_blist m ls1 ls))) =
+    from_row (q0,q1) (MAP (eval env) (from_blist ls)) ∪
+    from_row (q0 + &m,q1) (MAP (eval env) (from_blist ls1))) ∧
+  (∀m a ls1 ls q0.
+    m + blist_length ls1 + 1 ≤ blist_length ls ⇒
+    from_row (q0,q1) (MAP (eval env) (from_blist (union_blist' m a ls1 ls))) =
+    from_row (q0,q1) (MAP (eval env) (from_blist ls)) ∪
+    from_row (q0 + &m,q1) (eval env a :: MAP (eval env) (from_blist ls1)))
+Proof
+  HO_MATCH_MP_TAC union_blist_ind
+  \\ rw [union_blist_def, blist_length_def, from_blist_def,
+    from_row_def, INT_ADD_ASSOC, GSYM INT_ADD, from_row_cons]
+  >- (`q0 + &m + 1 + &(n − (m + 1)) = q0 + &n` by ARITH_TAC
+    \\ simp [AC UNION_ASSOC UNION_COMM])
+  >- (`q0 + &n + &(m − n) = q0 + &m` by ARITH_TAC
+    \\ simp [AC UNION_ASSOC UNION_COMM])
+  >- SET_TAC []
+  >- (`q0 + 1 + &(m - 1) = q0 + &m` by ARITH_TAC
+    \\ simp [] \\ SET_TAC [])
+QED
+
+Theorem from_rows_union_blists:
+  ∀q env h.
+  EVERY (λl. blist_length l + row ≤ h) ls1 ∧
+  EVERY (λl. blist_length l = h) ls ∧
+  LENGTH ls1 + col ≤ LENGTH ls
+  ⇒
+  from_rows q (MAP (MAP (eval env) ∘ from_blist) (union_blists (row,col) ls1 ls)) =
+  from_rows q (MAP (MAP (eval env) ∘ from_blist) ls) ∪
+    from_rows (add_pt q (&row, &col)) (MAP (MAP (eval env) ∘ from_blist) ls1)
+Proof
+  simp [union_blists_def] \\ rpt gen_tac
+  \\ PairCases_on `q`
+  \\ MAP_EVERY qid_spec_tac [`q1`,`ls`]
+  \\ reverse (Induct_on `col`) \\ simp []
+  >- (
+    Cases_on `ls` \\ rw [] \\ fs [from_rows_def, union_blists_inner_def]
+    \\ simp [ARITH_PROVE ``(x:int) + 1 + &n = x + &SUC n``, UNION_ASSOC])
+  \\ Induct_on `ls1` \\ simp [union_blists_inner_def, from_rows_def]
+  \\ Cases_on `ls` \\ rw [] \\ fs [from_rows_def, union_blists_inner_def]
+  \\ simp [AC UNION_ASSOC UNION_COMM, from_row_union_blist]
+QED
+
+Definition trim_blist_def:
+  trim_blist a l Nil = Falses l Nil ∧
+  trim_blist a l (Falses n ls) = (
+    if a + l ≤ n then Falses l Nil
+    else if n ≤ a then trim_blist (a - n) l ls
+    else mk_Falses (n - a) (trim_blist 0 (a + l - n) ls)) ∧
+  trim_blist a l (Cell b ls) = (
+    if l = 0 then Nil else
+    if a = 0 then Cell b (trim_blist 0 (l - 1) ls) else
+    trim_blist (a - 1) l ls)
+End
+
+Definition trim_blists_def:
+  trim_blists (a0,a1) (l0,l1) ls =
+    MAP (trim_blist a0 l0) (TAKE l1 (DROP a1 ls)) ++
+    REPLICATE (l1 - (LENGTH ls - a1)) (Falses l0 Nil)
+End
+
+Theorem trim_blist_length[simp]:
+  blist_length (trim_blist a l ls) = l
+Proof
+  MAP_EVERY qid_spec_tac [`a`,`l`] \\ Induct_on `ls`
+  \\ rw [trim_blist_def, blist_length_def, blist_length_mk_Falses]
+QED
+
+Theorem trim_blists_length[simp]:
+  LENGTH (trim_blists (a0,a1) (l0,l1) ls) = l1
+Proof
+  simp [trim_blists_def]
+  \\ Cases_on `l1 ≤ LENGTH ls − a1` \\ simp [TAKE_LENGTH_TOO_LONG]
+QED
+
+Theorem trim_blists_every_length:
+  EVERY (λr. blist_length r = l0) (trim_blists (a0,a1) (l0,l1) ls)
+Proof
+  simp [trim_blists_def, blist_length_def, EVERY_MAP]
+QED
+
+Definition build_mega_cell_padded_def:
+  build_mega_cell_padded [] init = init ∧
+  build_mega_cell_padded (((x,y),g)::gates) init =
+    union_blists (75 * Num x, 75 * Num y) g.init (build_mega_cell_padded gates init)
+End
+
+Definition build_mega_cell_def:
+  build_mega_cell gates =
+    let init = REPLICATE (150 * ^tileN + 20) (Falses (150 * ^tileN + 20) Nil) in
+    let padded = build_mega_cell_padded gates init in
+    let ret = trim_blists (10,10) (150 * ^tileN, 150 * ^tileN) padded in
+    if union_blists (10, 10) ret init = padded then SOME ret else NONE
+End
+
+Definition mega_cell_builder_def:
+  mega_cell_builder mega_tile =
+  to_tiling (λb.
+    from_rows (-75,-75) (MAP (MAP (eval (λ_. b)) ∘ from_blist) mega_tile))
+End
+
+Theorem build_mega_cell_length:
+  build_mega_cell gates = SOME ret ⇒
+  LENGTH ret = 150 * ^tileN ∧
+  EVERY (λr. blist_length r = 150 * ^tileN) ret
+Proof
+  qid_spec_tac `ret` \\ simp [build_mega_cell_def, trim_blists_every_length]
+QED
+
+Theorem from_rows_replicate_F[simp]:
+  from_rows q (REPLICATE m (REPLICATE n F)) = ∅
+Proof
+  PairCases_on `q` \\ qid_spec_tac `q1`
+  \\ Induct_on `m` \\ simp [from_rows_def]
+QED
+
+Theorem build_mega_cell_thm':
+  EVERY (gate_at_wf area) gates ∧ EVERY in_range area ∧
+  build_mega_cell gates = SOME ret ⇒
+  union_gates gates = λb.
+    from_rows (-75,-75) (MAP (MAP (eval (λ_. b)) ∘ from_blist) ret)
+Proof
+  qid_spec_tac `ret` \\ simp [build_mega_cell_def]
+  \\ qmatch_goalsub_abbrev_tac `trim_blists _ _ padded`
+  \\ strip_tac
+  \\ pop_assum (fn h => assume_tac h
+    \\ rw [Once FUN_EQ_THM]
+    \\ qspecl_then [`(-85,-85)`, `(λ_. b)`] mp_tac $
+      Q.GENL [`q`,`env`,`h`] $ PART_MATCH (dest_path "rlrrr")
+        from_rows_union_blists (lhs (concl h))
+    \\ simp [from_blist_def, blist_length_def])
+  \\ impl_tac
+  >- (irule MONO_EVERY \\ irule_at Any trim_blists_every_length \\ simp [])
+  \\ disch_then (rw o single o SYM)
+  \\ pop_assum kall_tac \\ simp [Abbr`padded`, union_gates_def]
+  \\ qho_match_abbrev_tac `_ = _ (_ (f gates))`
+  \\ qspec_then `LENGTH (f gates) = 150 * ^tileN + 20 ∧
+    EVERY (λr. blist_length r = 150 * ^tileN + 20) (f gates)` match_mp_tac AND2_THM
+  \\ simp [Abbr`f`] \\ Induct_on `gates`
+  \\ simp [from_blist_def, blist_length_def, build_mega_cell_padded_def, FORALL_PROD]
+  \\ qmatch_goalsub_abbrev_tac `MAP _ ls`
+  \\ rw [every_length_union_blists] \\ fs []
+  \\ drule_all gate_at_wf_bounded \\ rw []
+  \\ fs [gate_at_wf_def, gate_wf_def, rectangle_def, EVERY_MAP,
+    GSYM blist_length_thm]
+  \\ (fn g => qspec_then `150 * ^tileN + 20` mp_tac (
+    Q.GEN `h` $ PART_MATCH (dest_path "rlr")
+      from_rows_union_blists (rhs (snd g))) g)
+  \\ simp [] \\ impl_tac
+  >- (reverse conj_tac >- ARITH_TAC
+    \\ irule MONO_EVERY \\ first_x_assum $ irule_at Any
+    \\ simp [] \\ ARITH_TAC)
+  \\ disch_then (fn h => rw [h, Once UNION_COMM]) \\ cong_tac 1
+  \\ simp [from_init_def, Once EXTENSION, FORALL_PROD]
+  \\ CONV_TAC $ ONCE_DEPTH_CONV $ REWR_CONV from_rows_translate_0
+  \\ rw [] \\ cong_tac 2 \\ simp [] \\ ARITH_TAC
+QED
+
+Theorem build_mega_cell_thm:
+  EVERY (gate_at_wf area) gates ∧ EVERY in_range area ∧
+  build_mega_cell gates = SOME ret ⇒
+  to_tiling (union_gates gates) = mega_cell_builder ret
+Proof
+  strip_tac
+  \\ drule_all_then (fn h => rw [h, mega_cell_builder_def]) build_mega_cell_thm'
+QED
 
 Theorem read_mega_cells_build_mega_cells_thm:
   EVERY (gate_at_wf area) gates ∧ EVERY in_range area ∧
-  test_pt_slow T gates (1726,599) ∧ ¬test_pt_slow F gates (1726,599) ⇒
-  read_mega_cells (mega_cell_builder gates s) = s
+  build_mega_cell gates = SOME ret ∧
+  test_blists (1801,674) ret = Var A 0 ⇒
+  read_mega_cells (mega_cell_builder ret s) = s
 Proof
-  simp [EVERY_MEM, gate_at_wf_def, gate_wf_def, Once FORALL_PROD]
-  \\ rw [read_mega_cells_def, mega_cell_builder_def, Once EXTENSION,
-    MEM_MAP, PULL_EXISTS, Q.INST_TYPE [`:β`|->`:gate`] EXISTS_PROD,
-    from_masks_def, translate_set_def]
-  \\ qmatch_goalsub_abbrev_tac `sub_pt y`
+  rw [read_mega_cells_def, mega_cell_builder_def, to_tiling_def, Once EXTENSION]
   \\ HO_BACKCHAIN_TAC $ METIS_PROVE []
-    ``(∀z q g. P z q g ⇒ z = x) ∧ ((∃q g. P x q g) ⇔ Q) ⇒
-      ((∃z q g. P z q g) ⇔ Q)``
+    ``(∀z. P z ⇒ z = x) ∧ (P x ⇔ Q) ⇒ ((∃z. P z) ⇔ Q)``
   \\ conj_tac >- (
-    `∀z q w h pat.
-      w ≠ 0 ∧ h ≠ 0 ∧ rectangle w h pat ∧
-      (∀y. MEM y (make_area w h) ⇒ in_range (add_pt q y)) ∧
-      sub_pt y (mul_pt 75 (mk_pt q z)) ∈ from_rows (-85,-85) pat ⇒
-      z = x` suffices_by metis_tac []
-    \\ rw [Abbr`y`] \\ MAP_EVERY PairCases_on [`x`,`q`,`z`] \\ fs [mk_pt_def]
-    \\ `∃r0 r1. q0 = 2*r0 ∧ q1 = 2*r1 ∧ 0 ≤ r0 ∧ 0 ≤ r1 ∧
-        r0 + &w ≤ ^tileZ ∧ r1 + &h ≤ ^tileZ` by (
-      `MEM (0,0) (make_area w h) ∧ MEM (2 * &w - 2,2 * &h - 2) (make_area w h)` by
-        (simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS] \\ ARITH_TAC)
-      \\ res_tac \\ fs [in_range_def] \\ ARITH_TAC)
-    \\ drule_then (drule_then strip_assume_tac) from_rows_rectangle \\ gvs []
-    \\ ARITH_TAC)
-  \\ `∀q. sub_pt y (mul_pt 75 (mk_pt q x)) = sub_pt (1726,599) (mul_pt 75 q)` by
-    (rw [Abbr`y`] \\ MAP_EVERY PairCases_on [`x`,`q`] \\ fs [mk_pt_def] \\ ARITH_TAC)
-  \\ pop_assum (rw o single)
-  \\ fs [from_rows_iff_test_masks', test_pt_slow_def, EXISTS_MEM, EVERY_MEM,
-    Q.INST_TYPE [`:β`|->`:gate`] EXISTS_PROD,
-    Q.INST_TYPE [`:β`|->`:gate`] FORALL_PROD]
-  \\ CASE_TAC \\ fs [] \\ metis_tac []
+    rw [] \\ MAP_EVERY PairCases_on [`x`,`z`] \\ fs [mk_pt_def]
+    \\ drule_all_then strip_assume_tac build_mega_cell_length
+    \\ `∃i0 i1:num. 3150 * x0 + 1801 − 3150 * z0 = -75 + &i0 ∧
+        3150 * x1 + 674 − 3150 * z1 = -75 + &i1` by (
+      drule_then strip_assume_tac from_rows_lower_bound \\ ARITH_TAC)
+    \\ drule_at Any from_rows_rectangle'
+    \\ simp [rectangle'_def, EVERY_MAP, GSYM blist_length_thm]
+    \\ disch_then drule \\ ARITH_TAC)
+  \\ simp []
+  \\ rewrite_tac [from_rows_iff_test_blists,
+    ARITH_PROVE ``(1726:int) = -75 + 1801 ∧ (599:int) = -75 + 674``]
+  \\ simp []
 QED
 
 Triviality in_if_set_empty:
@@ -1945,14 +2141,31 @@ Proof
   end
 QED
 
-Theorem floodfill_finish:
+Definition floodfill_result_def:
+  floodfill_result ret ⇔ ∃area gates.
   floodfill area
     [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact (-77) Clock)]
     [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact 509 Clock)] [] gates ∧
-  test_pt_slow T gates (1726,599) ∧ ¬test_pt_slow F gates (1726,599) ⇒
-  gol_in_gol (mega_cell_builder gates) (^periodN * 60) read_mega_cells
+  build_mega_cell gates = SOME ret
+End
+
+Theorem floodfill_finish:
+  floodfill area
+    [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact (-77) Clock)]
+    [(((23,8),E),Exact (-15) ThisCell); (((13,0),E),Exact 509 Clock)] [] gates ⇒
+  build_mega_cell gates = SOME ret ⇒
+  floodfill_result ret
 Proof
-  rw [gol_rulesTheory.gol_in_gol_def] \\ gvs [floodfill_def, SF DNF_ss]
+  metis_tac [floodfill_result_def]
+QED
+
+Theorem floodfill_result_finish:
+  floodfill_result ret ∧
+  test_blists (1801,674) ret = Var A 0 ⇒
+  gol_in_gol (mega_cell_builder ret) (^periodN * 60) read_mega_cells
+Proof
+  rw [floodfill_result_def, gol_rulesTheory.gol_in_gol_def]
+  \\ gvs [floodfill_def, SF DNF_ss]
   \\ gvs [FUN_EQ_THM,FORALL_PROD] \\ rw []
   \\ rename [‘FUNPOW step n init (x,y) = _’]
   \\ qabbrev_tac ‘env = λn. FUNPOW step n init’
@@ -1973,6 +2186,7 @@ Proof
   >- (ntac 4 $ pop_assum kall_tac
     \\ simp [floodfill_io_wf_def, SF DNF_ss, FUN_EQ_THM]
     \\ metis_tac [add_pt_0, mk_pt_0])
+  \\ drule_all_then (simp o single) build_mega_cell_thm
   \\ gvs [circuit_run_def]
   \\ strip_tac
   \\ dxrule run_clear_mods
@@ -2195,12 +2409,12 @@ Theorem floodfill_add_crossover_gen:
   classify 5 P = SOME ea ∧
   g.width = 1 ∧ g.height = 1 ∧
   (∀env v1 Q v2 z. env_wf env ∧
-    classify 5 Q = SOME (Zeros, Zeros) ∧
+    classify 5 Q = SOME Zeros ∧
     v_eval env P v1 ∧ v_eval env Q v2 ⇒
     circuit (make_area 1 1) [(a,d1,v1 z); (b,d2,v2 z)]
-      [(a',d1, delay' (5,eval_pair (env 0 z) ea) (v1 z));
+      [(a',d1, delay' (5,ea,env 0 z) (v1 z));
        (b',d2, delay 5 (v2 z))]
-      (from_masks (env 0 z) (g.lo,g.hi))) ⇒
+      (from_init (env 0 z) g.init)) ⇒
   ∀p x' y'.
   p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   ¬MEM p area ∧
@@ -2232,7 +2446,7 @@ Proof
   \\ imp_res_tac LIST_REL_LENGTH
   \\ drule_at_then Any (qspecl_then [`p`,`g`,
       `[((a,d1),v1); ((b,d2),v2)]`,
-      `[((a',d1),λz. delay' (5,eval_pair (env 0 z) ea) (v1 z)); ((b',d2),delay 5 ∘ v2)]`
+      `[((a',d1),λz. delay' (5,ea,env 0 z) (v1 z)); ((b',d2),delay 5 ∘ v2)]`
     ] mp_tac) floodfill_run_add_gate
   \\ simp [make_area_def]
   \\ impl_tac >- simp [Abbr`p`, floodfill_gate_wf_def, make_area_def]
@@ -2252,7 +2466,7 @@ Theorem floodfill_add_crossover_l:
     [(a',d1,Var A 0); (b',d2,Var B 0)] init1 ∧
   PERM outs (((p',d1),P) :: outs') ⇒
   classify 5 P = SOME ea ⇒
-  instantiate_gate 1 1 (ea, (Zeros, Zeros)) init1 = g ⇒
+  instantiate (ea, Zeros) init1 = init2 ⇒
   ∀p x' y'.
   p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   ¬MEM p area ∧
@@ -2260,7 +2474,7 @@ Theorem floodfill_add_crossover_l:
   floodfill (p :: area) ins
     (((add_pt p a',d1),v_delay 5 P) :: outs')
     ((add_pt p b, add_pt p b', d2) :: crosses)
-    ((p, g) :: init)
+    ((p, gate 1 1 init2) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_assum $ irule_at Any \\ rw [] >>> ROTATE_LT 2
@@ -2269,7 +2483,7 @@ Proof
   \\ dxrule blist_simulation_ok_imp_circuit
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ rev_drule_then $ drule_then $
-    qspecl_then [`z`,`Zeros,Zeros`,`ea`] suff_eq_tac
+    qspecl_then [`z`,`Zeros`,`ea`] suff_eq_tac
   \\ cong_tac 5 >>> NTH_GOAL (cong_tac 2) 2
   \\ simp [FUN_EQ_THM, mk_output_env_def, eval_pair_def]
 QED
@@ -2281,7 +2495,7 @@ Theorem floodfill_add_crossover_r:
     [(a',d1,Var A 0); (b',d2,Var B 0)] init1 ∧
   PERM outs (((p',d2),P) :: outs') ⇒
   classify 5 P = SOME eb ⇒
-  instantiate_gate 1 1 ((Zeros, Zeros), eb) init1 = g ⇒
+  instantiate (Zeros, eb) init1 = init2 ⇒
   ∀p x' y'.
   p = (&(2 * x'), &(2 * y')) ∧ x' < ^tileN ∧ y' < ^tileN ∧
   ¬MEM p area ∧
@@ -2289,7 +2503,7 @@ Theorem floodfill_add_crossover_r:
   floodfill (p :: area) ins
     (((add_pt p b',d2),v_delay 5 P) :: outs')
     ((add_pt p a, add_pt p a', d1) :: crosses)
-    ((p, g) :: init)
+    ((p, gate 1 1 init2) :: init)
 Proof
   rpt strip_tac \\ irule floodfill_add_crossover_gen
   \\ rpt $ last_assum $ irule_at Any \\ rw [] >>> ROTATE_LT 2
@@ -2298,7 +2512,7 @@ Proof
   \\ dxrule blist_simulation_ok_imp_circuit
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ dxrule_then $ drule_then $
-    qspecl_then [`z`,`eb`,`Zeros,Zeros`] suff_eq_tac
+    qspecl_then [`z`,`eb`,`Zeros`] suff_eq_tac
   \\ irule circuit_perm \\ simp [PERM_SWAP_AT_FRONT]
   \\ irule $ METIS_PROVE [PERM_SWAP_AT_FRONT, PERM_REFL] ``[b;a] = c ⇒ PERM [a;b] c``
   \\ cong_tac 2 >>> NTH_GOAL (cong_tac 2) 2
@@ -2309,7 +2523,7 @@ Theorem floodfill_finish_crossover:
   floodfill area ins outs crosses init ∧
   PERM outs (((p,d),P) :: outs') ∧
   PERM crosses ((p,q,d) :: crosses') ⇒
-  classify 5 P = SOME (Zeros, Zeros) ⇒
+  classify 5 P = SOME Zeros ⇒
   floodfill area ins (((q,d),v_delay 5 P) :: outs') crosses' init
 Proof
   rpt strip_tac \\ dxrule_then (dxrule_then dxrule) floodfill_perm
