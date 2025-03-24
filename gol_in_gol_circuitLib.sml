@@ -156,29 +156,12 @@ fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a lo
       end
   val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v) 1) asserts
   fun loop () = case !queue of
-    [] => ()
+    [] => !wires
   | q =>
     if foldl (fn (x, r) => processQueue x 2 orelse r) (queue := []; false) q then
       loop ()
     else raise Fail "queue stuck"
-  val _ = loop ()
-  (* val (header, lines) = d
-  val lines' = Vector.tabulate (SIZE, fn y => let
-    val (left, right) = lineHeader (Vector.sub (lines, y))
-    val body = List.tabulate (SIZE, fn x =>
-      case coord d (x, y) of
-        w as Wire _ =>
-        if Redblackmap.inDomain (!wires, (x-1, y-1)) then "* " else ". "
-      | w =>
-        if List.exists ((fn (a,b) => (x, y) = (2*a+1,2*b+1)) o #1 o #2) (!queue) then
-          "% "
-        else
-          (* "+ " *)
-        sigil_to_string w
-        )
-    in left ^ String.concat body ^ right end)
-  val _ = print' (header, lines') *)
-  in !wires end
+  in loop () end
 
 fun getWire res p dir = Redblackmap.find (res, wpos (p, dirToXY dir))
 

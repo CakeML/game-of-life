@@ -108,43 +108,5 @@ val _ = translate_gate [0,1,2,3] half_adder_ee_ee;
 val _ = translate_gate [0,1,2,3] slow_wire_e_e;
 (* val _ = translate_gate [2] slower_wire_e_e; *)
 
-(* Definition conj_def:
-  conj a b = (λn. a n ∧ b n)
-End
-
-Definition disj_def:
-  disj a b = (λn. a n ∨ b n)
-End
-
-Definition set_env_def:
-  set_env a b (A,n) = a n ∧
-  set_env a b (B,n) = b n
-End
-
-Theorem simulation_ok_2:
-  simulation_ok w h [((x1,x2),d,Var A a_d); ((x1',x2'),d',Var B b_d)] outs init ⇒
-  ∀a b.
-    circuit
-      (make_area w h)
-      [((x1,x2),d,a); ((x1',x2'),d',b)]
-      (eval_io (set_env (delay a_d a) (delay b_d b)) outs) []
-      (from_rows (-85,-85)
-        (MAP (MAP (eval (set_env (delay a_d a) (delay b_d b)))) init))
-Proof
-  rw []
-  \\ drule simulation_ok_IMP_circuit
-  \\ disch_then $ qspec_then ‘(set_env (delay a_d a) (delay b_d b))’ mp_tac
-  \\ gvs [eval_io_def,set_env_def,delay_simp]
-QED
-
-Theorem and_en_e_circuit =
-  MATCH_MP blist_simulation_ok_thm (theorem "and_en_e_thm")
-  |> MATCH_MP simulation_ok_2
-  |> CONV_RULE ((QUANT_CONV o QUANT_CONV o RAND_CONV o RAND_CONV)
-       (REWRITE_CONV [definition "and_en_e_def"] THENC EVAL
-        THENC make_abbrev "and_en_e_concrete"))
-  |> SRULE [eval_io_def,set_env_def,GSYM conj_def,GSYM disj_def,
-            SF ETA_ss, make_area_def]; *)
-
 val _ = (max_print_depth := 10); (* avoids blow up in size of Theory.sig file *)
 val _ = export_theory();
