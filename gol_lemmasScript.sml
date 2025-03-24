@@ -27,6 +27,7 @@ Theorem adj_set:
   adj x y = set [(x-1,y-1);(x,y-1);(x+1,y-1);(x-1,y);(x+1,y);(x-1,y+1);(x,y+1);(x+1,y+1)]
 Proof
   gvs [EXTENSION,adj_def] \\ rw [] \\ eq_tac \\ rw []
+  \\ intLib.COOPER_TAC
 QED
 
 Theorem finite_adj:

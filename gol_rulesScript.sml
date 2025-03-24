@@ -14,9 +14,7 @@ val _ = new_theory "gol_rules";
 Type state[pp] = “:(int # int) set”;
 
 Definition adj_def:
-  adj i j = {(i-1,j-1); (i,j-1); (i+1,j-1);
-              (i-1,j) ;           (i+1,j) ;
-             (i-1,j+1); (i,j+1); (i+1,j+1)}
+  adj i j = { (i',j') | int_max (ABS (i'-i)) (ABS (j'-j)) = 1 }
 End
 
 Definition live_adj_def:
