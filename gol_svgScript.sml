@@ -260,8 +260,8 @@ fun diag_to_svg_with_wires {speed, fade, offset} filename = let
   val red = oklab (0.15, 0.1)
   val blue = oklab (~0.1, ~0.2)
   val wires = C map (Redblackmap.listItems wires) $ apsnd (trim o (fn
-    Regular (n, Cell p) => reg ("#ccc", red p, "#ccc", blue p) n
-  | Regular (n, v) =>
+    Approx (n, Cell p) => reg ("#ccc", red p, "#ccc", blue p) n
+  | Approx (n, v) =>
       if v = nextCell then reg ("#ccc", blue (0,0), "#ccc", red (0,0)) n
       else reg ("#ccc", "purple", "#ccc", "green") n
   | Exact (n, v) => let

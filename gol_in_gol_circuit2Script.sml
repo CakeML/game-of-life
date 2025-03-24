@@ -34,10 +34,10 @@ Definition circuit_gen_def:
 End
 
 Datatype:
-  rvalue = Cell (int # int) | RNot rvalue
-    | RAnd rvalue rvalue | ROr rvalue rvalue | RXor rvalue rvalue;
+  avalue = Cell (int # int) | RNot avalue
+    | RAnd avalue avalue | ROr avalue avalue | RXor avalue avalue;
   evalue = Clock | NotClock | ThisCell | ThisCellClock | ThisCellNotClock;
-  value = Reg num rvalue | Exact int evalue | Fail
+  value = Approx num avalue | Exact int evalue | Fail
 End
 
 Definition r_eval_def[simp]:
@@ -65,7 +65,7 @@ Definition e_eval_def[simp]:
 End
 
 Definition v_eval'_def[simp]:
-  (v_eval' env (Reg d rv) s ⇔
+  (v_eval' env (Approx d rv) s ⇔
     ∀ n. d ≤ n MOD ^periodN ⇒ s n = r_eval (env (n DIV ^periodN)) rv) ∧
   (v_eval' env (Exact d ev) s ⇔ s = (λn. e_eval (λi. env i (0, 0)) ev (&n - d))) ∧
   (v_eval' env Fail s ⇔ T)
@@ -83,7 +83,7 @@ Proof
 QED
 
 Definition v_delay_def[simp]:
-  v_delay n (Reg i v) = Reg (n + i) v ∧
+  v_delay n (Approx i v) = Approx (n + i) v ∧
   v_delay n (Exact i v) = Exact (&n + i) v ∧
   v_delay n Fail = Fail
 End
@@ -95,7 +95,7 @@ Proof
 QED
 
 Definition v_teleport_def:
-  v_teleport p (Reg i (Cell a)) = Reg i (Cell (add_pt a p)) ∧
+  v_teleport p (Approx i (Cell a)) = Approx i (Cell (add_pt a p)) ∧
   v_teleport _ _ = Fail
 End
 
@@ -121,12 +121,12 @@ Definition nextCell_def[compute]:
 End
 
 Definition v_and_def[simp,compute]:
-  (v_and (Reg d1 rv1) (Reg d2 rv2) = Reg (MAX d1 d2) (RAnd rv1 rv2)) ∧
+  (v_and (Approx d1 rv1) (Approx d2 rv2) = Approx (MAX d1 d2) (RAnd rv1 rv2)) ∧
   (v_and (Exact d1 ThisCell) (Exact d2 NotClock) =
     if d2 ≤ d1 ∧ d1 ≤ d2 + ^pulseZ then
       Exact d2 ThisCellNotClock
     else Fail) ∧
-  (v_and (Exact d1 Clock) (Reg d2 v2) =
+  (v_and (Exact d1 Clock) (Approx d2 v2) =
     if v2 = nextCell ∧ &d2 ≤ d1 + ^periodZ ∧ d1 ≤ -^pulseZ then
       Exact d1 ThisCellClock
     else Fail) ∧
@@ -140,7 +140,7 @@ Proof
 QED
 
 Definition v_or_def[simp]:
-  (v_or (Reg d1 rv1) (Reg d2 rv2) = Reg (MAX d1 d2) (ROr rv1 rv2)) ∧
+  (v_or (Approx d1 rv1) (Approx d2 rv2) = Approx (MAX d1 d2) (ROr rv1 rv2)) ∧
   (v_or (Exact d1 ThisCellClock) (Exact d2 ThisCellNotClock) =
     if d1 = d2 then Exact d1 ThisCell else Fail) ∧
   (v_or _ _ = Fail)
@@ -154,12 +154,12 @@ QED
 
 Definition v_not_def[simp]:
   v_not (Exact d1 Clock) = Exact d1 NotClock ∧
-  v_not (Reg d1 v1) = Reg d1 (RNot v1) ∧
+  v_not (Approx d1 v1) = Approx d1 (RNot v1) ∧
   v_not _ = Fail
 End
 
 Definition v_xor_def[simp]:
-  v_xor (Reg d1 v1) (Reg d2 v2) = Reg (MAX d1 d2) (RXor v1 v2) ∧
+  v_xor (Approx d1 v1) (Approx d2 v2) = Approx (MAX d1 d2) (RXor v1 v2) ∧
   v_xor _ _ = Fail
 End
 
@@ -182,7 +182,7 @@ Proof
 QED
 
 Theorem Reg_mono:
-  na ≤ nb ∧ (∀env. r_eval env va ⇔ r_eval env vb) ⇒ Reg na va ⊑ Reg nb vb
+  na ≤ nb ∧ (∀env. r_eval env va ⇔ r_eval env vb) ⇒ Approx na va ⊑ Approx nb vb
 Proof
   simp [v_subset_def, v_eval_def] \\ metis_tac [LE_TRANS]
 QED
@@ -274,7 +274,7 @@ Definition and_this_def[compute]:
 End
 
 Definition classify_def[compute]:
-  classify _ (Reg _ _) = SOME Zeros ∧
+  classify _ (Approx _ _) = SOME Zeros ∧
   classify da (Exact d Clock) = classify_clock da T d ∧
   classify da (Exact d NotClock) = classify_clock da F d ∧
   classify da (Exact d ThisCell) =
@@ -476,7 +476,7 @@ Theorem v_eval'_v_and:
   v_eval' env (v_and v1 v2) (λn. a1 n ∧ a2 n)
 Proof
   gvs [oneline v_and_def] \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def]
-  (* v_and (Exact i Clock) (Reg n nextCell) = Exact i ThisCellClock *)
+  (* v_and (Exact i Clock) (Approx n nextCell) = Exact i ThisCellClock *)
   >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&n' − i)` \\ rw []
     \\ DEP_ASM_REWRITE_TAC [] \\ gvs [e_clock_def, e_cell_def] \\ rw []
     >- ARITH_TAC
@@ -1334,7 +1334,7 @@ QED
 Theorem floodfill_weaken:
   floodfill area ins outs crosses init ∧
   PERM outs ((pd,Exact (&d) ThisCell) :: outs') ⇒
-  floodfill area ins ((pd,Reg d (Cell (0, 0))) :: outs') crosses init
+  floodfill area ins ((pd,Approx d (Cell (0, 0))) :: outs') crosses init
 Proof
   strip_tac \\ qspec_then `crosses` assume_tac PERM_REFL
   \\ POP_ASSUM_LIST (assume_tac o MATCH_MP floodfill_perm o LIST_CONJ o rev)
@@ -2251,7 +2251,7 @@ Proof
   \\ conj_tac >- (
     qpat_x_assum `_ v` mp_tac \\ POP_ASSUM_LIST kall_tac
     \\ Cases_on `P` \\ fs [v_eval_def, v_eval'_def, v_teleport_def]
-    \\ Cases_on `r` \\ fs [v_teleport_def]
+    \\ Cases_on `a` \\ fs [v_teleport_def]
     \\ metis_tac [add_pt_comm, add_pt_assoc])
   \\ rw [] \\ first_x_assum $ drule_all_then assume_tac
   \\ drule_then irule floodfill_run_teleport

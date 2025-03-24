@@ -2,12 +2,12 @@ structure gol_in_gol_paramsLib =
 struct
 local open gol_simLib gol_diagramLib in
 
-datatype rvalue =
+datatype avalue =
     Cell of int * int
-  | RAnd of rvalue * rvalue
-  | ROr of rvalue * rvalue
-  | RNot of rvalue
-  | RXor of rvalue * rvalue
+  | RAnd of avalue * avalue
+  | ROr of avalue * avalue
+  | RNot of avalue
+  | RXor of avalue * avalue
 
 datatype evalue =
     Clock
@@ -16,7 +16,7 @@ datatype evalue =
   | ThisCellClock
   | ThisCellNotClock
 
-datatype value = Regular of int * rvalue | Exact of int * evalue
+datatype value = Approx of int * avalue | Exact of int * evalue
 
 Quote diag = gol_diagramLib.parse:
      0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20     |

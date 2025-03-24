@@ -2,16 +2,16 @@ signature gol_in_gol_circuitLib =
 sig
   include Abbrev
 
-  type rvalue = gol_in_gol_paramsLib.rvalue
+  type avalue = gol_in_gol_paramsLib.avalue
   type evalue = gol_in_gol_paramsLib.evalue
   type value = gol_in_gol_paramsLib.value
 
-  val mk_ROr: rvalue * rvalue -> rvalue
+  val mk_ROr: avalue * avalue -> avalue
   val delay: int -> value -> value
-  val nextCell: rvalue
+  val nextCell: avalue
 
   val tr_evalue: evalue -> term
-  val tr_rvalue: rvalue -> term
+  val tr_avalue: avalue -> term
   val tr_value: value -> term
 
   type dir = gol_simLib.dir

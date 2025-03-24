@@ -15,7 +15,7 @@ fun mk_ROr p = case p of
     else ROr p
   | _ => ROr p
 
-fun delay d (Regular (d', v)) = Regular (d + d', v)
+fun delay d (Approx (d', v)) = Approx (d + d', v)
   | delay d (Exact (d', v)) = Exact (d + d', v)
 
 type io_port = (int * int) * dir * value
@@ -82,27 +82,27 @@ fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a lo
         val (d, value) = Vector.sub (ins, i)
         in delay (d - d') value end
       | evalExp (Or (e1, e2)) = (case (evalExp e1, evalExp e2) of
-          (Regular (d1, v1), Regular (d2, v2)) =>
-          Regular (Int.max (d1, d2), mk_ROr (v1, v2))
+          (Approx (d1, v1), Approx (d2, v2)) =>
+          Approx (Int.max (d1, d2), mk_ROr (v1, v2))
         | (Exact (d1, ThisCellClock), Exact (d2, ThisCellNotClock)) => (
           if d1 = d2 then () else (PolyML.print ("clock timing 1", d2, d1); ());
           Exact (d1, ThisCell))
         | r => (PolyML.print (ins, Or (e1, e2), r); raise Fail "evalExp Or"))
       | evalExp (And (e1, e2)) = (case (evalExp e1, evalExp e2) of
-          (Regular (d1, v1), Regular (d2, v2)) =>
-          Regular (Int.max (d1, d2), RAnd (v1, v2))
+          (Approx (d1, v1), Approx (d2, v2)) =>
+          Approx (Int.max (d1, d2), RAnd (v1, v2))
         | (Exact (d1, ThisCell), Exact (d2, NotClock)) => (
           if d2 <= d1 andalso d1 <= d2+pulse then () else
             (PolyML.print ("clock timing 2", d2, d1, d2+pulse); ());
           Exact (d2, ThisCellNotClock))
-        | (Exact (d1, Clock), Regular (d2, v2)) => (
+        | (Exact (d1, Clock), Approx (d2, v2)) => (
           if v2 = nextCell then () else (PolyML.print "calculated wrong function"; ());
           if d2 <= d1 + period andalso d1 <= ~pulse then () else
             (PolyML.print ("clock timing 3", d2-period, d1, d1+pulse, 0); ());
           Exact (d1, ThisCellClock))
         | r => (PolyML.print (ins, And (e1, e2), r); raise Fail "evalExp And"))
       | evalExp (Not e1) = (case evalExp e1 of
-          Regular (d1, v1) => Regular (d1, RNot v1)
+          Approx (d1, v1) => Approx (d1, RNot v1)
         | Exact (d1, Clock) => Exact (d1, NotClock)
         | _ => raise Fail "evalExp Not")
       | evalExp bv = (PolyML.print (ins, bv); raise Fail "evalExp other")
@@ -135,8 +135,8 @@ fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a lo
           case value of
             Exact (d, ThisCell) => (
               if 0 <= d then () else (PolyML.print ("exact signal too early", d); ());
-              #weaken log (w, Regular (d, Cell (0, 0)));
-              Regular (d, Cell (0, 0)))
+              #weaken log (w, Approx (d, Cell (0, 0)));
+              Approx (d, Cell (0, 0)))
           | _ => raise Fail "bad weaken"
         else value
       val _ = wires := Redblackmap.insert (!wires, w, value)
@@ -149,10 +149,10 @@ fun build (gates, teleport) ({period, pulse, asserts, weaken}:params) (log:'a lo
           val (a,b) = dirToXY dir
           val wout = (fst w - tile2*a, snd w - tile2*b)
           val (d, (x, y)) = case value of
-              Regular (d, Cell p) => (d, p)
+              Approx (d, Cell p) => (d, p)
             | _ => raise Fail "bad signal on teleport"
           val _ = #teleport log (w, dir)
-          in processWire (wout, Regular (d, Cell (x - a, y - b))) depth end
+          in processWire (wout, Approx (d, Cell (x - a, y - b))) depth end
       end
   val _ = app (fn (w,d,v) => processWire (wpos (w, dirToXY d), v) 1) asserts
   fun loop () = case !queue of
@@ -198,7 +198,7 @@ val ThisCellClock_tm =
 val ThisCellNotClock_tm =
   prim_mk_const {Name = "ThisCellNotClock", Thy = "gol_in_gol_circuit2"}
 
-val Reg_tm   = prim_mk_const {Name = "Reg",   Thy = "gol_in_gol_circuit2"}
+val Reg_tm   = prim_mk_const {Name = "Approx",   Thy = "gol_in_gol_circuit2"}
 val Exact_tm = prim_mk_const {Name = "Exact", Thy = "gol_in_gol_circuit2"}
 
 fun ERR x = mk_HOL_ERR "gol_in_gol_circuitLib" x ""
@@ -207,11 +207,11 @@ in
 
 val from_int = intSyntax.term_of_int o Arbint.fromInt
 
-fun tr_rvalue (Cell p)  = mk_binop Cell_tm $ pair_map from_int p
-  | tr_rvalue (RNot v)  = mk_monop RNot_tm $ tr_rvalue v
-  | tr_rvalue (RAnd vs) = mk_binop RAnd_tm $ pair_map tr_rvalue vs
-  | tr_rvalue (ROr vs)  = mk_binop ROr_tm $ pair_map tr_rvalue vs
-  | tr_rvalue (RXor vs) = mk_binop ROr_tm $ pair_map tr_rvalue vs
+fun tr_avalue (Cell p)  = mk_binop Cell_tm $ pair_map from_int p
+  | tr_avalue (RNot v)  = mk_monop RNot_tm $ tr_avalue v
+  | tr_avalue (RAnd vs) = mk_binop RAnd_tm $ pair_map tr_avalue vs
+  | tr_avalue (ROr vs)  = mk_binop ROr_tm $ pair_map tr_avalue vs
+  | tr_avalue (RXor vs) = mk_binop ROr_tm $ pair_map tr_avalue vs
 
 fun tr_evalue Clock = Clock_tm
   | tr_evalue NotClock = NotClock_tm
@@ -219,7 +219,7 @@ fun tr_evalue Clock = Clock_tm
   | tr_evalue ThisCellClock = ThisCellClock_tm
   | tr_evalue ThisCellNotClock = ThisCellNotClock_tm
 
-fun tr_value (Regular (n, v)) = mk_binop Reg_tm (numSyntax.term_of_int n, tr_rvalue v)
+fun tr_value (Approx (n, v)) = mk_binop Reg_tm (numSyntax.term_of_int n, tr_avalue v)
   | tr_value (Exact (n, v)) = mk_binop Exact_tm (from_int n, tr_evalue v)
 
 end
@@ -271,7 +271,7 @@ fun append_conv tm =
 (*  *)
 
 fun floodfill diag params = let
-  datatype gate_kind = Regular of thm | Crossover of thm
+  datatype gate_kind = Approx of thm | Crossover of thm
   fun gateKey ((gate, i, lgate): gate * int * loaded_gate) = let
     val g = List.nth (#stems gate, i)
     val g0 = List.nth (#stems gate, 0)
@@ -293,7 +293,7 @@ fun floodfill diag params = let
           "half_adder_ee_ee" => MATCH_MP half_adder_weaken thm
         | "half_adder_ee_es" => MATCH_MP half_adder_weaken thm
         | _ => thm
-      in Regular (save_thm (genth, thm)) end
+      in Approx (save_thm (genth, thm)) end
     in (lgate, genth, res) end
   val cache = ref $ Redblackmap.mkDict $
     pair_compare (pair_compare (Term.compare, Term.compare), Term.compare)
@@ -317,7 +317,7 @@ fun floodfill diag params = let
     in CONV_RULE (PATH_CONV "llrr" instantiate_conv) gth end
   val thm = ref floodfill_start
   fun newIn ((_, s, g), (x', y'), _, ins) = let
-    val gth = case g of Regular g => g | _ => raise Match
+    val gth = case g of Approx g => g | _ => raise Match
     val gth = specGate (Vector.foldr (fn ((_, v), r) => tr_value v :: r) [] ins) gth
     val thm' = MATCH_MP floodfill_add_ins (CONJ (!thm) gth)
     val p = mk_pair $ pair_map from_int (2*x', 2*y')
@@ -329,7 +329,7 @@ fun floodfill diag params = let
     val (x, y) = (2*x', 2*y')
     val ins = map (mk_pair o pair_map from_int o (fn ((a,b),_,_) => (x+a, y+b))) (#inputs lg)
     val thm' = case g of
-      Regular gth => let
+      Approx gth => let
       val permth = pull_perm
         (map (fn a => term_eq a o fst o dest_pair o fst o dest_pair) ins)
         (lhand $ rator $ concl (!thm))
