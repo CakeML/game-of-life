@@ -77,7 +77,7 @@ End
 
 Definition mega_cell_compile_def:
   mega_cell_compile s =
-    rev_concat (mega_cell_compile_big_rows rle_fragments (from_rle s) []) "!"
+    rev_concat (mega_cell_compile_big_rows rle_fragments (from_rle s) []) "!\n"
 End
 
 Definition digit_def:
@@ -144,7 +144,7 @@ fun big_rows [] acc = acc
     big_rows ls (small_rows row rle_fragments acc)
 
 fun mega_cell_compile s =
-  String.concat (rev ("!" :: big_rows (from_rle s) []))
+  String.concat (rev ("!\n" :: big_rows (from_rle s) []))
 
 fun mega_cell_to_file {in_logic, wrap} filename s = let
   val f = TextIO.openOut filename

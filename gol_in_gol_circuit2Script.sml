@@ -40,10 +40,6 @@ Datatype:
   value = Reg num rvalue | Exact int evalue | Fail
 End
 
-Definition base_def:
-  (base:num) = 0
-End
-
 Definition r_eval_def[simp]:
   (r_eval env (Cell p) ⇔ env p) ∧
   (r_eval env (RNot v) ⇔ ¬r_eval env v) ∧
@@ -70,8 +66,8 @@ End
 
 Definition v_eval'_def[simp]:
   (v_eval' env (Reg d rv) s ⇔
-    ∀ n. d ≤ (n + base) MOD ^periodN ⇒ s n = r_eval (env ((n + base) DIV ^periodN)) rv) ∧
-  (v_eval' env (Exact d ev) s ⇔ s = (λn. e_eval (λi. env i (0, 0)) ev (&(n + base) - d))) ∧
+    ∀ n. d ≤ n MOD ^periodN ⇒ s n = r_eval (env (n DIV ^periodN)) rv) ∧
+  (v_eval' env (Exact d ev) s ⇔ s = (λn. e_eval (λi. env i (0, 0)) ev (&n - d))) ∧
   (v_eval' env Fail s ⇔ T)
 End
 
@@ -167,12 +163,6 @@ Definition v_xor_def[simp]:
   v_xor _ _ = Fail
 End
 
-Theorem v_xor_fail[simp]:
-  v_or v Fail = Fail
-Proof
-  Cases_on `v` \\ simp [] \\ rpt CASE_TAC \\ simp []
-QED
-
 Definition v_subset_def:
   v_subset v1 v2 ⇔ ∀env s. v_eval env v1 s ⇒ v_eval env v2 s
 End
@@ -191,52 +181,10 @@ Proof
   simp [v_subset_def]
 QED
 
-Theorem v_subset_trans:
-  v1 ⊑ v2 ∧ v2 ⊑ v3 ⇒ v1 ⊑ v3
-Proof
-  simp [v_subset_def]
-QED
-
 Theorem Reg_mono:
   na ≤ nb ∧ (∀env. r_eval env va ⇔ r_eval env vb) ⇒ Reg na va ⊑ Reg nb vb
 Proof
   simp [v_subset_def, v_eval_def] \\ metis_tac [LE_TRANS]
-QED
-
-Definition is_exact_def:
-  is_exact v ⇔ (∀env s s'. v_eval env v s ∧ v_eval env v s' ⇒ s = s') ∧ (∀v'. v' ⊑ v ⇒ v ⊑ v')
-End
-
-Theorem is_exact_unique:
-  is_exact v ∧ v_eval env v s ∧ v_eval env v t ⇒ s = t
-Proof
-  metis_tac [is_exact_def]
-QED
-
-Theorem is_exact_minimal:
-  is_exact v ∧ v' ⊑ v ⇒ v ⊑ v'
-Proof
-  metis_tac [is_exact_def]
-QED
-
-Theorem is_exact_exact[simp]:
-  is_exact (Exact i v)
-Proof
-  simp [FUN_EQ_THM, is_exact_def, FORALL_PROD] \\ rpt strip_tac
-  >- fs [v_eval_def, v_eval'_def]
-  \\ fs [v_subset_def, v_eval_def] \\ fs [GSYM FORALL_PROD, GSYM FUN_EQ_THM] \\ rw []
-  \\ `∀x. ∃s'. v_eval' (λi a. env i (add_pt x a)) v' s'` by (
-    pop_assum kall_tac \\ Cases_on `v'` \\ rw [v_eval'_def]
-    \\ qexists_tac `λn'. r_eval (λa. env ((n' + base) DIV 586) (add_pt x a)) r`
-    \\ simp [])
-  \\ fs [SKOLEM_THM]
-  \\ last_x_assum (qspecl_then [`env`,`f`] mp_tac) \\ rw [] \\ gvs []
-QED
-
-Theorem is_exact_mono:
-  v ⊑ v' ∧ is_exact v' ⇒ is_exact v
-Proof
-  simp [is_exact_def, v_subset_def] \\ metis_tac []
 QED
 
 Definition env_wf_def:
@@ -277,36 +225,6 @@ Definition span_def:
   span s = {mk_dpt p z | z,p | p ∈ s}
 End
 
-Theorem span_mono[simp]:
-  s ⊆ t ⇒ span s ⊆ span t
-Proof
-  simp [span_def, SUBSET_DEF] \\ metis_tac []
-QED
-
-Theorem span_subset[simp]:
-  s ⊆ span s
-Proof
-  simp [span_def, SUBSET_DEF] \\ metis_tac [mk_dpt_0]
-QED
-
-Theorem mem_span_self[simp] = ONCE_REWRITE_RULE [SUBSET_DEF] span_subset;
-
-Theorem mk_dpt_in_span[simp]:
-  mk_dpt p z ∈ span s ⇔ p ∈ span s
-Proof
-  PairCases_on `p` \\ PairCases_on `z`
-  \\ simp [span_def, EXISTS_PROD, mk_dpt_def, mk_pt_def] \\ eq_tac \\ strip_tac
-  \\ first_assum $ irule_at (Pos last) \\ ARITH_TAC
-QED
-
-Theorem span_subset_iff:
-  span s ⊆ span t ⇔ s ⊆ span t
-Proof
-  eq_tac >- metis_tac [SUBSET_TRANS, span_subset]
-  \\ CONV_TAC (PATH_CONV "rlr" (SCONV [span_def]))
-  \\ simp [SUBSET_DEF, PULL_EXISTS]
-QED
-
 Theorem span_sn_eq_span_sn:
   span {(a,d)} = span {(a',d')} ⇔ d = d' ∧ ∃z. a' = mk_pt a z
 Proof
@@ -316,27 +234,6 @@ Proof
   \\ metis_tac [mk_pt_0]
 QED
 
-Definition assign_ext_def:
-  assign_ext (s, dom) (s', dom') ⇔
-    span dom ⊆ span dom' ∧ (∀x. x ∈ span dom ⇒ s x = s' x)
-End
-
-Definition assign_sat_def:
-  assign_sat env (s, dom) (p, v) ⇔
-    p ∈ span dom ∧ v_eval env v (s ∘ mk_dpt p)
-End
-
-Theorem assign_sat_mono:
-  v ⊑ v' ∧ assign_sat env s (p, v) ⇒ assign_sat env s (p, v')
-Proof
-  Cases_on `s` \\ simp [v_subset_def, assign_sat_def]
-QED
-
-Definition assign_tr_def:
-  assign_tr x (s, dom) =
-    ((λ(a,d). s (sub_pt a x, d)), λ(a,d). dom (sub_pt a x, d))
-End
-
 Definition vb_eval_def[simp,compute]:
   (vb_eval ((da, a), _) (Var A d) = v_delay (da - d) a) ∧
   (vb_eval (_, (db, b)) (Var B d) = v_delay (db - d) b) ∧
@@ -345,41 +242,6 @@ Definition vb_eval_def[simp,compute]:
   (vb_eval env (Or x y)  = v_or  (vb_eval env x) (vb_eval env y)) ∧
   (vb_eval _ _ = Fail)
 End
-
-(*
-Definition to_env'_def:
-  to_env' (f, t) (a, da) p n = ARB
-    (* (* to_env' (f,t) (Exact n' e,da) (x,y) n ⇔
-        e_eval (λi. f i (x,y)) (n − (da + n') - t) e *)
-  (v_eval' ((λi (a,b). f i (x + a,y + b)), t) (v_delay da (Exact n' e)) s ⇔
-    λn. e_eval (λi. f i (x, y)) (n - (da + n') - t) e) ∧ *)
-End
-
-Definition to_env_def:
-  to_env env (ea, eb) p (A, n) = to_env' env ea p n ∧
-  to_env env (ea, eb) p (B, n) = to_env' env eb p n
-End
-
-Theorem v_eval'_v_delay:
-  n ≤ da ⇒
-  v_eval' ((λi (a,b). f i (x + a,y + b)),t) (v_delay (da − n) a)
-    (λn'. to_env' (f, t) (a,da) (x,y) (n + n'))
-Proof
-  Cases_on `a` \\ rw [v_delay_def]
-
-QED
-
-Theorem v_eval_vb_eval:
-  v_eval env (vb_eval ee v) (λp n. eval (age n (to_env env ee p)) v)
-Proof
-  Cases_on `env` \\ PairCases_on `ee`
-  \\ rw [v_eval_def] \\ Induct_on `v` \\ rw []
-  >- (
-    Cases_on `v` \\ rw [to_env_def, vb_eval_def]
-    THENL [Cases_on `ee0`, Cases_on `ee2`] \\ rw []
-
-  )
-QED *)
 
 Definition classify_clock_def[compute]:
   (classify_clock da T d =
@@ -413,19 +275,15 @@ End
 
 Definition classify_def[compute]:
   classify _ (Reg _ _) = SOME Zeros ∧
-  classify da (Exact d Clock) = classify_clock da T (d - &base) ∧
-  classify da (Exact d NotClock) = classify_clock da F (d - &base) ∧
+  classify da (Exact d Clock) = classify_clock da T d ∧
+  classify da (Exact d NotClock) = classify_clock da F d ∧
   classify da (Exact d ThisCell) =
-    OPTION_MAP and_this (classify_this da (d - &base)) ∧
+    OPTION_MAP and_this (classify_this da d) ∧
   classify da (Exact d ThisCellClock) =
-    OPTION_MAP and_this (classify_clock da T (d - &base)) ∧
+    OPTION_MAP and_this (classify_clock da T d) ∧
   classify da (Exact d ThisCellNotClock) =
-    OPTION_MAP and_this (classify_clock da F (d - &base)) ∧
+    OPTION_MAP and_this (classify_clock da F d) ∧
   classify _ Fail = NONE
-End
-
-Definition twice_def:
-  twice x = (x, x)
 End
 
 Definition from_init_def:
@@ -456,7 +314,6 @@ Definition is_gate_def:
   is_gate (g:gate)
     (ins: (((int # int) # dir) # value) list)
     (outs: (((int # int) # dir) # value) list) ⇔
-  (* ALL_DISTINCT (MAP FST ins ++ MAP FST outs) ∧ *)
   gate_wf g ∧
   gate_ports_wf g.width g.height (set (MAP FST ins)) (set (MAP FST outs)) ∧
   ∀env. env_wf env ⇒
@@ -485,23 +342,6 @@ Theorem EVERY2_trans':
   ∀x y z. LIST_REL R1 x y ∧ LIST_REL R2 y z ⇒ LIST_REL R3 x z
 Proof
   strip_tac \\ Induct_on `x` \\ Cases_on `y` \\ Cases_on `z` \\ simp [] \\ metis_tac []
-QED
-
-Theorem ZIP_ind:
-  !P.
-  (!l. P ([],l)) ∧ (!v2 v3. P (v2::v3,[])) ∧
-  (!x xs y ys. P (xs,ys) ⇒ P (x::xs,y::ys)) ⇒
-  !v v1. P (v,v1)
-Proof
-  ntac 2 strip_tac
-  \\ Induct \\ ASM_REWRITE_TAC []
-  \\ gen_tac \\ Cases \\ ASM_SIMP_TAC bool_ss []
-QED
-
-Theorem MEM_ZIP_IMP:
- !l1 l2 a b. MEM (a,b) (ZIP (l1,l2)) ⇒ MEM a l1 ∧ MEM b l2
-Proof
-  recInduct ZIP_ind \\ RW_TAC list_ss [listTheory.ZIP_def] \\ METIS_TAC []
 QED
 
 Theorem PERM_ZIP_R:
@@ -537,32 +377,6 @@ Proof
   \\ simp [PERM_LENGTH, MAP_ZIP]
 QED
 
-Theorem is_gate_perm:
-  is_gate g ins outs ∧ PERM ins ins' ∧ PERM outs outs' ⇒
-  is_gate g ins' outs'
-Proof
-  simp [is_gate_def] \\ rw []
-  >- metis_tac [PERM_MAP, PERM_LIST_TO_SET]
-  \\ rename [`_ ins' sin'`]
-  \\ imp_res_tac PERM_LENGTH
-  \\ imp_res_tac LIST_REL_LENGTH
-  \\ last_assum $ mp_then (Pos hd) (qspec_then `sin'` mp_tac) PERM_ZIP_R'
-    o MATCH_MP (iffLR PERM_SYM)
-  \\ rw [] \\ rename [`PERM _ (ZIP (_, sin))`]
-  \\ imp_res_tac PERM_LENGTH
-  \\ fs [LIST_REL_EVERY_ZIP]
-  \\ first_x_assum $ drule_then $ qspec_then `sin` mp_tac
-  \\ impl_tac >- (simp [] \\ metis_tac [PERM_EVERY])
-  \\ strip_tac \\ rename [`_ (ZIP (_, sout))`]
-  \\ qpat_assum `PERM outs _` $ mp_then (Pos hd) drule PERM_ZIP_R'
-  \\ strip_tac \\ rename [`_ (ZIP (_, sout'))`]
-  \\ imp_res_tac PERM_LENGTH
-  \\ qexists_tac `sout'` \\ conj_tac >- metis_tac [PERM_EVERY]
-  \\ strip_tac \\ first_x_assum $ qspec_then `z` suff_eqr_tac
-  \\ irule circuit_perm \\ simp [ZIP_MAP, MAP2_ZIP]
-  \\ metis_tac [PERM_MAP, PERM_SYM]
-QED
-
 Theorem env_wf_translate:
   env_wf f ⇒ env_wf (λi a. f i (add_pt x a))
 Proof
@@ -573,13 +387,6 @@ Definition delay_def:
   delay n a i = if i < n then F else a (i - n:num)
 End
 
-Theorem delay_simp:
-  (λn. delay k a (k + n)) = a ∧
-  (λn. delay k a (n + k)) = a
-Proof
-  gvs [FUN_EQ_THM,delay_def]
-QED
-
 Definition delay'_def:
   delay' (n,ee,env) a i =
     if i < n then eval (λ_. env) (eval_env_kind ee i) else a (i - n:num)
@@ -589,16 +396,6 @@ Theorem delay'_eq_delay[simp]:
   delay' (n,Zeros,env) = delay n
 Proof
   rw [FUN_EQ_THM, delay'_def, delay_def, eval_env_kind_def]
-QED
-
-Definition eval_pair_def:
-  eval_pair b (rF,rT) = if b then rT else rF
-End
-
-Theorem eval_pair_var_CASE:
-  eval_pair b (var_CASE x rF rT) = var_CASE x (eval_pair b rF) (eval_pair b rT)
-Proof
-  Cases_on `x` \\ rw []
 QED
 
 Theorem eval_classify_clock:
@@ -629,7 +426,7 @@ Theorem v_eval'_v_delay':
   v_eval' env (v_delay (da - k) a) (λi. delay' (da,ea,env 0 (0,0)) s (k + i))
 Proof
   gvs [oneline v_delay_def] \\ CASE_TAC \\ rw [FUN_EQ_THM]
-  \\ gvs [v_eval_def, delay'_def, base_def]
+  \\ gvs [v_eval_def, delay'_def]
   >- (`da ≤ i + k ∧ n ≤ (i + k - da) MOD ^periodN ∧
       (i + k − da) DIV ^periodN = i DIV ^periodN` by ARITH_TAC
     \\ simp [])
@@ -638,7 +435,7 @@ Proof
   \\ `∀ee n. eval (λ_. env 0 (0,0)) (eval_env_kind (and_this ee) n) ⇔
       env 0 (0,0) ∧ eval (λ_. env 0 (0,0)) (eval_env_kind ee n)` by (
     Cases \\ rw [and_this_def, eval_env_kind_def])
-  \\ Cases_on `e` \\ gvs [classify_def, base_def, eval_pair_def]
+  \\ Cases_on `e` \\ gvs [classify_def]
   \\ FIRST (map (drule_then $ drule_then $
       qspec_then `λ_. env 0 (0,0)` strip_assume_tac)
     [eval_classify_clock, eval_classify_this])
@@ -663,7 +460,7 @@ Proof
   gvs [oneline v_not_def] \\ rpt (CASE_TAC \\ gvs [])
   \\ rw [e_cell_def]
   \\ `∃k. i = &k` by rw [NUM_POSINT_EXISTS] \\ gvs []
-  \\ `k ≤ n + base ∧ (n + base − k) DIV 586 = (n + base) DIV 586` by ARITH_TAC
+  \\ `k ≤ n ∧ (n − k) DIV 586 = n DIV 586` by ARITH_TAC
   \\ simp [INT_SUB]
 QED
 
@@ -680,24 +477,24 @@ Theorem v_eval'_v_and:
 Proof
   gvs [oneline v_and_def] \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def]
   (* v_and (Exact i Clock) (Reg n nextCell) = Exact i ThisCellClock *)
-  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n' + base) − i)` \\ rw []
+  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&n' − i)` \\ rw []
     \\ DEP_ASM_REWRITE_TAC [] \\ gvs [e_clock_def, e_cell_def] \\ rw []
     >- ARITH_TAC
     \\ `∃k. i = -&k` by ARITH_TAC \\ gvs [INT_ADD]
-    \\ `(k + (n' + base)) DIV ^periodN = (n' + base) DIV ^periodN + 1` by ARITH_TAC
+    \\ `(k + n') DIV ^periodN = n' DIV ^periodN + 1` by ARITH_TAC
     \\ fs [env_wf_def]
     \\ cong_tac 2 \\ simp [FUN_EQ_THM, FORALL_PROD])
   (* v_and (Exact i' ThisCell) (Exact i NotClock) = Exact d2 ThisCellNotClock *)
-  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw []
+  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&n − i)` \\ rw []
     \\ gvs [e_cell_def, e_clock_def] \\ reverse (Cases_on `0 ≤ i`)
-    >- (`22 ≤ &(n + base) - i` by ARITH_TAC
-      \\ `∃k. i = -&k ∧ ∃j. &(n + base) − i' = &j` by ARITH_TAC \\ gvs [INT_ADD]
+    >- (`22 ≤ &n - i` by ARITH_TAC
+      \\ `∃k. i = -&k ∧ ∃j. &n − i' = &j` by ARITH_TAC \\ gvs [INT_ADD]
       \\ cong_tac 2 \\ ARITH_TAC)
     \\ `(∃k. i = &k) ∧ ∃k'. i' = &k'` by ARITH_TAC \\ gvs [INT_SUB, INT_SUB_LE]
-    \\ `∀m:int. ^periodZ * m ≤ &(n + base) − &k ⇔ ^periodZ * m ≤ &(n + base) − &k'` by ARITH_TAC
+    \\ `∀m:int. ^periodZ * m ≤ &n − &k ⇔ ^periodZ * m ≤ &n − &k'` by ARITH_TAC
     \\ pop_assum (qspec_then `&(m:num)` (assume_tac o GEN ``m:num`` o SRULE []))
     \\ first_assum (qspec_then `0` mp_tac) \\ simp [NoAsms] \\ rw []
-    \\ gvs [INT_SUB, INT_SUB_LE] \\ Cases_on `k' ≤ n + base` \\ gvs [INT_SUB, INT_SUB_LE]
+    \\ gvs [INT_SUB, INT_SUB_LE] \\ Cases_on `k' ≤ n` \\ gvs [INT_SUB, INT_SUB_LE]
     \\ assume_tac (GSYM $ MATCH_MP X_LE_DIV (DECIDE ``0 < 586n``)) \\ gvs []
     \\ cong_tac 2 \\ irule LESS_EQUAL_ANTISYM \\ simp []
     \\ pop_assum $ K $ qpat_x_assum `$! _` (rw o single o GSYM))
@@ -716,7 +513,7 @@ Theorem v_eval'_v_or:
 Proof
   gvs [oneline v_or_def] \\ rpt (CASE_TAC \\ rw []) \\ gvs [v_eval'_def]
   (* v_or (Exact i ThisCellClock) (Exact i ThisCellNotClock) = Exact i ThisCell *)
-  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&(n + base) − i)` \\ rw [])
+  >- (rw [FUN_EQ_THM] \\ Cases_on `e_clock (&n − i)` \\ rw [])
 QED
 
 Theorem v_eval_v_or:
@@ -724,94 +521,6 @@ Theorem v_eval_v_or:
   v_eval env (v_or v1 v2) (λz n. a1 z n ∨ a2 z n)
 Proof
   rw [v_eval_def] \\ metis_tac [v_eval'_v_or]
-QED
-
-(*
-Theorem circuit_conj_imp_gate:
-  (∀a1 a2 env.
-    circuit (make_area w h)
-      [(xy1,d1,a1);(xy2,d2,a2)] [(xy3,d3,conj (delay 5 a1) (delay 5 a2))] []
-         (from_masks env init))
-  ⇒
-  ALL_DISTINCT [(xy1,d1);(xy2,d2);(xy3,d3)]
-  ⇒
-  is_gate w h
-    [((xy1,d1),v1); ((xy2,d2),v2)]
-    [((xy3,d3), v_and (v_delay 5 v1) (v_delay 5 v2))] init
-Proof
-  gvs [is_gate_def] \\ rpt strip_tac
-  \\ gvs [SF DNF_ss]
-  \\ PairCases_on ‘s’ \\ gvs [EXISTS_PROD]
-  \\ gvs [assign_sat_def,assign_ext_def]
-  \\ qexists_tac ‘λxyd. if xyd = (xy3,d3) then
-    λp. conj (delay 5 (s0 (xy1,d1) p)) (delay 5 (s0 (xy2,d2) p)) else s0 xyd’
-  \\ `v_eval env (v_and (v_delay 5 v1) (v_delay 5 v2))
-      (λp. conj (delay 5 (s0 (xy1,d1) p)) (delay 5 (s0 (xy2,d2) p)))` by (
-    rw [conj_def] \\ HO_BACKCHAIN_TAC v_eval_v_and \\ rw []
-    \\ CONV_TAC (DEPTH_CONV ETA_CONV) \\ irule v_eval_v_delay \\ rw [])
-  \\ gvs [] \\ rw [] \\ gvs [] \\ imp_res_tac is_exact_unique
-QED *)
-
-Definition find_in_def:
-  (* find_in: (α # β # bexp) list -> var -> α *)
-  find_in ins a =
-    let (p,d,_) = THE (FIND (λ(_,_,v). case v of Var a' _ => a = a' | _ => F) ins) in
-    (p,d)
-End
-
-Definition out_lookup_def:
-  out_lookup outs x = some (z, v). ∃p. MEM (p, v) outs ∧ x = mk_dpt p z
-End
-
-Theorem blist_simulation_ok_ALL_DISTINCT:
-  blist_simulation_ok w h ins outs init ⇒
-  ALL_DISTINCT (MAP FST ins ++ MAP FST outs)
-Proof
-  rewrite_tac [blist_simulation_ok_def]
-  \\ disch_then (mp_tac o CONJUNCT1) \\ simp [blist_simple_checks_def]
-QED
-
-Theorem blist_simulation_ok_injective:
-  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
-  MEM (p,d,v) outs ∧ (MEM (p',d,v') ins ∨ MEM (p',d,v') outs) ∧
-  mk_pt p z = mk_pt p' z' ⇒ (p,z) = (p',z') ∧ v = v' ∧ ¬MEM (p',d,v') ins
-Proof
-  strip_tac
-  \\ `∀x y d v. MEM ((x,y),d,v) (ins ++ outs) ⇒
-      -1 ≤ x ∧ x < ^tile2Z - 1 ∧ -1 ≤ y ∧ y < ^tile2Z - 1` by (
-    simp []
-    \\ last_x_assum (assume_tac o CONJUNCT1
-      o REWRITE_RULE [simulation_ok_def]
-      o MATCH_MP blist_simulation_ok_thm)
-    \\ rpt gen_tac \\ disch_then assume_tac
-    \\ drule_all simple_checks_io_bounded \\ ARITH_TAC)
-  \\ once_rewrite_tac [GSYM MEM_APPEND] \\ strip_tac
-  \\ MAP_EVERY Cases_on [`p`, `p'`, `z`, `z'`] \\ first_assum drule
-  \\ qpat_x_assum `MEM _ _` (fn h =>
-    fs [DISJ_IMP_THM, FORALL_AND_THM, mk_pt_def]
-    \\ first_x_assum drule \\ ntac 2 strip_tac
-    \\ conj_asm1_tac >- ARITH_TAC
-    \\ mp_tac h \\ gvs [])
-  \\ dxrule blist_simulation_ok_ALL_DISTINCT
-  \\ fs [ALL_DISTINCT_APPEND, MEM_MAP, EXISTS_PROD, FORALL_PROD]
-  \\ ntac 2 strip_tac >- `F` by metis_tac []
-  \\ reverse conj_tac >- metis_tac []
-  \\ drule_then assume_tac ALOOKUP_ALL_DISTINCT_MEM \\ res_tac \\ fs []
-QED
-
-Theorem blist_simulation_ok_injective_oo:
-  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
-  MEM (p,d,v) outs ∧ MEM (p',d,v') outs ∧
-  mk_pt p z = mk_pt p' z' ⇒ (p,z) = (p',z') ∧ v = v'
-Proof
-  metis_tac [blist_simulation_ok_injective, MEM_APPEND]
-QED
-
-Theorem blist_simulation_ok_injective_io:
-  blist_simulation_ok w h ins outs init ∧ w < ^tileN ∧ h < ^tileN ⇒
-  MEM (p,d,v) ins ∧ MEM (p',d,v') outs ∧ mk_pt p z = mk_pt p' z' ⇒ F
-Proof
-  metis_tac [blist_simulation_ok_injective]
 QED
 
 Theorem LIST_REL_MAP2 = CONV_RULE (DEPTH_CONV ETA_CONV) LIST_REL_MAP2;
@@ -952,7 +661,7 @@ Proof
   >- (
     fs [eval_io_def, MAP2_self] \\ cong_tac 2
     \\ simp [FUN_EQ_THM, FORALL_PROD])
-  \\ simp [MAP_COMPOSE, Abbr`env2`, mk_output_env_def, eval_pair_var_CASE]
+  \\ simp [MAP_COMPOSE, Abbr`env2`, mk_output_env_def]
   \\ qmatch_goalsub_abbrev_tac `eval env3`
   \\ rw [MAP_COMPOSE, from_init_def, instantiate_def] \\ cong_tac 1
   \\ irule MAP_CONG \\ rw []
@@ -1511,12 +1220,10 @@ Definition floodfill_def:
     (crosses: ((int # int) # (int # int) # dir) list)
     (gates: ((int # int) # gate) list) ⇔
   EVERY (gate_at_wf area) gates ∧
-  EVERY in_range area ∧
   ∀env. env_wf env ⇒
     ∃sin sout.
       LIST_REL (λ(_,v). v_eval env v) ins sin ∧
       LIST_REL (λ(_,v). v_eval env v) outs sout ∧
-      (∀pd v. MEM (pd, v) ins ⇒ is_exact v) ∧
       ∀scross.
         LENGTH crosses = LENGTH scross ∧
         (∀s. MEM s scross ⇒ ∃v.
@@ -1551,7 +1258,6 @@ Proof
   \\ conj_tac >- (
     fs [gate_at_wf_def, is_gate_def, make_area_def]
     \\ drule_at_then Any irule every_gate_at_wf_mono \\ simp [])
-  \\ conj_tac >- simp [in_range_def]
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ rw []
   \\ first_x_assum drule \\ rw []
@@ -1563,11 +1269,10 @@ Proof
   \\ rw []
   \\ irule_at Any EVERY2_mono \\ first_assum $ irule_at Any
   \\ conj_tac >- simp [FORALL_PROD]
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ imp_res_tac LIST_REL_LENGTH
   \\ DEP_REWRITE_TAC [GSYM ZIP_APPEND]
   \\ drule_at_then Any (qspecl_then [`p`,`g`,
-      `[((a,d),(λz n. e_eval (λi. env i z) v (&(n + base) − dl)))]`,
+      `[((a,d),(λz n. e_eval (λi. env i z) v (&n − dl)))]`,
       `ZIP (MAP FST outs',s')`] mp_tac) floodfill_run_add_gate
   \\ impl_tac >- (
     fs [make_area_def, floodfill_gate_wf_def, MAP_ZIP]
@@ -1593,7 +1298,6 @@ Proof
   \\ imp_res_tac PERM_LENGTH
   \\ fs [LIST_REL_EVERY_ZIP]
   \\ conj_tac >- metis_tac [PERM_EVERY]
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw []
   \\ qpat_assum `PERM crosses _` $ mp_then (Pos hd)
     (qspec_then `scross` mp_tac) PERM_ZIP_R' o MATCH_MP (iffLR PERM_SYM)
@@ -1619,7 +1323,6 @@ Proof
     \\ simp [EVERY2_MAP] \\ drule_at_then Any irule EVERY2_mono
     \\ simp [FORALL_PROD])
   \\ qexistsl_tac [`sin`, `sout`] \\ fs []
-  \\ reverse conj_tac >- first_assum ACCEPT_TAC
   \\ fs [SF DNF_ss] \\ rw []
   \\ qpat_x_assum `LIST_REL _ _ sout` (fn h1 =>
     qpat_x_assum `LIST_REL _ outs _` (fn h2 =>
@@ -1638,7 +1341,7 @@ Proof
   \\ irule_at Any floodfill_weaken_gen \\ first_x_assum (irule_at Any)
   \\ simp [EVERY2_refl, FORALL_PROD]
   \\ rw [v_subset_def, v_eval_def, e_cell_def]
-  \\ `∃i. (&(n + base):int) − &d = &i` by ARITH_TAC \\ rw []
+  \\ `∃i. (&n:int) − &d = &i` by ARITH_TAC \\ rw []
   \\ cong_tac 2 \\ ARITH_TAC
 QED
 
@@ -2197,7 +1900,7 @@ Proof
   \\ `env 0 = init` by simp [Abbr`env`] \\ pop_assum $ fs o single
   \\ qpat_x_assum `floodfill_run _ _ _ _` mp_tac
   \\ simp [floodfill_run_def]
-  \\ disch_then (mp_tac o el 5 o CONJUNCTS)
+  \\ disch_then ((fn x => assume_tac (hd x) \\ mp_tac (el 6 x)) o CONJUNCTS)
   \\ impl_tac
   >- (ntac 4 $ pop_assum kall_tac
     \\ simp [floodfill_io_wf_def, SF DNF_ss, FUN_EQ_THM]
@@ -2273,74 +1976,17 @@ Proof
       \\ intLib.COOPER_TAC)
   \\ gvs [integerTheory.INT_LDISTRIB,INT_MUL_ASSOC]
   \\ rewrite_tac [in_lwss_as_set_E] \\ gvs []
-  \\ gvs [FORALL_PROD,mk_dpt_def,mk_pt_def,base_def]
+  \\ gvs [FORALL_PROD,mk_dpt_def,mk_pt_def]
   \\ simp [e_cell_def]
   \\ gvs [IN_DEF,is_ew_def]
   \\ cong_tac 2
-  \\ simp [base_def,INT_ADD]
+  \\ simp [INT_ADD]
   \\ once_rewrite_tac [ADD_COMM]
   \\ ‘0 < 60:num’ by gvs []
   \\ drule ADD_DIV_ADD_DIV
   \\ disch_then $ rewrite_tac o single o GSYM
   \\ gvs [DIV_DIV_DIV_MULT]
 QED
-
-Theorem assign_ext_sat:
-  assign_ext s1 s2 ∧ assign_sat env s1 v ⇒ assign_sat env s2 v
-Proof
-  MAP_EVERY PairCases_on [‘s1’, ‘s2’, ‘v’]
-  \\ gvs [assign_ext_def,assign_sat_def,SUBSET_DEF,o_DEF]
-  \\ strip_tac
-  \\ `∀x. s10 (mk_dpt ((v0,v1),v2) x) = s20 (mk_dpt ((v0,v1),v2) x)` suffices_by gvs []
-  \\ strip_tac \\ first_assum irule \\ simp []
-QED
-
-Theorem assign_ext_trans:
-  assign_ext s1 s2 ∧ assign_ext s2 s3 ⇒ assign_ext s1 s3
-Proof
-  MAP_EVERY PairCases_on [‘s1’, ‘s2’, ‘s3’]
-  \\ gvs [assign_ext_def, SUBSET_DEF]
-QED
-
-Theorem span_imp_add_pt:
-  (x,d) ∈ span s ⇒ (add_pt x delta, d) ∈ span (λ(a,d). s (sub_pt a delta,d))
-Proof
-  PairCases_on ‘x’ \\ PairCases_on ‘delta’
-  \\ simp [span_def, mk_dpt_def, EXISTS_PROD, mk_pt_def, IN_DEF]
-  \\ strip_tac
-  \\ qexistsl_tac [`p_1`, `p_2`, `p_1'+delta0`,`p_2'+delta1`]
-  \\ gvs [ARITH_PROVE ``a+b-b:int=a``] \\ ARITH_TAC
-QED
-
-Theorem assign_ext_tr_IMP:
-  assign_ext (assign_tr delta s) s2 ⇒
-  assign_ext s (assign_tr (neg_pt delta) s2)
-Proof
-  MAP_EVERY PairCases_on [‘s’, ‘s2’]
-  \\ simp [assign_ext_def, assign_tr_def, SUBSET_DEF] \\ strip_tac
-  \\ pop_assum (assume_tac o GSYM)
-  \\ simp [GSYM FORALL_AND_THM, GSYM IMP_CONJ_THM] \\ ntac 2 strip_tac
-  \\ Cases_on `x` \\ DEP_ASM_REWRITE_TAC [] \\ simp []
-  \\ drule_then (qspec_then `delta` assume_tac) span_imp_add_pt \\ rfs []
-  \\ last_x_assum $ drule_then assume_tac
-  \\ drule_then (qspec_then `neg_pt delta` assume_tac) span_imp_add_pt \\ rfs []
-QED
-
-Theorem assign_sat_tr_IMP:
-  assign_sat env s ((p, d), v) ⇒
-  assign_sat env (assign_tr delta s) ((add_pt p delta, d), v)
-Proof
-  PairCases_on ‘s’ \\ simp [assign_sat_def, assign_tr_def]
-  \\ rw [assign_ext_def, assign_tr_def, SUBSET_DEF]
-  >- (irule span_imp_add_pt \\ simp [])
-  \\ pop_assum suff_eq_tac \\ AP_TERM_TAC
-  \\ simp [FUN_EQ_THM, FORALL_PROD, mk_dpt_def, mk_pt_def]
-  \\ Cases_on `p` \\ Cases_on `delta` \\ rw []
-  \\ cong_tac 4 \\ simp [] \\ ARITH_TAC
-QED
-
-Theorem assign_sat_tr_IMP' =
-  ONCE_REWRITE_RULE [add_pt_comm] assign_sat_tr_IMP;
 
 Theorem floodfill_add_gate:
   floodfill area ins outs crosses gates ∧
@@ -2362,9 +2008,6 @@ Proof
   \\ rpt conj_tac
   >- (fs [gate_at_wf_def, is_gate_def, EVERY_MEM, MEM_MAP] \\ metis_tac [])
   >- (irule every_gate_at_wf_mono \\ first_assum $ irule_at Any \\ simp [])
-  >- (fs [EVERY_MEM, MEM_MAP, PULL_EXISTS, make_area_def, MEM_FLAT,
-      MEM_GENLIST, in_range_def]
-    \\ ARITH_TAC)
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ rpt strip_tac \\ first_x_assum $ drule_then strip_assume_tac
   \\ dxrule $ iffLR LIST_REL_SPLIT1 \\ rw [LIST_REL_MAP1]
@@ -2380,7 +2023,6 @@ Proof
   \\ rw [] \\ rename [`_ outs1 sout1`]
   \\ irule_at Any EVERY2_mono \\ first_assum $ irule_at Any
   \\ conj_tac >- simp [FORALL_PROD]
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw []
   \\ first_assum $ drule_all_then mp_tac
   \\ imp_res_tac LIST_REL_LENGTH
@@ -2446,15 +2088,12 @@ Proof
   \\ rpt conj_tac
   >- fs [gate_at_wf_def, make_area_def]
   >- (irule every_gate_at_wf_mono \\ first_assum $ irule_at Any \\ simp [])
-  >- (simp [make_area_def, MEM_FLAT, MEM_GENLIST, PULL_EXISTS, in_range_def]
-    \\ ARITH_TAC)
   \\ qabbrev_tac `p = (&(2*x'):int, &(2*y'):int)`
   \\ rpt strip_tac \\ ntac 2 $ first_x_assum $ drule_then strip_assume_tac
   \\ rename [`_ outs' sout'`, `v_eval _ P v1`]
   \\ ntac 2 $ first_assum $ irule_at Any
   \\ dxrule_then (drule_then $ qspecl_then [`0`] mp_tac) v_eval_v_delay'
   \\ rw [] \\ pop_assum $ irule_at Any
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ simp [LIST_LENGTH_COMPARE_SUC, PULL_EXISTS, SF DNF_ss] \\ rw []
   \\ rename [`v_eval _ Q v2`]
   \\ first_x_assum $ dxrule_then $ dxrule_then dxrule
@@ -2501,7 +2140,7 @@ Proof
   \\ disch_then $ rev_drule_then $ drule_then $
     qspecl_then [`z`,`Zeros`,`ea`] suff_eq_tac
   \\ cong_tac 5 >>> NTH_GOAL (cong_tac 2) 2
-  \\ simp [FUN_EQ_THM, mk_output_env_def, eval_pair_def]
+  \\ simp [FUN_EQ_THM, mk_output_env_def]
 QED
 
 Theorem floodfill_add_crossover_r:
@@ -2532,7 +2171,7 @@ Proof
   \\ irule circuit_perm \\ simp [PERM_SWAP_AT_FRONT]
   \\ irule $ METIS_PROVE [PERM_SWAP_AT_FRONT, PERM_REFL] ``[b;a] = c ⇒ PERM [a;b] c``
   \\ cong_tac 2 >>> NTH_GOAL (cong_tac 2) 2
-  \\ simp [FUN_EQ_THM, mk_output_env_def, eval_pair_def]
+  \\ simp [FUN_EQ_THM, mk_output_env_def]
 QED
 
 Theorem floodfill_finish_crossover:
@@ -2553,9 +2192,7 @@ Proof
     \\ POP_ASSUM_LIST kall_tac \\ rw []
     \\ dxrule_then (dxrule_then $ qspecl_then [`0`] mp_tac) v_eval_v_delay'
     \\ rw [] \\ pop_assum suff_eq_tac \\ cong_tac 1
-    \\ simp [FUN_EQ_THM, delay_def, delay'_def,
-      eval_pair_def, eval_env_kind_def])
-  \\ conj_tac >- first_assum ACCEPT_TAC
+    \\ simp [FUN_EQ_THM, delay_def, delay'_def, eval_env_kind_def])
   \\ rw []
   \\ first_x_assum (qspec_then `v::scross` mp_tac)
   \\ simp [SF DNF_ss]
@@ -2616,7 +2253,6 @@ Proof
     \\ Cases_on `P` \\ fs [v_eval_def, v_eval'_def, v_teleport_def]
     \\ Cases_on `r` \\ fs [v_teleport_def]
     \\ metis_tac [add_pt_comm, add_pt_assoc])
-  \\ conj_tac >- first_assum ACCEPT_TAC
   \\ rw [] \\ first_x_assum $ drule_all_then assume_tac
   \\ drule_then irule floodfill_run_teleport
 QED
