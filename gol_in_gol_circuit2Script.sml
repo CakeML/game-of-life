@@ -71,8 +71,10 @@ Definition v_eval'_def[simp]:
   (v_eval' env Fail s ⇔ T)
 End
 
+Type stream[pp] = “:int # int -> num -> bool”;
+
 Definition v_eval_def:
-  v_eval env v s ⇔
+  v_eval env v (s:stream) ⇔
     ∀x. v_eval' (λi p. env i (add_pt x p)) v (s x)
 End
 
