@@ -895,7 +895,8 @@ function initializeFromRLE(rle: string, startRow: number = 0, startCol: number =
         if (line[0] === '#') continue;
 
         let count = 0;
-        for (const char of line) {
+        for (let i = 0; i < line.length; i++) {
+            const char = line.charAt(i);
             if (char >= '0' && char <= '9') {
                 // Build the count from consecutive digits
                 count = count * 10 + parseInt(char, 10);
