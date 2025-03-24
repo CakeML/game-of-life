@@ -638,7 +638,7 @@ Proof
   \\ simp [blist_length_def, instantiate_row_def, from_blist_def]
 QED
 
-Theorem blist_simulation_ok_imp_circuit:
+Theorem blist_simulation_ok_imp_circuit':
   blist_simulation_ok w h ins outs init ∧
   admissible_ins ins = SOME (da, db') ∧
   LIST_REL (λ(_,_,v). v_eval env (vb_eval ((da,a),db,b) v)) ins sin ∧
@@ -651,8 +651,7 @@ Theorem blist_simulation_ok_imp_circuit:
 Proof
   strip_tac
   \\ qmatch_goalsub_abbrev_tac `age _ env2`
-  \\ drule_then (qspec_then `env2` suff_eq_tac o
-      MATCH_MP simulation_ok_IMP_circuit) blist_simulation_ok_thm
+  \\ drule_then (qspec_then `env2` suff_eq_tac) blist_simulation_ok_IMP_circuit
   \\ cong_tac 1 >>> HEADGOAL (cong_tac 1)
   >- (
     fs [eval_io_def]
@@ -663,7 +662,7 @@ Proof
   >- (
     fs [eval_io_def, MAP2_self] \\ cong_tac 2
     \\ simp [FUN_EQ_THM, FORALL_PROD])
-  \\ simp [MAP_COMPOSE, Abbr`env2`, mk_output_env_def]
+  \\ simp [Abbr`env2`, mk_output_env_def]
   \\ qmatch_goalsub_abbrev_tac `eval env3`
   \\ rw [MAP_COMPOSE, from_init_def, instantiate_def] \\ cong_tac 1
   \\ irule MAP_CONG \\ rw []
@@ -713,7 +712,7 @@ Proof
     \\ disch_then (drule o CONJUNCT1) \\ simp [])
   \\ drule_then (drule_at_then Any $ drule_then $
       qspecl_then [`z`,`s`,`env`,`eb`,`ea`,`b`,`a`] mp_tac o SRULE [])
-    blist_simulation_ok_imp_circuit
+    blist_simulation_ok_imp_circuit'
   \\ impl_tac >- (
     qpat_x_assum `_ s` suff_eq_tac \\ cong_tac 3
     \\ simp [Abbr`f`, FUN_EQ_THM, FORALL_PROD])
@@ -2137,7 +2136,7 @@ Proof
   \\ rpt $ last_assum $ irule_at Any \\ rw [] >>> ROTATE_LT 2
   >- (drule blist_simulation_ok_gate_ports_wf \\ simp [])
   >- (drule_then irule blist_simulation_ok_gate_wf \\ simp [])
-  \\ dxrule blist_simulation_ok_imp_circuit
+  \\ dxrule blist_simulation_ok_imp_circuit'
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ rev_drule_then $ drule_then $
     qspecl_then [`z`,`Zeros`,`ea`] suff_eq_tac
@@ -2166,7 +2165,7 @@ Proof
   \\ rpt $ last_assum $ irule_at Any \\ rw [] >>> ROTATE_LT 2
   >- (drule blist_simulation_ok_gate_ports_wf \\ simp [INSERT_COMM])
   >- (drule_then irule blist_simulation_ok_gate_wf \\ rw [])
-  \\ dxrule blist_simulation_ok_imp_circuit
+  \\ dxrule blist_simulation_ok_imp_circuit'
   \\ simp [admissible_ins_def, PULL_EXISTS]
   \\ disch_then $ dxrule_then $ drule_then $
     qspecl_then [`z`,`eb`,`Zeros`] suff_eq_tac

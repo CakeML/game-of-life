@@ -2311,4 +2311,15 @@ Proof
   \\ gvs [blist_inc_vars_thm]
 QED
 
+Theorem blist_simulation_ok_IMP_circuit:
+  blist_simulation_ok w h ins outs rows ⇒
+  ∀env.
+    circuit (make_area w h)
+            (eval_io env ins)
+            (eval_io env outs)
+            (from_rows (-85,-85) (MAP (MAP (eval env) ∘ from_blist) rows))
+Proof
+  metis_tac [blist_simulation_ok_thm, simulation_ok_IMP_circuit, MAP_COMPOSE]
+QED
+
 val _ = export_theory();
