@@ -85,8 +85,8 @@ QED
 
 (* area of influence *)
 
-Definition infl_def: (* influence *)
-  infl s (i,j) ⇔ live_adj s i j ≠ 0 ∨ (i,j) ∈ s
+Definition infl_def:
+  infl s = { (i',j') | ∃i j. (i,j) ∈ s ∧ int_max (ABS (i'-i)) (ABS (j'-j)) ≤ 1 }
 End
 
 Theorem infl_thm:
@@ -95,7 +95,19 @@ Theorem infl_thm:
     (i-1, j  ) ∈ s ∨ (i, j  ) ∈ s ∨ (i+1, j  ) ∈ s ∨
     (i-1, j+1) ∈ s ∨ (i, j+1) ∈ s ∨ (i+1, j+1) ∈ s
 Proof
-  fs [IN_DEF,infl_def]
+  simp [infl_def] \\ eq_tac \\ rw []
+  >- (CCONTR_TAC \\ gvs []
+      \\ drule $ METIS_PROVE [] “(x,y) ∈ s ∧ (r,t) ∉ s ⇒ x = r ⇒ y ≠ t”
+      \\ disch_then (fn th => rpt $ dxrule th)
+      \\ intLib.COOPER_TAC)
+  \\ pop_assum $ irule_at $ Pos hd
+  \\ intLib.COOPER_TAC
+QED
+
+Theorem infl_eq_live_adj:
+  infl s (i,j) ⇔ live_adj s i j ≠ 0 ∨ (i,j) ∈ s
+Proof
+  simp [infl_thm |> SRULE [IN_DEF], IN_DEF]
   \\ Cases_on ‘s (i,j)’ \\ fs [live_adj_eq]
   \\ fs [AC DISJ_COMM DISJ_ASSOC]
 QED
@@ -118,7 +130,7 @@ Theorem IN_COMPL_infl_COMPL:
     (x-1,y  ); (x,y  ); (x+1,y  );
     (x-1,y+1); (x,y+1); (x+1,y+1) } ⊆ s
 Proof
-  gvs [] \\ simp [IN_DEF,infl_def]
+  gvs [] \\ simp [IN_DEF,infl_eq_live_adj]
   \\ gvs [live_adj_eq,IN_DEF]
   \\ eq_tac \\ rw []
 QED
@@ -153,7 +165,7 @@ QED
 Theorem IMP_infl_subset:
   s ⊆ COMPL (infl (COMPL t)) ⇒ infl s ⊆ t
 Proof
-  gvs [SUBSET_DEF] \\ gvs [IN_DEF, infl_def, FORALL_PROD]
+  gvs [SUBSET_DEF] \\ gvs [IN_DEF, infl_eq_live_adj, FORALL_PROD]
   \\ gvs [live_adj_eq,IN_DEF] \\ rw []
   \\ Cases_on ‘s (p_1,p_2)’ \\ gvs []
   \\ last_x_assum drule \\ gvs [integerTheory.INT_SUB_ADD]
@@ -165,7 +177,7 @@ Theorem infl_compose:
   step (s ∪ t) = step s ∪ step t
 Proof
   fs [EXTENSION,FORALL_PROD,IN_step]
-  \\ rw [IN_DEF,infl_def]
+  \\ rw [IN_DEF,infl_eq_live_adj]
   \\ first_x_assum (qspecl_then [‘p_1’,‘p_2’] mp_tac)
   \\ Cases_on ‘s (p_1,p_2)’ \\ fs [] \\ rw []
   \\ fs [live_adj_eq,IN_DEF]
@@ -256,7 +268,7 @@ Proof
   \\ simp [Once EXTENSION]
   \\ PairCases
   \\ gvs [PULL_EXISTS,IN_step]
-  \\ reverse $ rw [IN_DEF,infl_def]
+  \\ reverse $ rw [IN_DEF,infl_eq_live_adj]
   >-
    (gvs [METIS_PROVE [] “b ∨ ~c ⇔ (c ⇒ b)”, SF CONJ_ss]
     \\ drule live_adj_U

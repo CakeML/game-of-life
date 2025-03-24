@@ -1284,7 +1284,7 @@ Theorem infl_translate[simp]:
   infl (translate_set p s) = translate_set p (infl s)
 Proof
   PairCases_on `p`
-  \\ simp [Once EXTENSION, FORALL_PROD, infl_def, IN_DEF, translate_set_def,
+  \\ simp [Once EXTENSION, FORALL_PROD, infl_eq_live_adj, IN_DEF, translate_set_def,
     live_adj_translate]
 QED
 
