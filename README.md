@@ -56,3 +56,5 @@ It should take about 2-5 minutes to compile the project.
   [![Spaceship evolution](./spaceships.svg)](./spaceships.svg)
 
 The tools for creating these images are in [`gol_svgScript.sml`](./gol_svgScript.sml), so you can modify them to e.g. see images of the rest of the gates or show other patterns, etc.
+
+There is also a simulator at [`ts/gol.html`](ts/gol.html) which you can use to see the symbolic computation in action. Hover over the pixels to see the values assigned at each point.
