@@ -31,3 +31,28 @@ Points of interest:
   [`gol_in_gol_circuitScript.sml`](./gol_in_gol_circuitScript.sml).
 
 It should take about 2-5 minutes to compile the project.
+
+## Some pretty pictures that couldn't all fit in the paper
+
+* The mega-cell:
+  [![The mega-cell](./mega-cell.svg)](./mega-cell.svg)
+
+* Propagation of values through the mega-cell:
+  [![Propagation of values through the mega-cell](./propagation.svg)](./propagation.svg)
+
+* Symbolic evaluation of an AND gate:
+  [![Symbolic evaluation of an AND gate](./and-en-e.svg)](./and-en-e.svg)
+
+* Symbolic evaluation of a crossover:
+  [![Symbolic evaluation of a crossover](./cross-es-es.svg)](./cross-es-es.svg)
+
+* Symbolic evaluation of a half-adder:
+  [![Symbolic evaluation of a half-adder](./half-adder-ee-ee.svg)](./half-adder-ee-ee.svg)
+
+* Composition of gates:
+  [![Composition of gates](./composition.svg)](./composition.svg)
+
+* Spaceship evolution:
+  [![Spaceship evolution](./spaceships.svg)](./spaceships.svg)
+
+The tools for creating these images are in [`gol_svgScript.sml`](./gol_svgScript.sml), so you can modify them to e.g. see images of the rest of the gates or show other patterns, etc.
