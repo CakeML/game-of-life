@@ -18,10 +18,10 @@ type Circuit = {
 const circuits: Circuit[] = [
     {
         name: "And gate - EN - E",
-        input: [[[-1,0],"E"],[[0,1],"N"]],
-        output: [[[1,0],"E"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"],[[4,9],"N"]],
+        output: [[[9,4],"E"]],
+        height: 5,
+        width: 5,
         content: `
 o57$47b2o$48bo$48bobo$49b2o$52b2o$52bobo$52bo8$o2$o$bo2$67b2o$67bobo$
 67bo13$82b2o$82bobo$82bo13$97b2o$97bobo$97bo2$86b2o$85bo2bo$88bo$88bo$
@@ -33,10 +33,10 @@ o3b2o3b2o$92bo11b4o14bo3b2o3b2o$97b2o5bo2bo8b2o5bobo$97b2o5b4o16bo$
     },
     {
         name: "And gate - ES - E",
-        input: [[[-1,0],"E"],[[0,-1],"S"]],
-        output: [[[1,0],"E"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"],[[4,-1],"S"]],
+        output: [[[9,4],"E"]],
+        height: 5,
+        width: 5,
         content: `
 o3$117b2o$117b2o9$117bo$116b3o$115b5o$114b2o3b2o$115b5o$115bo3bo$116bo
 bo$117bo3$119bo$117b2ob2o$112bo$111bo4bo5bo$111b3o$116b2obob2o$107b2o$
@@ -49,10 +49,10 @@ $115b2o$115b2o4$82bo$81bo$81b3o13$67bo$o65bo$66b3o$o$bo11$52bo$51bo$
     },
     {
         name: "And gate - EW - N",
-        input: [[[1,0],"W"],[[-1,0],"E"]],
-        output: [[[0,-1],"N"]],
-        height: 1,
-        width: 1,
+        input: [[[9,4],"W"],[[-1,4],"E"]],
+        output: [[[4,-1],"N"]],
+        height: 5,
+        width: 5,
         content: `
 o20$30b2o$31bo$31bobo5bo$32b2o4bobo$37bob2o15b2o$36b2ob2o16bo$37bob2o
 16bobo$38bobo8b2o7b2o$18bo20bo9bobo$16b3o32bo$15bo35b2o$15b2o23bo$38bo
@@ -85,10 +85,10 @@ o$3bo3bo59bobo4bo5bobo58b3o$7bo15b3o3b3o36b2o11bo51b2o5b5o$4b2obo15bo
     },
     {
         name: "Or gate - EN - E",
-        input: [[[-1,0],"E"],[[0,1],"N"]],
-        output: [[[1,0],"E"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"],[[4,9],"N"]],
+        output: [[[9,4],"E"]],
+        height: 5,
+        width: 5,
         content: `
 o52$83b2o$83bo2bo$87bo9bobo$71bo15bo7bo3bo$68b4o15bo7bo$59bo7b4o12bo2b
 o7bo4bo8b2o$58bobo6bo2bo12b2o10bo12b2o$57bo3b2o4b4o24bo3bo$43bo2b2o9bo
@@ -113,10 +113,10 @@ o$56bo5b3ob2o8bobo$43b2o19bob2o9bo$43b2o2$61b2o2b2o$61bo2bobo$62bobo$
     },
     {
         name: "Not gate - E - E",
-        input: [[[-1,0],"E"]],
-        output: [[[1,0],"E"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"]],
+        height: 5,
+        width: 5,
         content: `
 o49$30bo$28b4o$19b2o5b4ob2o9b2o$17bo2bo3bo3b2ob3o8b2o40b2o$8b2o6bo7bo
 3b2ob2o49bo3bo$8b2o6bo6bo3b5o49bo5bo13b2o$16bo7b3o3bo42b2o5bo2bo3bo13b
@@ -135,10 +135,10 @@ $62b2o6$69bobo$70b2o$70bo5$77bo$78b2o$77b2o10$72b2o$73b2o$72bo$61b2o$
     },
     {
         name: "Half-adder - EE - ES",
-        input: [[[-1,0],"E"],[[-1,2],"E"]],
-        output: [[[3,0],"E"],[[2,3],"S"]],
-        height: 2,
-        width: 2,
+        input: [[[-1,4],"E"],[[-1,14],"E"]],
+        output: [[[19,4],"E"],[[14,19],"S"]],
+        height: 10,
+        width: 10,
         content: `
 o23$101b2o$101b2o5$78b2o$78b2o2$100b3o$99bo3bo$79bo18bo5bo$78bobo17b2o
 bob2o$77bo3bo$78b3o$76b2o3b2o18bo$100bobo$100bobo$101b2o$103bo$77bo24b
@@ -207,10 +207,10 @@ o17bo3bo$15b2o20b3o$38bo4$38b2o$38b2o!
     },
     {
         name: "Half-adder - EE - EE",
-        input: [[[-1,0],"E"],[[-1,2],"E"]],
-        output: [[[3,0],"E"],[[3,2],"E"]],
-        height: 2,
-        width: 2,
+        input: [[[-1,4],"E"],[[-1,14],"E"]],
+        output: [[[19,4],"E"],[[19,14],"E"]],
+        height: 10,
+        width: 10,
         content: `
 o23$101b2o$101b2o5$78b2o$78b2o2$100b3o$99bo3bo$79bo18bo5bo$78bobo17b2o
 bob2o$77bo3bo$78b3o$76b2o3b2o18bo$100bobo$100bobo$101b2o$103bo$77bo24b
@@ -267,10 +267,10 @@ obo48b2o$13b2o3b2o17bo2b2o46b2o$202b2o$201bobo$16bo184bo$17b2o181b2o2$
     },
     {
         name: "Turn clockwise faster",
-        input: [[[-1,0],"E"]],
-        output: [[[0,1],"S"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[4,9],"S"]],
+        height: 5,
+        width: 5,
         content: `
 o2$88b2o$88b2o6$54b2o$54b2o4$70b2o14b2o3b2o$31b2o37b2o16b3o$31b2o54bo
 3bo$88bobo$89bo2$53b3o$32bo19bo3bo$32bo18bo5bo$31bobo18bo3bo33b3o$30b
@@ -289,10 +289,10 @@ o$81b2obobo$84bobo6bo$84b2o7bo$94bo3$91b2o$91b2o4$69bo$70bo$o2bo64b3o$
     },
     {
         name: "Turn clockwise normal",
-        input: [[[-1,0],"E"]],
-        output: [[[0,1],"S"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[4,9],"S"]],
+        height: 5,
+        width: 5,
         content: `
 o3$63b2o$63b2o9$60b2obob2o2$60bo5bo14b2o$81b2o$61b2ob2o$63bo2$83b2o12b
 2o$97b2o3$66bo$60b3o4b2o10b2o3b2o$59bo3bo2b2o12b5o12b3o$80b2ob2o12b3o$
@@ -311,10 +311,10 @@ o3$63b2o$63b2o9$60b2obob2o2$60bo5bo14b2o$81b2o$61b2ob2o$63bo2$83b2o12b
     },
     {
         name: "Turn clockwise slower",
-        input: [[[-1,0],"E"]],
-        output: [[[0,1],"S"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[4,9],"S"]],
+        height: 5,
+        width: 5,
         content: `
 o2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo22b2o$88bobo23b2o$
 89bo4$137b2o$90b3o21b3o20b2o$84bobo$67b2o3b2o10b2o4bobo21bobo$85bo3b5o
@@ -335,10 +335,10 @@ o!
     },
     {
         name: "Turn anti-clockwise",
-        input: [[[-1,0],"E"]],
-        output: [[[0,-1],"N"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[4,-1],"N"]],
+        height: 5,
+        width: 5,
         content: `
 o36$47b2o$48bo$48bobo$49b2o29$80b2o$80bobo$72b3o5bo$o71bo2bo$72bo$o71b
 o$bo71bobo9$95b2o$57b2o36bobo$57b2o36bo3$55bo$56bo7b2o$56bo6bobo$63bob
@@ -356,10 +356,10 @@ $71b2o20bo3bo$58b2o12b2o20b3o$71bo20b2o3b2o2$78b3o$55b2o3b2o16b3o$55b
     },
     {
         name: "Duplicate clockwise",
-        input: [[[-1,0],"E"]],
-        output: [[[1,0],"E"],[[0,1],"S"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"],[[4,9],"S"]],
+        height: 5,
+        width: 5,
         content: `
 o2$88b2o$88b2o8$30b2o$30b2o2$70b2o14b2o3b2o$70b2o16b3o$32b2o53bo3bo$
 88bobo$89bo3$28b2o3b2o$29b5o$29b2ob2o56b3o$29b2ob2o50bobo$30b3o34b2o3b
@@ -377,10 +377,10 @@ o3b5o50b3o3bo5bo$9b2o6bo7bo3b2ob2o49b2o7bo$18bo2bo3bo3b2ob3o8b2o38bo5b
     },
     {
         name: "Duplicate anti-clockwise",
-        input: [[[-1,0],"E"]],
-        output: [[[1,0],"E"],[[0,-1],"N"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"],[[4,-1],"N"]],
+        height: 5,
+        width: 5,
         content: `
 o18$97b2o$97b2o8$97b3o$90bo5bo3bo$89b2o4bo5bo$89bobo3b2obob2o3$98bo$
 97bobo$97bobo$98b3o$100b2o$100bo$101b3o$72b3o28bo$72bo2bo$72bo$72bo$
@@ -401,18 +401,18 @@ $23b2o62b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o15bo3bo$85b3o10$85b
     },
     {
         name: "Wire - E - E",
-        input: [[[-1,0],"E"]],
-        output: [[[1,0],"E"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"]],
+        height: 5,
+        width: 5,
         content: "!",
     },
     {
         name: "Slow wire - E - E",
-        input: [[[-1,0],"E"]],
-        output: [[[1,0],"E"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"]],
+        height: 5,
+        width: 5,
         content: `
 o12$124b2o$124b2o5$101b2o$101b2o3$123b3o$122bo3bo$102bo18bo5bo$100b2ob
 2o16bo5bo$124bo$99bo5bo16bo3bo$123b3o$99b2obob2o18bo3$100bo24b3o$100bo
@@ -437,10 +437,10 @@ bo$8b5o3b2ob3o27bo5b2o13b2o4b2o53bo$17bobo51b2o$10b2obo3bobo52bo$10bob
     },
     {
         name: "Slower wire - E - E",
-        input: [[[-1,0],"E"]],
-        output: [[[7,0],"E"]],
-        height: 1,
-        width: 4,
+        input: [[[-1,4],"E"]],
+        output: [[[39,4],"E"]],
+        height: 5,
+        width: 20,
         content: `
 o5$87bo49bo49bo49bo49bo49bo49bo49bo49bo49bo$87b3o47b3o9bo37b3o47b3o47b
 3o9bo37b3o47b3o47b3o9bo37b3o47b3o$90bo7b2o40bo8bo40bo7b3o39bo7b2o40bo
@@ -551,26 +551,26 @@ o37b3o47b3o47b3o9bo140b2o$24bo49bo49bo49bo49bo49bo49bo49bo49bo152b2o!
     },
     {
         name: "Cross - EN - EN",
-        input: [[[-1,0],"E"],[[0,1],"N"]],
-        output: [[[1,0],"E"],[[0,-1],"N"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"],[[4,9],"N"]],
+        output: [[[9,4],"E"],[[4,-1],"N"]],
+        height: 5,
+        width: 5,
         content: "!",
     },
     {
         name: "Cross - ES - ES",
-        input: [[[-1,0],"E"],[[0,-1],"S"]],
-        output: [[[1,0],"E"],[[0,1],"S"]],
-        height: 1,
-        width: 1,
+        input: [[[-1,4],"E"],[[4,-1],"S"]],
+        output: [[[9,4],"E"],[[4,9],"S"]],
+        height: 5,
+        width: 5,
         content: "!",
     },
     {
         name: "Terminator - E",
-        input: [[[-1,0],"E"]],
+        input: [[[-1,4],"E"]],
         output: [],
-        height: 1,
-        width: 1,
+        height: 5,
+        width: 5,
         content: `
 o68$12b2o$12bo$10bobo$o2bo6b2o$4bo$o3bo$b4o!
 `,
@@ -984,8 +984,8 @@ function drawGrid() {
     }
 }
 
-function toX(x:number) :number { return x+75+10; }
-function toY(y:number) :number { return y+75+10; }
+function toX(x:number) :number { return x+15+10; }
+function toY(y:number) :number { return y+15+10; }
 
 function deleteBox(x:number, y:number, w:number, h:number) {
     for (let i = 0; i < w; i++) {
@@ -1030,7 +1030,7 @@ function computeNextState(ignoreInput: boolean = false) {
             if (output[1] == "E" || output[1] == "W") {
                 const x = output[0][0];
                 const y = output[0][1];
-                deleteBox(75*x-6, 75*y-6, 12, 12);
+                deleteBox(15*x-6, 15*y-6, 12, 12);
             }
         });
         if (!ignoreInput) {
@@ -1039,13 +1039,13 @@ function computeNextState(ignoreInput: boolean = false) {
                     const x = input[0][0];
                     const y = input[0][1];
                     const v : BExp = buildVar(varNames[index], genCount);
-                    initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(75*y-5),toX(75*x-5),v);
+                    initializeFromRLE("$5bo2bo$9bo$5bo3bo$6b4o!",toY(15*y-5),toX(15*x-5),v);
                 }
                 if (input[1] == "W") {
                     const x = input[0][0];
                     const y = input[0][1];
                     const v : BExp = buildVar(varNames[index], genCount);
-                    initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(75*y-5),toX(75*x-5),v);
+                    initializeFromRLE("5$4o$o3bo$o$bo2bo!",toY(15*y-5),toX(15*x-5),v);
                 }
             });
         }
@@ -1055,7 +1055,7 @@ function computeNextState(ignoreInput: boolean = false) {
             if (output[1] == "N" || output[1] == "S") {
                 const x = output[0][0];
                 const y = output[0][1];
-                deleteBox(75*x-6, 75*y-6, 12, 12);
+                deleteBox(15*x-6, 15*y-6, 12, 12);
             }
         });
         if (!ignoreInput) {
@@ -1064,13 +1064,13 @@ function computeNextState(ignoreInput: boolean = false) {
                     const x = input[0][0];
                     const y = input[0][1];
                     const v : BExp = buildVar(varNames[index], genCount);
-                    initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(75*y-5),toX(75*x-5),v);
+                    initializeFromRLE("2b3o$bo2bo$4bo$4bo$bobo!",toY(15*y-5),toX(15*x-5),v);
                 }
                 if (input[1] == "S") {
                     const x = input[0][0];
                     const y = input[0][1];
                     const v : BExp = buildVar(varNames[index], genCount);
-                    initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(75*y-5),toX(75*x-5),v);
+                    initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!",toY(15*y-5),toX(15*x-5),v);
                 }
             });
         }
@@ -1106,17 +1106,17 @@ function colourBox(x: number, y: number, w: number, h: number, colour: string) {
 }
 
 function updateBackground() {
-    colourBox(-75,-75,150 * blockWidth,150 * blockHeight,'#000000');
+    colourBox(-15,-15,30 * blockWidth,30 * blockHeight,'#000000');
     const port : string = '#111111';
     outputs.forEach((output) => {
         const x = output[0][0];
         const y = output[0][1];
-        colourBox(75*x-6, 75*y-6, 12, 12, port);
+        colourBox(15*x-6, 15*y-6, 12, 12, port);
     });
     inputs.forEach((input) => {
         const x = input[0][0];
         const y = input[0][1];
-        colourBox(75*x-6, 75*y-6, 12, 12, port);
+        colourBox(15*x-6, 15*y-6, 12, 12, port);
 
     });
 }
@@ -1124,8 +1124,8 @@ function updateBackground() {
 function resizeGrid(width: number, height: number) {
     blockWidth = width;
     blockHeight = height;
-    rows = height * 150 + 20;
-    cols = width * 150 + 20;
+    rows = height * 30 + 20;
+    cols = width * 30 + 20;
     canvas.width = cols * 5;
     canvas.height = rows * 5;
     cellSize = canvas.width / cols;
@@ -1218,7 +1218,7 @@ rotate_button.addEventListener('click', () => {
     outputs.forEach((output) => {
         const x = output[0][0];
         const y = output[0][1];
-        deleteBox(75*x-6, 75*y-6, 12, 12);
+        deleteBox(15*x-6, 15*y-6, 12, 12);
     });
     stepCount = 0;
     genCount = 0;
