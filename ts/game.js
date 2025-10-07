@@ -3,6 +3,46 @@
 // ************************************************************************* //
 var circuits = [
     {
+        name: "Collide - EXN - EXN",
+        input: [[[-1, 0], "EX"], [[0, 1], "N"]],
+        output: [[[1, 0], "EX"], [[0, -1], "N"]],
+        height: 1,
+        width: 1,
+        content: "!",
+    },
+    {
+        name: "Collide stop - EXN - N",
+        input: [[[-1, 0], "EX"], [[0, 1], "N"]],
+        output: [[[1, 0], "EX"], [[0, -1], "N"]],
+        height: 1,
+        width: 1,
+        content: "\no7$20b2o$20bo$18bobo$o2bo14b2o$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$\n11bobo!\n",
+    },
+    {
+        name: "Generate - EX",
+        input: [],
+        output: [[[5, 0], "EX"]],
+        height: 2,
+        width: 3,
+        content: "\no$42b2o$42b3o$28bo15b2obo$26bobo4b3o8bo2bo5b2o$25bobo16b2obo5b2o$19b2o\n3bo2bo7bo2b2o2b3o$19b2o4bobo7bo3bo2b2o$26bobo6bo2bo$28bo8b2o2$44b4o13b\no12b4o$43bo3bo13bo11bo3bo$47bo29bo$43bo2bo26bo2bo2$33b2o$34b2o17b2o2b\n3o2b2o$33bo19bo2b5o2bo$54b9o$44b2o5b3o9b3o$43b2o6bo2bo7bo2bo$15bo9b2o\n18bo6b2o9b2o$14bobo7b4o$7b2o4bob2o5b3o2bo2bobo$7b2o3b2ob2o9b2o2bo2bo\n25bo$13bob2o6bo9b2o17b2obo3b4o$14bobo5bo8bo3b2o9b2o2b2obobo4b4o5b2o$\n15bo6bo10b2o10bobo2b2obob2o3bo2bo5b2o$30bo2bo10b3o8b2o3b4o$30bobo10b3o\n8b2o3b4o$44b3o12bo$45bobo$46b2o!\n",
+    },
+    {
+        name: "Turn - S - EX",
+        input: [[[-1, 4], "EX"]],
+        output: [[[2, 5], "S"]],
+        height: 3,
+        width: 3,
+        content: "\no29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$57bo3bo$58bobo$59bo5$\n60b3o$54bobo$37b2o3b2o10b2o4bobo$55bo3b5o$38bo3bo15b2o3b2o$39b3o16b2o\n3b2o$39b3o2$48bo$46b2o12b2o$47b2o2$38bo5bo6b2o$37b3o5bo4b2o$37b3o3b3o\n6bo2$35b2o3b2o19b2obob2o$35b2o3b2o19bo5bo$62bo3bo$59bo3b3o$38bo19b2o$\n37bobo18bobo$36b2o6bobo$36b2o9bo6b2o$36b3o8bo6bobo$37bobo4bo2bo3b2obob\no$38b2o5b3o3bobobo$53bo8bo$53b2o7bo$53b3o5bobo$53b3o4b2ob2o$53b3o3bo5b\no$53b2o7bo$53bo5b2o3b2o$51bobobo$51b2obobo$54bobo6bo$15bob2o4bo30b2o7b\no$15b2obo3bobo39bo$22bobo$13b5o3b2ob3o$12bo2bo2bo8bo33b2o$12b2o3b2o2b\n2ob3o34b2o$21b2obo$28bo$26b3o$25bo$25b2o$14b4o$13bo3bo$17bo$13bo2bo$\n22b2o20bobo$21bo2bo22bo$22b2o23bo$14b2o28bo2bo$13bobo29b3o$13bo$12b2o$\n25b2o$25bo$26b3o$28bo!\n",
+    },
+    {
+        name: "Not turn - N - EX",
+        input: [[[4, 3], "N"]],
+        output: [[[5, 2], "EX"]],
+        height: 2,
+        width: 3,
+        content: "\no21$45b2o$45b2o$42b2o10bo4bo$30bobo8b3o10bo4bobo$30bo3bo7b2o10bo7b2o$\n14bo19bo10b2o2b2o11b2o4b2o$12b4o14bo4bo9b2o2bo2b2o8b2o4b2o$11bobob2o4b\no12bo15b4o5bobo$6b2o2bo2bob3o5b2obo3bo3bo16bo7bo$o5b2o3bobob2o5b4obo2b\nobo$12b4o6b2o2b2o$14bo36b2o9b2o$42bobo5bo2bo2b3o2bo2bo$42b2o6b3o2b5o2b\n3o$43bo9b9o$52bo9bo$32bobo17b2o7b2o$33b2o$33bo2$44b4o26b4o$43bo3bo25bo\n3bo$47bo29bo$43bo2bo26bo2bo$26bo8bo2bo$25bobo10bo$18b2o3b2o3bo5b2o3bo\n2bo$18b2o3b2o3bo4bobob2o3b4o$23b2o3bo14b4o5b2o$25bobo5b2o8bo2bo5b2o$\n26bo16b4o$42b4o$42bo!\n",
+    },
+    {
         name: "And gate - EN - E",
         input: [[[-1, 4], "E"], [[4, 9], "N"]],
         output: [[[9, 4], "E"]],
@@ -683,7 +723,7 @@ function computeNextState(ignoreInput) {
     }
     if (stepCount == 29) {
         outputs.forEach(function (output) {
-            if (output[1] == "N" || output[1] == "S") {
+            if (output[1] == "N" || output[1] == "S" || output[1] == "EX") {
                 var x = output[0][0];
                 var y = output[0][1];
                 deleteBox(15 * x - 6, 15 * y - 6, 12, 12);
@@ -702,6 +742,12 @@ function computeNextState(ignoreInput) {
                     var y = input[0][1];
                     var v = buildVar(varNames[index], genCount);
                     initializeFromRLE("5$6bobo$5bo$5bo$5bo2bo$5b3o!", toY(15 * y - 5), toX(15 * x - 5), v);
+                }
+                if (input[1] == "EX") {
+                    var x = input[0][0];
+                    var y = input[0][1];
+                    var v = buildVar(varNames[index], genCount);
+                    initializeFromRLE("3bo2bo$7bo$3bo3bo$4b4o", toY(15 * y - 5), toX(15 * x - 5), v);
                 }
             });
         }
