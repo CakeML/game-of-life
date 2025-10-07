@@ -27,7 +27,7 @@ var circuits = [
         content: "\no$42b2o$42b3o$28bo15b2obo$26bobo4b3o8bo2bo5b2o$25bobo16b2obo5b2o$19b2o\n3bo2bo7bo2b2o2b3o$19b2o4bobo7bo3bo2b2o$26bobo6bo2bo$28bo8b2o2$44b4o13b\no12b4o$43bo3bo13bo11bo3bo$47bo29bo$43bo2bo26bo2bo2$33b2o$34b2o17b2o2b\n3o2b2o$33bo19bo2b5o2bo$54b9o$44b2o5b3o9b3o$43b2o6bo2bo7bo2bo$15bo9b2o\n18bo6b2o9b2o$14bobo7b4o$7b2o4bob2o5b3o2bo2bobo$7b2o3b2ob2o9b2o2bo2bo\n25bo$13bob2o6bo9b2o17b2obo3b4o$14bobo5bo8bo3b2o9b2o2b2obobo4b4o5b2o$\n15bo6bo10b2o10bobo2b2obob2o3bo2bo5b2o$30bo2bo10b3o8b2o3b4o$30bobo10b3o\n8b2o3b4o$44b3o12bo$45bobo$46b2o!\n",
     },
     {
-        name: "Turn - S - EX",
+        name: "Not turn - EX - S",
         input: [[[-1, 4], "EX"]],
         output: [[[2, 5], "S"]],
         height: 3,

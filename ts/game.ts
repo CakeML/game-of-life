@@ -53,7 +53,7 @@ o12b4o$43bo3bo13bo11bo3bo$47bo29bo$43bo2bo26bo2bo2$33b2o$34b2o17b2o2b
 `,
     },
     {
-        name: "Not turn - S - EX",
+        name: "Not turn - EX - S",
         input: [[[-1,4],"EX"]],
         output: [[[2,5],"S"]],
         height: 3,
