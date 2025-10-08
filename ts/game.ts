@@ -90,6 +90,61 @@ obo$12b4o6b2o2b2o$14bo36b2o9b2o$42bobo5bo2bo2b3o2bo2bo$42b2o6b3o2b5o2b
 `,
     },
     {
+        name: "Not turn - S - EX",
+        input: [[[4,-1], "S"]],
+        output: [[[5,0], "EX"]],
+        height: 2,
+        width: 3,
+        content: `
+o$42bo$42bobo$25b2o18b2o$23bo3bo17b2o4b2o$22bo5bo16b2o4b2o$17b2o2b2obo
+3bo8bo4bobo$17b2o3bo5bo9bo3bo$23bo3bo5bo2b3o$25b2o2$44b4o26b4o$43bo3bo
+25bo3bo$47bo29bo$43bo2bo26bo2bo$32b2o$33b2o$32bo18b2o2b3o2b2o$51bo2b5o
+2bo$41b2o9b9o$40b2o7b3o9b3o$42bo6bo2bo7bo2bo$14bo10bo24b2o9b2o$14b2o9b
+2o$5b2o2b2o4b2o7bobo4bo$5b2o2b2o4b3o13bobo15b2o9bo$9b2o4b2o15bobo13b4o
+7bobo$14b2o16bo2bo7bobo2bo2b3o5b2obo4b2o$14bo17bobo7bo2bo2b2o9b2ob2o3b
+2o$31bobo7b2o9bo6b2obo10b2o$31bo7b2o3bo8bo5bobo12bo$41b2o10bo6bo10b3o$
+42bo2bo25bo$43bobo!
+`,
+    },
+    {
+        name: "U turn - EN - EW",
+        input: [[[-1,4], "E"], [[2,11], "N"]],
+        output: [[[9,4], "E"], [[-1,8], "W"]],
+        height: 6,
+        width: 5,
+        content: `
+o2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo$88bobo$89bo2$39b2o$
+39b2o2$40bo49b3o$39bobo42bobo$39bobo25b2o3b2o10b2o4bobo$40bo44bo3b5o$
+68bo3bo15b2o3b2o$69b3o16b2o3b2o$37b2obob2o25b3o$37bo5bo$38bo3bo35bo$
+39b3o34b2o12b2o$77b2o2$68bo5bo6b2o$67b3o5bo4b2o$67b3o3b3o6bo2$42bo22b
+2o3b2o19b2obob2o$43bo21b2o3b2o19bo5bo$41b3o48bo3bo$89bo3b3o$68bo19b2o$
+67bobo18bobo$66b2o6bobo$36b5o25b2o9bo6b2o$35bob3obo8bo15b3o8bo6bobo$
+36bo3bo7bobo16bobo4bo2bo3b2obobo$37b3o9b2o17b2o5b3o3bobobo$38bo44bo8bo
+$83b2o7bo$83b3o5bobo$83b3o4b2ob2o$37b2o44b3o3bo5bo$37b2o44b2o7bo$83bo
+5b2o3b2o$41bo39bobobo$41b2o38b2obobo$40bobo41bobo6bo$o30bo52b2o7bo$30b
+obo61bo$29bo3b2o8bo21bo$18b2o9bo3b2o5b4o4bo14bobo$18b2o9bo3b2o4b4o5bo
+15b2o25b2o$30bobo6bo2bo9b2o37b2o$31bo7b4o9b2o$40b4o$43bo3$30bo2bo26bo
+2bo$34bo29bo$30bo3bo25bo3bo$31b4o26b4o$74bobo$77bo$77bo$74bo2bo7b2o$
+75b3o7b2o10$85b3o$84bo3bo$83bo5bo$84bo3bo$85b3o$85b3o$102bo$101bobo$
+94b2o4bob2o15b2o$94b2o3b2ob2o14bobo$83b3o14bob2o13bo6b2o2b2o$82b2ob2o
+3bo10bobo13bo2bo2bo2bob2o$82b2ob2o4b2o9bo5bo8bo6b2o$82b5o3b2o16bobo7bo
+bo$81b2o3b2o20b2o9b2o2$74bobo$77bo$77bo21bo$74bo2bo7b2o10bo2b2o$75b3o
+20b2o$98bob3o2$83b2o$83b2o3$93bo$93bobo$93b2o2$o5$109b2o$102b3o4b2o$
+62b2o37b5o6b2o10bo$62bo37bobo3bo5b3o7bobo$60bobo37b2o3bo6b2o6b2o$60b2o
+47b2o9b2o12b2o$109b2o9b2o12b2o$122bobo$112bo11bo$101bo2bo7bobo$25b4o
+26b4o15bobo8b4o11bo11b2o$25bo3bo25bo3bo17bo7bo3bo10bo3bo12bo$25bo29bo
+21bo7bo14b4o12b2o$26bo2bo26bo2bo14bo2bo8bo2bo26bobo$75b3o$113bo$47b3o
+41b2o2b3o2b2o11b2o$49bo41bo2b5o2bo10bobo$48bo43b9o$89b3o9b3o20b2o$73b
+2o14bo2bo7bo2bo19b2o$74bo15b2o9b2o22bo9bo$71b3o59bobo$71bo33b2o14b2o9b
+obo11b2o$93bobo10b2o13b3o7bo2bo11b2o$30b2o15b2o44bo2bo8bo11bo5b2obo5bo
+bo$31bo15bo3bo32b2o10b2o11b2o6bo5bo2bo6bobo$31bobo11bobo2bobo31b2o8bo
+3b2o8bobo12b2obo8bo$32b2o11b2o3bobo36b2o5b2o9bo13b3o$39bo9b2ob3o33bo4b
+o2bo10bo2bo10b2o$38bobo14bo37bobo11bo$38bobo8b2ob3o53bobo$39bo9b2obo
+56b2o3$42b3o5b2o2b2o$42bo2bo4bobo2bo$42bo9bobo$36b2o4bo8b2ob2o$37bo5bo
+bo6bo$34b3o13bobo$34bo15b2o14$o!
+`,
+    },
+    {
         name: "And gate - EN - E",
         input: [[[-1,4],"E"],[[4,9],"N"]],
         output: [[[9,4],"E"]],
