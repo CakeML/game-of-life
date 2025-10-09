@@ -25,6 +25,14 @@ const circuits: Circuit[] = [
         content: "!",
     },
     {
+        name: "Collide - EXS - EXS",
+        input: [[[-1,0],"EX"],[[0,-1],"S"]],
+        output: [[[1,0],"EX"],[[0,1],"S"]],
+        height: 1,
+        width: 1,
+        content: "!",
+    },
+    {
         name: "Collide stop - EXN - N",
         input: [[[-1,0],"EX"],[[0,1],"N"]],
         output: [[[1,0],"EX"],[[0,-1],"N"]],
@@ -104,6 +112,43 @@ o$42bo$42bobo$25b2o18b2o$23bo3bo17b2o4b2o$22bo5bo16b2o4b2o$17b2o2b2obo
 7bobo$14b2o16bo2bo7bobo2bo2b3o5b2obo4b2o$14bo17bobo7bo2bo2b2o9b2ob2o3b
 2o$31bobo7b2o9bo6b2obo10b2o$31bo7b2o3bo8bo5bobo12bo$41b2o10bo6bo10b3o$
 42bo2bo25bo$43bobo!
+`,
+    },
+    {
+        name: "Turn - E - N",
+        input: [[[-1,0], "E"]],
+        output: [[[2,-1], "N"]],
+        height: 3,
+        width: 3,
+        content: `
+o29bo29bo29bo11$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o4$27b2o$27b2o
+4$34b2o29b2o16b2o$26b3o4bobo29bobo15b2o$26b3o4bobob2o21b2o3bo$25bo3bo
+4bobobo21b2o$36bo$24b2o3b2o4b2o$34b3o$34b3o24bo20b3o$34b3o23bobo$35b2o
+22bo3bo6b2o2b3o5bobo$24b3o9bo23b3o7bobobo6b5o$28b2o4bobobo11b2o6b2o3b
+2o6b2o7b2o3b2o$28b2o3bobob2o11b2o20bo7b2o3b2o$29b2o2bobo$27bobo4b2o$
+27b2o51b2o$64b2o12b2obo$42b3o20b2o11bo$22b2o3b2o13bo2bo4b3o11bo$22b2o
+3b2o13bo6b2ob2o25b3obo$34bo7bo6b2ob2o29bo$24b3o8b2o6bobo3b5o29bo$24b3o
+7b2o12b2o3b2o$25bo2$48bo14bo$46b2obo12b3o13b2o3b2o$49bo11b5o14b3o$60b
+2o3b2o12bo3bo$28bo17bob2o30bobo$26b2ob2o7b2o8bo2bo29bo$39b2o8bobo$25bo
+5bo6bo23b3o$62b3o$25b2obob2o49b2o$81b2o$48b3o11b2o$31b2o14bo3bo10b2o$
+30bobo13bo5bo$31bo15bo3bo$30b2o16b3o$30b3o15b3o$31b2o$29bo2$48b2o$48b
+2o$30bo$29b3o$28b5o$27b2o3b2o$28b5o$28bo3bo$29bobo$30bo3$30b2o$30b2o!
+`,
+    },
+    {
+        name: "And - EN - N",
+        input: [[[-1,2], "E"], [[0,5], "N"]],
+        output: [[[0,-1], "N"]],
+        height: 3,
+        width: 2,
+        content: `
+o24$5b2o$6bo$6bobo$7b2o3$o29bo29bo8$20b2o$20bobo$12b3o5bo$o2bo8bo2bo$
+4bo7bo$o3bo7bo$b4o8bobo3$47b2o$47b2o$24b2o$24b2o2$25bo21bo$24bobo8b2o
+9b3o$24bobo8bobo7bo3bo$25bo9bo8bob3obo$45b5o2$22b2obob2o$22bo5bo$23bo
+3bo$24b3o3bo11b3o$30b2o10bo$29bobo11bo6$27bo$12b3o12bo16b3o$12bo2bo10b
+obo14bo3bo$12bo12b2ob2o12bo5bo$12bo11bo5bo11b2obob2o$13bobo11bo$24b2o
+3b2o$45bo$44bobo$28bo15bobo$28bo16bo$29bo$45b2o$45b2o$26b2o$26b2o6$60b
+o!
 `,
     },
     {

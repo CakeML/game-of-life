@@ -11,6 +11,14 @@ var circuits = [
         content: "!",
     },
     {
+        name: "Collide - EXS - EXS",
+        input: [[[-1, 0], "EX"], [[0, -1], "S"]],
+        output: [[[1, 0], "EX"], [[0, 1], "S"]],
+        height: 1,
+        width: 1,
+        content: "!",
+    },
+    {
         name: "Collide stop - EXN - N",
         input: [[[-1, 0], "EX"], [[0, 1], "N"]],
         output: [[[1, 0], "EX"], [[0, -1], "N"]],
@@ -49,6 +57,22 @@ var circuits = [
         height: 2,
         width: 3,
         content: "\no$42bo$42bobo$25b2o18b2o$23bo3bo17b2o4b2o$22bo5bo16b2o4b2o$17b2o2b2obo\n3bo8bo4bobo$17b2o3bo5bo9bo3bo$23bo3bo5bo2b3o$25b2o2$44b4o26b4o$43bo3bo\n25bo3bo$47bo29bo$43bo2bo26bo2bo$32b2o$33b2o$32bo18b2o2b3o2b2o$51bo2b5o\n2bo$41b2o9b9o$40b2o7b3o9b3o$42bo6bo2bo7bo2bo$14bo10bo24b2o9b2o$14b2o9b\n2o$5b2o2b2o4b2o7bobo4bo$5b2o2b2o4b3o13bobo15b2o9bo$9b2o4b2o15bobo13b4o\n7bobo$14b2o16bo2bo7bobo2bo2b3o5b2obo4b2o$14bo17bobo7bo2bo2b2o9b2ob2o3b\n2o$31bobo7b2o9bo6b2obo10b2o$31bo7b2o3bo8bo5bobo12bo$41b2o10bo6bo10b3o$\n42bo2bo25bo$43bobo!\n",
+    },
+    {
+        name: "Turn - E - N",
+        input: [[[-1, 0], "E"]],
+        output: [[[2, -1], "N"]],
+        height: 3,
+        width: 3,
+        content: "\no29bo29bo29bo11$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o4$27b2o$27b2o\n4$34b2o29b2o16b2o$26b3o4bobo29bobo15b2o$26b3o4bobob2o21b2o3bo$25bo3bo\n4bobobo21b2o$36bo$24b2o3b2o4b2o$34b3o$34b3o24bo20b3o$34b3o23bobo$35b2o\n22bo3bo6b2o2b3o5bobo$24b3o9bo23b3o7bobobo6b5o$28b2o4bobobo11b2o6b2o3b\n2o6b2o7b2o3b2o$28b2o3bobob2o11b2o20bo7b2o3b2o$29b2o2bobo$27bobo4b2o$\n27b2o51b2o$64b2o12b2obo$42b3o20b2o11bo$22b2o3b2o13bo2bo4b3o11bo$22b2o\n3b2o13bo6b2ob2o25b3obo$34bo7bo6b2ob2o29bo$24b3o8b2o6bobo3b5o29bo$24b3o\n7b2o12b2o3b2o$25bo2$48bo14bo$46b2obo12b3o13b2o3b2o$49bo11b5o14b3o$60b\n2o3b2o12bo3bo$28bo17bob2o30bobo$26b2ob2o7b2o8bo2bo29bo$39b2o8bobo$25bo\n5bo6bo23b3o$62b3o$25b2obob2o49b2o$81b2o$48b3o11b2o$31b2o14bo3bo10b2o$\n30bobo13bo5bo$31bo15bo3bo$30b2o16b3o$30b3o15b3o$31b2o$29bo2$48b2o$48b\n2o$30bo$29b3o$28b5o$27b2o3b2o$28b5o$28bo3bo$29bobo$30bo3$30b2o$30b2o!\n",
+    },
+    {
+        name: "And - EN - N",
+        input: [[[-1, 2], "E"], [[0, 5], "N"]],
+        output: [[[0, -1], "N"]],
+        height: 3,
+        width: 2,
+        content: "\no24$5b2o$6bo$6bobo$7b2o3$o29bo29bo8$20b2o$20bobo$12b3o5bo$o2bo8bo2bo$\n4bo7bo$o3bo7bo$b4o8bobo3$47b2o$47b2o$24b2o$24b2o2$25bo21bo$24bobo8b2o\n9b3o$24bobo8bobo7bo3bo$25bo9bo8bob3obo$45b5o2$22b2obob2o$22bo5bo$23bo\n3bo$24b3o3bo11b3o$30b2o10bo$29bobo11bo6$27bo$12b3o12bo16b3o$12bo2bo10b\nobo14bo3bo$12bo12b2ob2o12bo5bo$12bo11bo5bo11b2obob2o$13bobo11bo$24b2o\n3b2o$45bo$44bobo$28bo15bobo$28bo16bo$29bo$45b2o$45b2o$26b2o$26b2o6$60b\no!\n",
     },
     {
         name: "U turn - EN - EW",
