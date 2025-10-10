@@ -21,10 +21,26 @@ var circuits = [
     {
         name: "Collide stop - EXN - N",
         input: [[[-1, 0], "EX"], [[0, 1], "N"]],
-        output: [[[1, 0], "EX"], [[0, -1], "N"]],
+        output: [[[0, -1], "N"]],
         height: 1,
         width: 1,
         content: "\no7$20b2o$20bo$18bobo$o2bo14b2o$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$\n11bobo!\n",
+    },
+    {
+        name: "Collide stop - EXN - EX",
+        input: [[[-1, 0], "EX"], [[0, 1], "N"]],
+        output: [[[1, 0], "EX"]],
+        height: 1,
+        width: 1,
+        content: "\no4$8bo$8b3o$11bo$10b2o3$o2bo$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$\n11bobo!\n",
+    },
+    {
+        name: "Collide stop - EXS - EX",
+        input: [[[-1, 0], "EX"], [[0, -1], "S"]],
+        output: [[[1, 0], "EX"]],
+        height: 1,
+        width: 1,
+        content: "\no19$13b2o$14bo$11b3o$11bo!\n",
     },
     {
         name: "Generate - EX",
@@ -75,12 +91,36 @@ var circuits = [
         content: "\no24$5b2o$6bo$6bobo$7b2o3$o29bo29bo8$20b2o$20bobo$12b3o5bo$o2bo8bo2bo$\n4bo7bo$o3bo7bo$b4o8bobo3$47b2o$47b2o$24b2o$24b2o2$25bo21bo$24bobo8b2o\n9b3o$24bobo8bobo7bo3bo$25bo9bo8bob3obo$45b5o2$22b2obob2o$22bo5bo$23bo\n3bo$24b3o3bo11b3o$30b2o10bo$29bobo11bo6$27bo$12b3o12bo16b3o$12bo2bo10b\nobo14bo3bo$12bo12b2ob2o12bo5bo$12bo11bo5bo11b2obob2o$13bobo11bo$24b2o\n3b2o$45bo$44bobo$28bo15bobo$28bo16bo$29bo$45b2o$45b2o$26b2o$26b2o6$60b\no!\n",
     },
     {
+        name: "And - NN - NN",
+        input: [[[0, 3], "N"], [[4, 3], "N"]],
+        output: [[[0, -1], "N"], [[4, -1], "N"]],
+        height: 2,
+        width: 4,
+        content: "\no29bo29bo29bo2$3b2o$4bo$4bobo$5b2o$63b2o$63bo$54b2o5bobo$10b3o40bo3bo\n3b2o$10bo41bo5bo$11bo40bo3bob2o$52bo5bo$44b2o7bo3bo$43bobo8b2o$43bo$\n42b2o2$53bobo$53b2o$54bo2$69b3o$69bo$25b3o42bo$25bo64b2o$26bo63b3o$81b\n2o9b2obo8bo$81bo5bo4bo2bo6bobo$86bo5b2obo5bobo11b2o$o81bo3bo3b3o7bo2bo\n11b2o$84bo5b2o9bobo$22bo79bobo$22b3o13bobo53bo9bo$25bo12b2o52b2o$24b2o\n13bo53b2o$25b2o$26b2o8b2o46b3o$26bo3bo4bo2bo45bo$26b3ob3o3bobo46bo$27b\no9bo$27b6o$29bob2o8b2o$32b2o7bo$42b3o47b2o$44bo47bobo$92bo3$106bobo$\n101b2o3bo2bo$94b2o2b2ob3o5b2o$93bobo3bo3bo3bo3b2o4b2o$92bo8bobo5b2o6b\n2o$83b2o7bo2bo6b2o2bo2bo$83b2o7bo13bobo$93bobo$94b2o!\n",
+    },
+    {
+        name: "And - NN - N",
+        input: [[[0, 3], "N"], [[4, 3], "N"]],
+        output: [[[0, -1], "N"], [[4, -1], "N"]],
+        height: 2,
+        width: 3,
+        content: "\no6$5b2o$6bo$6bob2o$7bo$11bo$9bo$10bo$71bo$69b3o$58b3o7bo$56bo11b2o$54b\nobo2bo$64bo$53bob4o4bobo$52bo2b3o4bo2bo$54bo8b2o$51bo2bo$51bo13b2o$52b\no12bobo$24b3o22b3o13bo$24bo24bo$25bo3$o3$52bobo$52b2o$23b2o28bo14b2o\n15b2o$22bobo40bo3bo15bo$22bo41bobo2bobo11bobo$21b2o41bobo3b2o11b2o$62b\n3ob2o8b2o$12b3o13bo10b3o19bo13b2obo$12bo2bo12b3o8bo22b3ob2o8bobo$12bo\n18bo8bo23bob2o9bo$12bo17bo$13bobo14bo2bo10bobo$33bo9bo2bo14b2o2b2o$31b\no2b3o6bo3bo13bo2bobo$32bob4o5bo2bo15bobo$44b3o14b2ob2o13b2o$33bobo2bo\n25bo14bo$35bo11b2o15bobo13b3o$37b3o7bo17b2o15bo$48b3o$50bo!\n",
+    },
+    {
         name: "U turn - EN - EW",
         input: [[[-1, 4], "E"], [[2, 11], "N"]],
         output: [[[9, 4], "E"], [[-1, 8], "W"]],
         height: 6,
         width: 5,
         content: "\no2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo$88bobo$89bo2$39b2o$\n39b2o2$40bo49b3o$39bobo42bobo$39bobo25b2o3b2o10b2o4bobo$40bo44bo3b5o$\n68bo3bo15b2o3b2o$69b3o16b2o3b2o$37b2obob2o25b3o$37bo5bo$38bo3bo35bo$\n39b3o34b2o12b2o$77b2o2$68bo5bo6b2o$67b3o5bo4b2o$67b3o3b3o6bo2$42bo22b\n2o3b2o19b2obob2o$43bo21b2o3b2o19bo5bo$41b3o48bo3bo$89bo3b3o$68bo19b2o$\n67bobo18bobo$66b2o6bobo$36b5o25b2o9bo6b2o$35bob3obo8bo15b3o8bo6bobo$\n36bo3bo7bobo16bobo4bo2bo3b2obobo$37b3o9b2o17b2o5b3o3bobobo$38bo44bo8bo\n$83b2o7bo$83b3o5bobo$83b3o4b2ob2o$37b2o44b3o3bo5bo$37b2o44b2o7bo$83bo\n5b2o3b2o$41bo39bobobo$41b2o38b2obobo$40bobo41bobo6bo$o30bo52b2o7bo$30b\nobo61bo$29bo3b2o8bo21bo$18b2o9bo3b2o5b4o4bo14bobo$18b2o9bo3b2o4b4o5bo\n15b2o25b2o$30bobo6bo2bo9b2o37b2o$31bo7b4o9b2o$40b4o$43bo3$30bo2bo26bo\n2bo$34bo29bo$30bo3bo25bo3bo$31b4o26b4o$74bobo$77bo$77bo$74bo2bo7b2o$\n75b3o7b2o10$85b3o$84bo3bo$83bo5bo$84bo3bo$85b3o$85b3o$102bo$101bobo$\n94b2o4bob2o15b2o$94b2o3b2ob2o14bobo$83b3o14bob2o13bo6b2o2b2o$82b2ob2o\n3bo10bobo13bo2bo2bo2bob2o$82b2ob2o4b2o9bo5bo8bo6b2o$82b5o3b2o16bobo7bo\nbo$81b2o3b2o20b2o9b2o2$74bobo$77bo$77bo21bo$74bo2bo7b2o10bo2b2o$75b3o\n20b2o$98bob3o2$83b2o$83b2o3$93bo$93bobo$93b2o2$o5$109b2o$102b3o4b2o$\n62b2o37b5o6b2o10bo$62bo37bobo3bo5b3o7bobo$60bobo37b2o3bo6b2o6b2o$60b2o\n47b2o9b2o12b2o$109b2o9b2o12b2o$122bobo$112bo11bo$101bo2bo7bobo$25b4o\n26b4o15bobo8b4o11bo11b2o$25bo3bo25bo3bo17bo7bo3bo10bo3bo12bo$25bo29bo\n21bo7bo14b4o12b2o$26bo2bo26bo2bo14bo2bo8bo2bo26bobo$75b3o$113bo$47b3o\n41b2o2b3o2b2o11b2o$49bo41bo2b5o2bo10bobo$48bo43b9o$89b3o9b3o20b2o$73b\n2o14bo2bo7bo2bo19b2o$74bo15b2o9b2o22bo9bo$71b3o59bobo$71bo33b2o14b2o9b\nobo11b2o$93bobo10b2o13b3o7bo2bo11b2o$30b2o15b2o44bo2bo8bo11bo5b2obo5bo\nbo$31bo15bo3bo32b2o10b2o11b2o6bo5bo2bo6bobo$31bobo11bobo2bobo31b2o8bo\n3b2o8bobo12b2obo8bo$32b2o11b2o3bobo36b2o5b2o9bo13b3o$39bo9b2ob3o33bo4b\no2bo10bo2bo10b2o$38bobo14bo37bobo11bo$38bobo8b2ob3o53bobo$39bo9b2obo\n56b2o3$42b3o5b2o2b2o$42bo2bo4bobo2bo$42bo9bobo$36b2o4bo8b2ob2o$37bo5bo\nbo6bo$34b3o13bobo$34bo15b2o14$o!\n",
+    },
+    {
+        name: "-----------",
+        input: [[[-1, 4], "E"]],
+        output: [[[9, 4], "E"]],
+        height: 5,
+        width: 5,
+        content: "!",
     },
     {
         name: "And gate - EN - E",
@@ -822,7 +862,7 @@ function colourBox(x, y, w, h, colour) {
 }
 function updateBackground() {
     colourBox(-15, -15, 30 * blockWidth, 30 * blockHeight, '#000000');
-    var port = '#111111';
+    var port = '#444444';
     outputs.forEach(function (output) {
         var x = output[0][0];
         var y = output[0][1];
@@ -854,7 +894,7 @@ function resizeGrid(width, height) {
         for (var col = 0; col < cols; col++) {
             grid[row][col] = False;
             nextGrid[row][col] = False;
-            background[row][col] = '#111111';
+            background[row][col] = '#444444';
         }
     }
 }
