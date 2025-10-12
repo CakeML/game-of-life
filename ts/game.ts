@@ -67,68 +67,68 @@ o19$13b2o$14bo$11b3o$11bo!
     {
         name: "Generate1 - E",
         input: [],
-        output: [[[5,0],"E"]],
+        output: [[[3,0],"E"]],
         height: 2,
-        width: 3,
+        width: 2,
         content: `
-o29bo29bo2$47bo$46bobo$36b2o6b2o3bo$35bobo4b2obo3bo9b2o$34b3o4b3obo3bo
-9b2o$25b2o6b3o4bo2b2obobo$25b2o7b3o4b2o4bo$35bobo$36b2o$45bobo12bo2bo$
-45bob2obo13bo$50bo9bo3bo$47bo2bo10b4o$48bo3$59b2o7b2o$37b2o20bo9bo$38b
-2o20b9o$37bo19b3o2b5o2b3o$57bo2bo2b3o2bo2bo$24b2o26b2o4b2o9b2o$22bo2bo
-25b2o$13b2o6bo7b3o3bo17bo$13b2o6bo6bo3b5o26b2o$21bo7bo3b2ob2o23bo3bo$
-22bo2bo3bo3b2ob3o13bo7bo5bo8b2o$24b2o5b4ob2o14bobo4b2obo3bo8b2o$33b4o
-18b2o3bo5bo$35bo19b2o4bo3bo$55b2o6b2o$52bobo$52bo!
+o29bo2$29bo$29b4o$13bo16b4o$12bobo5b2o8bo2bo5b2o$10b2o3bo14b4o5b2o$5b
+2o3b2o3bo4bobob2o3b4o$5b2o3b2o3bo5b2o3bo2bo$12bobo10bo$13bo8bo2bo$30bo
+2bo$7b2o25bo$6bo2bo20bo3bo$6bo24b4o$6bo$6bobo11bo$6bobo11b2o$7bo11bobo
+17b2o7b2o$39bo9bo$30bo9b9o$4b2o3b2o18b2o6b3o2b5o2b3o$4bo5bo18bobo5bo2b
+o2b3o2bo2bo$38b2o9b2o$5bo3bo2b2o$6b3o4b2o$12bo$49bo$36b2o2b2o6b4o$31bo
+bo2bob4o5b2obobo3b2o$o28bo3bo3bob2o5b3obo2bo2b2o$22b2o5bo12bo4b2obobo$
+9bo12b2o4bo4bo14b4o$7b2ob2o17bo19bo$29bo3bo$6bo5bo18bobo2$6b2obob2o9$
+9b2o$9b2o!
 `,
     },
     {
         name: "Generate2 - E",
         input: [],
-        output: [[[5,2],"E"]],
+        output: [[[3,2],"E"]],
         height: 2,
-        width: 3,
+        width: 2,
         content: `
-o29bo29bo22$43bobo$41bo3bo$41bo19bo$33bo6bo4bo14b4o$32bobo6bo12bo4b2ob
-obo$15b2o14bo3b2o4bo3bo3bob2o5b3obo2bo2b2o$15bobo13bo3b2o6bobo2bob4o5b
-2obobo3b2o$10b2o4b3o12bo3b2o11b2o2b2o6b4o$6b4o2bo4b3o12bobo26bo$6b3ob
-2o4b3o7bo6bo$15bobo9b2o$15b2o9b2o23b2o9b2o$50bo2bo7bo2bo$41bobo6b3o9b
-3o$41b2o10b9o$42bo9bo2b5o2bo$52b2o2b3o2b2o$33bobo$34b2o$34bo25bo2bo$
-46b4o14bo$45bo3bo10bo3bo$49bo11b4o$45bo2bo$27b2o9b2o$27bobo7bobo$18b2o
-2b2o6bo8bo5bo$18b2obo2bo2bo2bo13bobo$22b2o6bo13b2obo4b2o$27bobo14b2ob
-2o3b2o$27b2o15b2obo$44bobo$45bo!
+o29bo9$8b2o$8b2o11$5b2o3b2o18bo$7b3o18bobo$6bo3bo16bobo17bo$7bobo11b2o
+3bo2bo16b2o$8bo12b2o4bobo15b2o4b2o$28bobo13b3o4b2o2b2o$30bo4bobo7b2o4b
+2o2b2o$35b2o9b2o$36bo10bo$o4b3o$11bobo$5bobo4b2o$4b5o3bo24b2o9b2o$3b2o
+3b2o19bo6bo2bo7bo2bo$3b2o3b2o17b2o7b3o9b3o$28b2o9b9o$38bo2b5o2bo$6bo
+12bo18b2o2b3o2b2o$4b2o14b2o$19b2o$3bo26bo2bo$34bo$4bo2bo22bo3bo$6b2o
+23b4o2$12b2o$10bo3bo5bo2b3o$4b2o3bo5bo9bo3bo$4b2o2b2obo3bo8bo4bobo$9bo
+5bo16b2o4b2o$10bo3bo17b2o4b2o$12b2o18b2o$29bobo$29bo!
 `,
     },
     {
         name: "Generate1 - EX",
         input: [],
-        output: [[[5,0],"EX"]],
+        output: [[[3,0],"EX"]],
         height: 2,
-        width: 3,
+        width: 2,
         content: `
-o$42b2o$42b3o$28bo15b2obo$26bobo4b3o8bo2bo5b2o$25bobo16b2obo5b2o$19b2o
-3bo2bo7bo2b2o2b3o$19b2o4bobo7bo3bo2b2o$26bobo6bo2bo$28bo8b2o2$44b4o13b
-o12b4o$43bo3bo13bo11bo3bo$47bo29bo$43bo2bo26bo2bo2$33b2o$34b2o17b2o2b
-3o2b2o$33bo19bo2b5o2bo$54b9o$44b2o5b3o9b3o$43b2o6bo2bo7bo2bo$15bo9b2o
-18bo6b2o9b2o$14bobo7b4o$7b2o4bob2o5b3o2bo2bobo$7b2o3b2ob2o9b2o2bo2bo
-25bo$13bob2o6bo9b2o17b2obo3b4o$14bobo5bo8bo3b2o9b2o2b2obobo4b4o5b2o$
-15bo6bo10b2o10bobo2b2obob2o3bo2bo5b2o$30bo2bo10b3o8b2o3b4o$30bobo10b3o
-8b2o3b4o$44b3o12bo$45bobo$46b2o!
+o$28b2o$28bo2bo$14bobo15bo$12bo3bo2b3o10bo6b2o$12bo19bo6b2o$5b2o4bo4bo
+7b2o2bo2bo$5b2o5bo7bobo2bo2b2o$12bo3bo5b3o$14bobo$28bo2bo$7b2o23bo11b
+4o$7b2o19bo3bo10bo3bo$29b4o14bo$43bo2bo$7bo$6b3o10bo$5bo3bo9b2o18b2o2b
+3o2b2o$7bo10bobo18bo2b5o2bo$4bo5bo29b9o$4bo5bo20bo5b3o9b3o$5bo3bo20b2o
+5bo2bo7bo2bo$6b3o21bobo5b2o9b2o2$11b2o$12b2o$11bo27bo7bo$38b4o5bobo$
+33b2o2bo2b2o8b2o4b2o$33b2o2b2o11b2o4b2o$o21b2o6b2o10bo7b2o$22b2o5b3o
+10bo4bobo$9bo20b2o10bo4bo$8b3o22b2o$8b3o22b2o2$6b2o3b2o$6b2o3b2o3$9bo$
+8bobo$7b2o$7b2o$7b3o$8bobo$9b2o!
 `,
     },
     {
         name: "Generate2 - EX",
         input: [],
-        output: [[[5,2],"EX"]],
+        output: [[[3,2],"EX"]],
         height: 2,
-        width: 3,
+        width: 2,
         content: `
-o21$45b2o$45b2o$42b2o10bo4bo$30bobo8b3o10bo4bobo$30bo3bo7b2o10bo7b2o$
-14bo19bo10b2o2b2o11b2o4b2o$12b4o14bo4bo9b2o2bo2b2o8b2o4b2o$11bobob2o4b
-o12bo15b4o5bobo$6b2o2bo2bob3o5b2obo3bo3bo16bo7bo$6b2o3bobob2o5b4obo2bo
-bo$12b4o6b2o2b2o$14bo36b2o9b2o$42bobo5bo2bo2b3o2bo2bo$42b2o6b3o2b5o2b
-3o$43bo9b9o$52bo9bo$32bobo17b2o7b2o$33b2o$33bo2$44b4o26b4o$43bo3bo25bo
-3bo$47bo29bo$43bo2bo26bo2bo$26bo8bo2bo$25bobo10bo$18b2o3b2o3bo5b2o3bo
-2bo$18b2o3b2o3bo4bobob2o3b4o$23b2o3bo14b4o5b2o$25bobo5b2o8bo2bo5b2o$
-26bo16b4o$42b4o$42bo!
+o8$8b2o$8b2o3$6bo$7bo$7bo3$5b2o3b2o$8bo$5bo5bo$6b2ob2o20bobo$7bobo20bo
+2bo$8bo20b2o10bo6bo$8bo12b2o4b2o3bo8bo5bobo$21b2o6b2o9bo6b2obo$30bo2bo
+2b2o9b2ob2o3b2o$31bobo2bo2b3o5b2obo4b2o$36b4o7bobo$37b2o9bo$10bobo$o
+10b2o$5b3o3bo$4bo3bo21bo6b2o9b2o$3bo5bo18b2o6bo2bo2b3o2bo2bo$3b2obob2o
+19b2o5b3o2b5o2b3o$39b9o$18bo19bo9bo$6bo12b2o17b2o7b2o$5bobo10b2o$5bobo
+$6bo21bo2bo$32bo11b4o$6b2o20bo3bo10bo3bo$6b2o21b4o14bo$43bo2bo$13bo8b
+2o$11bobo6bo2bo$4b2o4bobo7bo3bo2b2o$4b2o3bo2bo7bo2b2o2b3o$10bobo16b2ob
+o5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
 `,
     },
     {
@@ -207,6 +207,22 @@ o29bo29bo29bo11$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o4$27b2o$27b2o
 `,
     },
     {
+        name: "And - ES - S",
+        input: [[[-1,2], "E"], [[2,-1], "S"]],
+        output: [[[2,3], "S"]],
+        height: 2,
+        width: 2,
+        content: `
+o29bo12$27bo$25bobo$15b2o6b2o12b2o$14bo3bo4b2o12b2o5bobo$3b2o8bo5bo3b
+2o22bo$3b2o8bo3bob2o4bobo19bo$13bo5bo7bo16bo2bo$14bo3bo26b3o$15b2o$26b
+o$27b2o$26b2o6$33bobo$34b2o$17bob2o4bo8bo$17b2obo3bobo$24bobo$15b5o3b
+2ob3o$14bo2bo2bo8bo$14b2o3b2o2b2ob3o12bo$23b2obo15b2o$30bo10b2o$28b3o$
+27bo$o2bo23b2o$4bo$o3bo$b4o16bo26bobo$20b3o7b2o17b2o$19bo2bo6bobo17bo$
+19b3o9bo$20bo32b2o$16b2o35bobo$15bobo37bo$15bo39b2o$14b2o$27b2o$27bo$
+28b3o$30bo!
+`,
+    },
+    {
         name: "And - EN - N",
         input: [[[-1,2], "E"], [[0,5], "N"]],
         output: [[[0,-1], "N"]],
@@ -241,7 +257,7 @@ o9bo$27b6o$29bob2o8b2o$32b2o7bo$42b3o47b2o$44bo47bobo$92bo3$106bobo$
 `,
     },
     {
-        name: "And - NN - N",
+        name: "And Not - NN - N",
         input: [[[0,3], "N"], [[4,3], "N"]],
         output: [[[0,-1], "N"], [[4,-1], "N"]],
         height: 2,
