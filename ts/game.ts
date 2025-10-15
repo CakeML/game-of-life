@@ -153,19 +153,18 @@ o$15b2obo3bobo39bo$22bobo$13b5o3b2ob3o$12bo2bo2bo8bo33b2o$12b2o3b2o2b
     },
     {
         name: "Not turn - N - EX",
-        input: [[[4,3], "N"]],
-        output: [[[5,2], "EX"]],
+        input: [[[2,3], "N"]],
+        output: [[[3,2], "EX"]],
         height: 2,
-        width: 3,
+        width: 2,
         content: `
-o21$45b2o$45b2o$42b2o10bo4bo$30bobo8b3o10bo4bobo$30bo3bo7b2o10bo7b2o$
-14bo19bo10b2o2b2o11b2o4b2o$12b4o14bo4bo9b2o2bo2b2o8b2o4b2o$11bobob2o4b
-o12bo15b4o5bobo$6b2o2bo2bob3o5b2obo3bo3bo16bo7bo$o5b2o3bobob2o5b4obo2b
-obo$12b4o6b2o2b2o$14bo36b2o9b2o$42bobo5bo2bo2b3o2bo2bo$42b2o6b3o2b5o2b
-3o$43bo9b9o$52bo9bo$32bobo17b2o7b2o$33b2o$33bo2$44b4o26b4o$43bo3bo25bo
-3bo$47bo29bo$43bo2bo26bo2bo$26bo8bo2bo$25bobo10bo$18b2o3b2o3bo5b2o3bo
-2bo$18b2o3b2o3bo4bobob2o3b4o$23b2o3bo14b4o5b2o$25bobo5b2o8bo2bo5b2o$
-26bo16b4o$42b4o$42bo!
+o8$6b2o$6b2o11$3b2o3b2o18bo$5b3o18bobo$4bo3bo16bobo17bo$5bobo11b2o3bo
+2bo16b2o$6bo12b2o4bobo15b2o4b2o$26bobo13b3o4b2o2b2o$28bo4bobo7b2o4b2o
+2b2o$33b2o9b2o$34bo10bo$3b3o$o8bobo$3bobo4b2o$2b5o3bo24b2o9b2o$b2o3b2o
+19bo6bo2bo2b3o2bo2bo$b2o3b2o17b2o7b3o2b5o2b3o$26b2o9b9o$36bo9bo$4bo12b
+o18b2o7b2o$2b2o14b2o$17b2o$bo26bo2bo$32bo11b4o$2bo2bo22bo3bo10bo3bo$4b
+2o23b4o14bo$43bo2bo$10b2o$8bo3bo5bo2b3o$2b2o3bo5bo9bo3bo$2b2o2b2obo3bo
+8bo4bobo$7bo5bo16b2o4b2o$8bo3bo17b2o4b2o$10b2o18b2o$27bobo$27bo!
 `,
     },
     {
@@ -207,6 +206,29 @@ o29bo29bo29bo11$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o4$27b2o$27b2o
 `,
     },
     {
+        name: "Turn - E - S",
+        input: [[[-1,4], "E"]],
+        output: [[[2,5], "S"]],
+        height: 3,
+        width: 3,
+        content: `
+o29bo29bo3$48bo5b2o$40b2o4bo3bo3b3o$40b2o8bo5b2obo8bo$45bo5bo4bo2bo6bo
+bo$45b2o9b2obo5bobo$40bo13b3o7bo2bo11b2o$39b3o12b2o9bobo11b2o$38bo3bo
+23bobo$40bo17bo9bo$37bo5bo12b2o$37bo5bo13b2o$38bo3bo$39b3o4$49bobo$42b
+o6b2o$50bo13b2o$64b2o$42bo$40bobo$41b2o$65bo$54bo9bobo$53b2o8bo3bo$35b
+2o3b2o11bobo8b3o$o29bo15bobo13b2o3b2o$36bo3bo4bo$37b3o5bo$37b3o5bo2bo$
+45b3o$61b2o$54b2o4b2o$54bobo5bo$38b2o11b2obobo$38b2o11bobobo$53bo$53b
+2o$27bo25b3o$25bobo25b3o$15b2o6b2o12b2o14b3o7bo$14bo3bo4b2o12b2o5bobo
+6b2o7b3o$3b2o8bo5bo3b2o22bo5bo7b5o$3b2o8bo3bob2o4bobo19bo3bobobo4b2o3b
+2o$13bo5bo7bo16bo2bo3b2obobo$14bo3bo26b3o6bobo$15b2o37b2o$26bo35b3o$
+27b2o33b3o$26b2o2$62b2o$62b2o3$33bobo$o33b2o$17bob2o4bo8bo$17b2obo3bob
+o$24bobo$15b5o3b2ob3o$14bo2bo2bo8bo$14b2o3b2o2b2ob3o12bo$23b2obo15b2o$
+30bo10b2o$28b3o$27bo$o2bo23b2o$4bo$o3bo$b4o16bo26bobo$20b3o7b2o17b2o$
+19bo2bo6bobo17bo$19b3o9bo$20bo32b2o$16b2o35bobo$15bobo37bo$15bo39b2o$
+14b2o$27b2o$27bo$28b3o$30bo!
+`,
+    },   
+    {
         name: "And - ES - S",
         input: [[[-1,2], "E"], [[2,-1], "S"]],
         output: [[[2,3], "S"]],
@@ -220,6 +242,39 @@ o$27b2o$26b2o6$33bobo$34b2o$17bob2o4bo8bo$17b2obo3bobo$24bobo$15b5o3b
 27bo$o2bo23b2o$4bo$o3bo$b4o16bo26bobo$20b3o7b2o17b2o$19bo2bo6bobo17bo$
 19b3o9bo$20bo32b2o$16b2o35bobo$15bobo37bo$15bo39b2o$14b2o$27b2o$27bo$
 28b3o$30bo!
+`,
+    },
+    {
+        name: "And - EN - N (Illegal)",
+        input: [[[-1,2], "E"], [[2,3], "N"]],
+        output: [[[2,-1], "N"]],
+        height: 2,
+        width: 2,
+        content: `
+o$6b2o19b2o$6b2o19b2o3$33bo23bo$33b3o19b3o$6b3o18bo8bo17bo$6b3o18bo7b
+2o17b2o$5bo3bo16bobo$25b2ob2o$4b2o3b2o13bo5bo$27bo$24b2o3b2o2$49b2obob
+2o$4b3o19b4o$8b2o15b2o2bo19bo5bo$8b2o15b2obo$9b2o39b2ob2o$7bobo16b2o
+24bo$7b2o17bo3$2b2o3b2o17b2obob2o21b2o$2b2o3b2o11bo5bo5bo21bo$14bo4bo
+7bo3bo14b2o7b3o$4b3o8b2o2b3o6b3o14bobo9bo$4b3o7b2o31bo$5bo$o4$21bobo$
+4b2o16b2o5b2o$4b2o16bo6b2o5$o2bo27b2o$4bo25bobo$o3bo27bo$b4o5$23b3o$
+12bo12bo$7bo4b4o8bo$7bo5b4o10b2o$2b2o9bo2bo9bobo$2b2o9b4o8b3o4b2o$12b
+4o8b3o4bo2b4o$12bo12b3o4b2ob3o$26bobo$27b2o!
+`,
+    },
+    {
+        name: "And - EN - N (Illegal 2)",
+        input: [[[-1,2], "E"], [[0,3], "N"]],
+        output: [[[0,-1], "N"]],
+        height: 2,
+        width: 2,
+        content: `
+o29b2o$30b2o$49b2o$49b2o4$31bo$30b3o$30b3o2$28b2o3b2o$28b2o3b2o13b3o$
+47bo3bo$46bo5bo$30b2o14bo5bo$30bobo16bo$29bo2b2o13bo3bo$31b2o15b3o$31b
+2o16bo$32bo2$26bo5bo17b3o$26bo5bo5bobo9b3o$5b2o20bo3bo6bobo8bo3bo$6bo
+21b3o8bo3bobo$6bobo34b2o3b2o3b2o$7b2o35bo3$o4$28b2o$28b2o$51b2o$51b2o$
+20b2o$20bobo$12b3o5bo7bobo$o2bo8bo2bo12b2o$4bo7bo16bo$o3bo7bo$b4o8bobo
+2$27b3o$27bo$28bo2$41b2o$36bo4b2o$30b2ob5o6b2o$29bo4b2o2bo5b3o5b2o$28b
+o8b2o5b2o6b2o$18b2o8bo7bo4b2o$18b2o8bo12b2o$29bo$30b2o!
 `,
     },
     {
@@ -254,6 +309,25 @@ o29bo29bo29bo2$3b2o$4bo$4bobo$5b2o$63b2o$63bo$54b2o5bobo$10b3o40bo3bo
 o9bo$27b6o$29bob2o8b2o$32b2o7bo$42b3o47b2o$44bo47bobo$92bo3$106bobo$
 101b2o3bo2bo$94b2o2b2ob3o5b2o$93bobo3bo3bo3bo3b2o4b2o$92bo8bobo5b2o6b
 2o$83b2o7bo2bo6b2o2bo2bo$83b2o7bo13bobo$93bobo$94b2o!
+`,
+    },
+    {
+        name: "And Not - NN - NN",
+        input: [[[0,3], "N"], [[4,3], "N"]],
+        output: [[[0,-1], "N"], [[4,-1], "N"]],
+        height: 2,
+        width: 4,
+        content: `
+o29bo29bo29bo6$5b2o$6bo$6bobo54b2o$7b2o54bo$53b2o6bobo$51bo2bo6b2o$50b
+o$50bo6bo$50bo7b2o$44b2o5bo2bo$43bobo7b2o$17b2o24bo$17bobo22b2o$17bo2$
+52bobo$52b2o$53bo14b3o$68bo$24b3o42bo$24bo$25bo66bo$92bobo$81b2o12b2o
+6b2o$o80b2o12b2o4bo3bo$95b2o3bo5bo8b2o$32b2o58bobo4b2obo3bo8b2o$32bobo
+57bo7bo5bo$32bo68bo3bo$103b2o$93bo$91b2o$83b3o6b2o$83bo$12b3o24b3o42bo
+$12bo2bo23bo$12bo27bo$12bo$13bobo$91b2o$91bobo$47b2o9b2o31bo$47bobo7bo
+bo$41bo5bo8bo6b2o$40bobo13bo2bo2bo2bob2o36bobo$39bob2o13bo6b2o2b2o31b
+2o3bo2bo$33b2o3b2ob2o14bobo33b2o2b2ob3o5b2o$33b2o4bob2o15b2o32bobo3bo
+3bo3bo3b2o4b2o$40bobo48bo8bobo5b2o6b2o$41bo40b2o7bo2bo6b2o2bo2bo$82b2o
+7bo13bobo$92bobo$93b2o!
 `,
     },
     {
