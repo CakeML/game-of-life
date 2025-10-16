@@ -174,14 +174,14 @@ o18b2o7b2o$2b2o14b2o$17b2o$bo26bo2bo$32bo11b4o$2bo2bo22bo3bo10bo3bo$4b
         height: 2,
         width: 3,
         content: `
-o$42bo$42bobo$25b2o18b2o$23bo3bo17b2o4b2o$22bo5bo16b2o4b2o$17b2o2b2obo
-3bo8bo4bobo$17b2o3bo5bo9bo3bo$23bo3bo5bo2b3o$25b2o2$44b4o26b4o$43bo3bo
-25bo3bo$47bo29bo$43bo2bo26bo2bo$32b2o$33b2o$32bo18b2o2b3o2b2o$51bo2b5o
-2bo$41b2o9b9o$40b2o7b3o9b3o$42bo6bo2bo7bo2bo$14bo10bo24b2o9b2o$14b2o9b
-2o$5b2o2b2o4b2o7bobo4bo$5b2o2b2o4b3o13bobo15b2o9bo$9b2o4b2o15bobo13b4o
-7bobo$14b2o16bo2bo7bobo2bo2b3o5b2obo4b2o$14bo17bobo7bo2bo2b2o9b2ob2o3b
-2o$31bobo7b2o9bo6b2obo10b2o$31bo7b2o3bo8bo5bobo12bo$41b2o10bo6bo10b3o$
-42bo2bo25bo$43bobo!
+o29bo29bo$42bo$42bobo$25b2o18b2o$23bo3bo17b2o4b2o$22bo5bo16b2o4b2o$17b
+2o2b2obo3bo8bo4bobo$17b2o3bo5bo9bo3bo$23bo3bo5bo2b3o$25b2o2$44b4o26b4o
+$43bo3bo25bo3bo$47bo29bo$43bo2bo26bo2bo$32b2o$33b2o$32bo18b2o2b3o2b2o$
+51bo2b5o2bo$41b2o9b9o$40b2o7b3o9b3o$42bo6bo2bo7bo2bo$14bo10bo24b2o9b2o
+15b2o$14b2o9b2o51bo$5b2o2b2o4b2o7bobo4bo47b3o$5b2o2b2o4b3o13bobo15b2o
+9bo20bo$9b2o4b2o15bobo13b4o7bobo$14b2o16bo2bo7bobo2bo2b3o5b2obo4b2o$
+14bo17bobo7bo2bo2b2o9b2ob2o3b2o$31bobo7b2o9bo6b2obo$o30bo7b2o3bo8bo5bo
+bo$41b2o10bo6bo$42bo2bo$43bobo!
 `,
     },
     {
@@ -228,6 +228,26 @@ o$24bobo$15b5o3b2ob3o$14bo2bo2bo8bo$14b2o3b2o2b2ob3o12bo$23b2obo15b2o$
 14b2o$27b2o$27bo$28b3o$30bo!
 `,
     },   
+    {
+        name: "Duplicate - E - ES",
+        input: [[[-1,4],"E"]],
+        output: [[[5,4],"E"],[[2,5],"S"]],
+        height: 3,
+        width: 3,
+        content: `
+o29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$26b2o29bo3bo$6b2o18b2o
+30bobo$6b2o51bo5$60b3o$54bobo$37b2o3b2o10b2o4bobo$25b3o27bo3b5o$7bo16b
+o3bo9bo3bo15b2o3b2o$6b3o14bo5bo9b3o16b2o3b2o$5b5o13bo5bo9b3o$4b2o3b2o
+15bo$5b5o14bo3bo19bo$5bo3bo15b3o18b2o12b2o$6bobo17bo20b2o$7bo$38bo5bo
+6b2o$27b3o7b3o5bo4b2o$5bo21b3o7b3o3b3o6bo$3b2ob2o18bo3bo$12bo7bobo12b
+2o3b2o19b2obob2o$2bo5bo4bo6b2o3b2o3b2o3b2o3b2o19bo5bo$11b3o7bo40bo3bo$
+2b2obob2o50bo3b3o$38bo19b2o$37bobo18bobo$36b2o6bobo$36b2o9bo6b2o$20bo
+15b3o8bo6bobo$18bobo16bobo4bo2bo3b2obobo$19b2o17b2o5b3o3bobobo$28b2o
+23bo8bo$4b2o22b2o23b2o7bo$4b2o47b3o5bobo$53b3o4b2ob2o$53b3o3bo5bo$53b
+2o7bo$53bo5b2o3b2o$51bobobo$51b2obobo$54bobo6bo$54b2o7bo$64bo$35bo$33b
+obo$34b2o25b2o$61b2o6$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o!
+`,
+    },
     {
         name: "And - ES - S",
         input: [[[-1,2], "E"], [[2,-1], "S"]],
