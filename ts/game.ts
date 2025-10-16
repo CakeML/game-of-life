@@ -249,6 +249,22 @@ obo$34b2o25b2o$61b2o6$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o!
 `,
     },
     {
+        name: "And Wire - E - ES",
+        input: [[[-1,4],"E"]],
+        output: [[[3,4],"E"],[[2,5],"S"]],
+        height: 3,
+        width: 2,
+        content: `
+o29bo15$44bobo$47bo$47bo$44bo2bo$29b2o14b3o$9b2o18b2o$9b2o18b2o$29bo$
+10bo17bobo$9bobo16bobo$9bobo17bo$10bo2$26b2o3b2o$7b2obob2o12bobobobo$o
+6bo5bo13b5o$8bo3bo15b3o$9b3o17bo7$12bo13bobo$13bo12b2o$11b3o13bo3$30b
+3o$29bo3bo10bobo$6b5o17bo5bo12bo$5bob3obo8bo8bo3bo13bo$6bo3bo7bobo9b3o
+11bo2bo$7b3o9b2o9b3o12b3o$8bo3$31b2o$7b2o22b2o$7b2o5$o2$35bo$33bobo$
+34b2o7$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o3$50bo$48bobo$49b2o4$
+54b2o$54bo$55b3o$57bo!
+`,
+    },    
+    {
         name: "And - ES - S",
         input: [[[-1,2], "E"], [[2,-1], "S"]],
         output: [[[2,3], "S"]],
