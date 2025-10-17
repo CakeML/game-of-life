@@ -249,8 +249,101 @@ obo$34b2o25b2o$61b2o6$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o!
 `,
     },
     {
-        name: "And Wire - E - ES",
+        name: "Duplicate - E - EN",
+        input: [[[-1,2],"E"]],
+        output: [[[7,2],"E"],[[4,-1],"N"]],
+        height: 4,
+        width: 4,
+        content: `
+o29bo29bo29bo10$72b3o$72bo2bo$72bo$72bo$73bobo$84b2o$84b2o3$87bo$86bo$
+86bo3$82b2o3b2o$85bo$82bo5bo$83b2ob2o$84bobo$85bo$o84bo4$87b2o$87bo$
+88b3o$78b3o9bo$80bo$79bo$72b3o$o2bo26bo2bo26bo2bo8bo2bo$4bo29bo29bo7bo
+$o3bo25bo3bo25bo3bo7bo$b4o26b4o26b4o8bobo5$38bo$36b4o$27b2o5b4ob2o9b2o
+$25bo2bo3bo3b2ob3o8b2o11b3o$16b2o6bo7bo3b2ob2o24bo$16b2o6bo6bo3b5o24bo
+$24bo7b3o3bo49b2o$25bo2bo59b2o$27b2o2$40bo$o40b2o38b2o$40b2o39bobo$35b
+2o41b2obobo$35b2o41bobobo$35b2o43bo$36bo42b2o5b2obob2o$35bobo40b3o$35b
+obo10b3o27b3o5bo5bo$36bo13bo27b3o$49bo29b2o6b2ob2o$72b3o5bo8bo$33b2o3b
+2o25b2o5bo2bo2bobobo$33bobobobo25b2o5bo5b2obobo$34b5o33bo8bobo$35b3o3b
+2o30bobo5b2o$36bo3bobo20bo$42bo21bo21bo$64bo19b2o4b3o$85b2o2bo3bo2$62b
+2o3b2o19bo5bo$65bo22b2o3b2o$62bo5bo2b2o$37b3o23b2ob2o2bobo$36b2ob2o23b
+obo5bo4bobo$36b2ob2o24bo11b2o$36b5o24bo8bo3bo$35b2o3b2o31b2o$73bobo2$o
+66bo$66b3o$39b2o24bo3bo$64bob3obo14b2o3b2o$65b5o11b2o3b5o$80b2o4b2ob2o
+$37b2o43bo3b2ob2o$37b2o48b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o
+15bo3bo$85b3o10$85b2o$85b2o!
+`,
+    },
+    {
+        name: "Duplicate1 - E - ENS",
         input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"],[[6,-1],"N"],[[2,9],"S"]],
+        height: 5,
+        width: 5,
+        content: `
+o29bo59bo29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$26b2o29bo3bo$6b
+2o18b2o30bobo$6b2o51bo5$60b3o$54bobo$37b2o3b2o10b2o4bobo$25b3o27bo3b5o
+$7bo16bo3bo9bo3bo15b2o3b2o$6b3o14bo5bo9b3o16b2o3b2o$5b5o13bo5bo9b3o$o
+3b2o3b2o15bo$5b5o14bo3bo19bo$5bo3bo15b3o18b2o12b2o$6bobo17bo20b2o$7bo$
+38bo5bo6b2o$27b3o7b3o5bo4b2o$5bo21b3o7b3o3b3o6bo$3b2ob2o18bo3bo$12bo7b
+obo12b2o3b2o19b2obob2o$2bo5bo4bo6b2o3b2o3b2o3b2o3b2o19bo5bo34b3o$11b3o
+7bo40bo3bo35bo2bo$2b2obob2o50bo3b3o36bo$38bo19b2o42bo$37bobo18bobo42bo
+bo$36b2o6bobo67b2o$36b2o9bo6b2o58b2o$20bo15b3o8bo6bobo$18bobo16bobo4bo
+2bo3b2obobo$19b2o17b2o5b3o3bobobo61bo$28b2o23bo8bo53bo$4b2o22b2o23b2o
+7bo53bo$4b2o47b3o5bobo$53b3o4b2ob2o$53b3o3bo5bo46b2o3b2o$53b2o7bo52bo$
+53bo5b2o3b2o46bo5bo$51bobobo57b2ob2o$51b2obobo57bobo$54bobo6bo51bo$o
+53b2o7bo51bo$64bo$35bo$33bobo$34b2o25b2o54b2o$61b2o54bo$118b3o$108b3o
+9bo$110bo$109bo$102b3o$o2bo26bo2bo26bo2bo26bo2bo8bo2bo14bo2bo$4bo29bo
+29bo29bo7bo21bo$o3bo25bo3bo25bo3bo25bo3bo7bo17bo3bo$b4o26b4o26b4o26b4o
+8bobo15b4o8$93b3o$95bo$94bo$118b2o$118b2o4$o110b2o$111bobo$108b2obobo$
+108bobobo$110bo$109b2o5b2obob2o$108b3o$60b2o16b3o27b3o5bo5bo$60b2o18bo
+3b2o22b3o$79bo4b2o23b2o6b2ob2o$102b3o5bo8bo$95b2o5bo2bo2bobobo$95b2o5b
+o5b2obobo$102bo8bobo$60b3o8b2o11bo18bobo5b2o$59b2ob2o6b6o6b2ob2o6bo$
+59b2ob2o8bob2o18bo21bo$59b5o7bobo7bo5bo6bo19b2o4b3o$58b2o3b2o50b2o2bo
+3bo$81b2obob2o$92b2o3b2o19bo5bo$64bo30bo22b2o3b2o$63bob2o13b2o10bo5bo
+2b2o$63bo16bobo10b2ob2o2bobo$81bo12bobo5bo4bobo$63b2obo14b2o12bo11b2o$
+61bo2bo15b3o12bo8bo3bo$61bobo16b2o21b2o$83bo19bobo2$o96bo$96b3o$62b3o
+17bo12bo3bo$61bo3bo15b3o10bob3obo14b2o3b2o$60bo5bo13b5o10b5o11b2o3b5o$
+61bo3bo13b2o3b2o24b2o4b2ob2o$62b3o15b5o27bo3b2ob2o$62b3o15bo3bo32b3o$
+81bobo$82bo2$62b2o$62b2o18b2o31b3o$82b2o31b3o$114bo3bo$97b2o14bo5bo$
+97b2o15bo3bo$115b3o10$115b2o$115b2o!
+`,
+    },
+    {
+        name: "Duplicate2 - E - ENS",
+        input: [[[-1,4],"E"]],
+        output: [[[9,4],"E"],[[2,-1],"N"],[[6,9],"S"]],
+        height: 5,
+        width: 5,
+        content: `
+o29bo29bo29bo2$118b2o$118b2o11$100b2o14b2o3b2o$100b2o16b3o$86b2o29bo3b
+o$66b2o18b2o30bobo$66b2o51bo5$120b3o$114bobo$97b2o3b2o10b2o4bobo$85b3o
+27bo3b5o$67bo16bo3bo9bo3bo15b2o3b2o$66b3o14bo5bo9b3o16b2o3b2o$65b5o13b
+o5bo9b3o$64b2o3b2o15bo$65b5o14bo3bo19bo$65bo3bo15b3o18b2o12b2o$66bobo
+17bo20b2o$67bo$98bo5bo6b2o$87b3o7b3o5bo4b2o$65bo21b3o7b3o3b3o6bo$63b2o
+b2o18bo3bo$72bo7bobo12b2o3b2o19b2obob2o$42b3o17bo5bo4bo6b2o3b2o3b2o3b
+2o3b2o19bo5bo$42bo2bo25b3o7bo40bo3bo$42bo19b2obob2o50bo3b3o$42bo55bo
+19b2o$43bobo51bobo18bobo$54b2o40b2o6bobo$54b2o40b2o9bo6b2o$80bo15b3o8b
+o6bobo$78bobo16bobo4bo2bo3b2obobo$57bo21b2o17b2o5b3o3bobobo$56bo31b2o
+23bo8bo$56bo7b2o22b2o23b2o7bo$64b2o47b3o5bobo$113b3o4b2ob2o$52b2o3b2o
+54b3o3bo5bo$55bo57b2o7bo$52bo5bo54bo5b2o3b2o$53b2ob2o53bobobo$54bobo
+54b2obobo$55bo58bobo6bo$55bo58b2o7bo$124bo$95bo$93bobo$57b2o35b2o25b2o
+$57bo63b2o$58b3o$48b3o9bo$50bo$49bo$42b3o$o2bo26bo2bo8bo2bo14bo2bo26bo
+2bo26bo2bo$4bo29bo7bo21bo29bo29bo$o3bo25bo3bo7bo17bo3bo25bo3bo25bo3bo$
+b4o26b4o8bobo15b4o26b4o26b4o8$33b3o$35bo$34bo$58b2o$58b2o4$51b2o$51bob
+o$48b2obobo$48bobobo$3b2o45bo$3b2o22b2o20b2o5b2obob2o$27b2o19b3o$18b3o
+27b3o5bo5bo$20bo27b3o$19bo29b2o6b2ob2o$42b3o5bo8bo$35b2o5bo2bo2bobobo$
+35b2o5bo5b2obobo$42bo8bobo$11b2o30bobo5b2o$10bobo6b2o12bo$b2o3b2o4bo5b
+2o14bo21bo$3b3o14bo4b5o4bo19b2o4b3o$2bo3bo17bob3obo24b2o2bo3bo$3bobo
+19bo3bo$4bo21b3o3b2o3b2o19bo5bo$27bo7bo22b2o3b2o$5b3o17b2o5bo5bo2b2o$
+5b3o16bobo6b2ob2o2bobo$24bobo7bobo5bo4bobo$25bo9bo11b2o$35bo8bo3bo$3b
+2o3b2o33b2o$4b5o13b2obob2o14bobo$5b3o14bo5bo$6bo16bo3bo9bo$24b3o9b3o$
+35bo3bo$34bob3obo14b2o3b2o$35b5o11b2o3b5o$50b2o4b2ob2o$52bo3b2ob2o$57b
+3o$5b2o$5b2o18b2o$25b2o2$55b3o$55b3o$54bo3bo$37b2o14bo5bo$37b2o15bo3bo
+$55b3o10$55b2o$55b2o!
+`,
+    },
+    {
+        name: "And Wire - ES - ES",
+        input: [[[-1,4],"E"],[[2,-1],"S"]],
         output: [[[3,4],"E"],[[2,5],"S"]],
         height: 3,
         width: 2,
@@ -260,8 +353,7 @@ o29bo15$44bobo$47bo$47bo$44bo2bo$29b2o14b3o$9b2o18b2o$9b2o18b2o$29bo$
 6bo5bo13b5o$8bo3bo15b3o$9b3o17bo7$12bo13bobo$13bo12b2o$11b3o13bo3$30b
 3o$29bo3bo10bobo$6b5o17bo5bo12bo$5bob3obo8bo8bo3bo13bo$6bo3bo7bobo9b3o
 11bo2bo$7b3o9b2o9b3o12b3o$8bo3$31b2o$7b2o22b2o$7b2o5$o2$35bo$33bobo$
-34b2o7$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o3$50bo$48bobo$49b2o4$
-54b2o$54bo$55b3o$57bo!
+34b2o7$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o6$51b2o$51bo$52b3o$54bo!
 `,
     },    
     {
