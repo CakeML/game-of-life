@@ -514,6 +514,27 @@ bo6bo$34b3o13bobo$34bo15b2o14$o!
 `,
     },
     {
+        name: "U turn - WN - EXN",
+        input: [[[7,0], "W"], [[6,3], "N"]],
+        output: [[[7,2], "EX"], [[6,-1], "N"]],
+        height: 2,
+        width: 4,
+        content: `
+o29bo29bo29bo3$81bo$81b3o$84bo$83b2o$96b2o$8b2o86bo$8b2o84bobo$94b2o6b
+3o$86b2o14bo2bo$6bo78bo2bo13bo$7bo76b2ob2o13bo$7bo77bobo15bobo$86bo28b
+4o$115bo3bo$5b2o3b2o103bo$8bo74b2o31bo2bo$5bo5bo72bo$6b2ob2o20bobo47b
+3o$7bobo20bo2bo47bo$8bo20b2o10bo6bo36bob2o$8bo12b2o4b2o3bo8bo5bobo19bo
+13b3ob2o2b2o3b2o$21b2o6b2o9bo6b2obo18bobo10bo8bo2bo2bo$30bo2bo2b2o9b2o
+b2o3b2o12b2o12b3ob2o3b5o$31bobo2bo2b3o5b2obo4b2o28bobo$36b4o7bobo35bob
+o3bob2o$37b2o9bo37bo4b2obo$10bobo$o10b2o$5b3o3bo$4bo3bo21bo6b2o9b2o$3b
+o5bo18b2o6bo2bo2b3o2bo2bo$3b2obob2o19b2o5b3o2b5o2b3o$39b9o$18bo19bo9bo
+$6bo12b2o17b2o7b2o$5bobo10b2o$5bobo$6bo21bo2bo70b3o$32bo11b4o26b4o24bo
+2bo$6b2o20bo3bo10bo3bo25bo3bo24bo$6b2o21b4o14bo29bo24bo$43bo2bo26bo2bo
+26bobo$13bo8b2o$11bobo6bo2bo$4b2o4bobo7bo3bo2b2o$4b2o3bo2bo7bo2b2o2b3o
+$10bobo16b2obo5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
+`,
+    },
+    {
         name: "-----------",
         input: [[[-1,4],"E"]],
         output: [[[9,4],"E"]],
@@ -1319,6 +1340,9 @@ function golCell(x: BExp, ys: BExp8) : BExp {
 //  Rest
 // ************************************************************************* //
 
+let miniSize: number = 30; // pixels
+let marginSize: number = 2; // pixels
+
 // Create the dropdown menu
 const dropdown = document.createElement('select');
 circuits.forEach((optionText) => {
@@ -1354,7 +1378,6 @@ rotate_button.textContent = 'rotate';
 rotate_button.id = 'rotate_button';
 document.body.appendChild(rotate_button);
 
-// New line
 document.body.appendChild(document.createElement('br'));
 
 // Set up the canvas
@@ -1362,9 +1385,20 @@ const canvas = document.createElement('canvas');
 canvas.width = 320 * 5; // Grid size in pixels
 canvas.height = 320 * 5;
 document.body.appendChild(canvas);
-
 const ctx = canvas.getContext('2d');
 if (!ctx) {
+    throw new Error('Failed to get the canvas rendering context');
+}
+
+document.body.appendChild(document.createElement('br'));
+
+// Set up the canvas
+const mini_canvas = document.createElement('canvas');
+mini_canvas.width = 320 * 5; // Grid size in pixels
+mini_canvas.height = 320 * 5;
+document.body.appendChild(mini_canvas);
+const mini_ctx = mini_canvas.getContext('2d');
+if (!mini_ctx) {
     throw new Error('Failed to get the canvas rendering context');
 }
 
@@ -1657,7 +1691,72 @@ function resizeGrid(width: number, height: number) {
     }
 }
 
-function loadCircuit(circuit) {
+function drawMiniGate(x: number, 
+                      y: number, 
+                      rotate: number,
+                      ctxt: CanvasRenderingContext2D,
+                      circuit : Circuit) {
+    var width = circuit.width;
+    var height = circuit.height;
+    var input_list = circuit.input;
+    var output_list = circuit.output;
+    var i: number;
+    for(i = 0; i < rotate; i++) {
+        let h = height;
+        let w = width;
+        width = h;
+        height = w;
+        input_list = input_list.map((elem) =>
+                [[2*(h-1)-elem[0][1],elem[0][0]],rotateDir(elem[1])]);
+        output_list = output_list.map((elem) =>
+                [[2*(h-1)-elem[0][1],elem[0][0]],rotateDir(elem[1])]);
+    }
+    ctxt.fillStyle = '#7d5820ff';
+    ctxt.fillRect(x * miniSize + marginSize, 
+                  y * miniSize + marginSize, 
+                  width * miniSize - marginSize, 
+                  height * miniSize - marginSize);
+    /* 
+    ctxt.beginPath();
+    ctxt.moveTo(x - 10, bubbleY + bubbleHeight);
+    ctxt.lineTo(x, y);
+    ctxt.lineTo(x + 10, bubbleY + bubbleHeight);
+    ctxt.closePath();
+    ctxt.fillStyle = 'yellow';
+    ctxt.fill();
+    ctxt.strokeStyle = 'yellow';
+    ctxt.stroke();
+    */
+}
+
+function drawMiniCircuit() {
+    if (!mini_ctx) {
+        throw new Error('Failed to get the canvas rendering context');
+    }
+    let width = lastLoadedCircut.width;
+    let height = lastLoadedCircut.height;
+    let mini_width = 2 * width + 2 * height + 5;
+    let mini_height = 2 + Math.max(height,width);
+    mini_canvas.width = miniSize * mini_width + marginSize;
+    mini_canvas.height = miniSize * mini_height + marginSize;
+    mini_ctx.fillStyle = 'black';
+    mini_ctx.fillRect(0, 0, mini_canvas.width, mini_canvas.height); // Clear the canvas
+    mini_ctx.fillStyle = '#444444';
+    for (let row = 0; row < mini_height; row++) {
+        for (let col = 0; col < mini_width; col++) {
+            mini_ctx.fillRect(col * miniSize + marginSize, 
+                              row * miniSize + marginSize, 
+                              miniSize - marginSize, 
+                              miniSize - marginSize);
+        }
+    }    
+    drawMiniGate(1,1,0,mini_ctx,lastLoadedCircut);
+    drawMiniGate(2+width,1,1,mini_ctx,lastLoadedCircut);
+    drawMiniGate(3+width+height,1,2,mini_ctx,lastLoadedCircut);
+    drawMiniGate(4+2*width+height,1,3,mini_ctx,lastLoadedCircut);
+}
+
+function loadCircuit(circuit: Circuit) {
     lastLoadedCircut = circuit;
     const rleContent = circuit.content;
     inputs = circuit.input;
@@ -1666,6 +1765,7 @@ function loadCircuit(circuit) {
     updateBackground();
     initializeFromRLE(rleContent, 10, 10);
     drawGrid();
+    drawMiniCircuit();
 }
 
 // Function to handle dropdown changes
@@ -1758,4 +1858,189 @@ canvas.addEventListener('click', (event) => {
 canvas.addEventListener('mouseleave', (event) => {
     latestClick = { x : -500, y : -500 };
     drawGrid();
+});
+
+// ************************************************************************* //
+//  Circuit canvas
+// ************************************************************************* //
+
+let circ_width: number = 30; // Number of rows
+let circ_height: number = 30; // Number of columns
+
+document.body.appendChild(document.createElement('br'));
+
+const circ_textarea = document.createElement('textarea');
+circ_textarea.rows = 40;
+circ_textarea.cols = 40;
+circ_textarea.style.fontFamily = "monospace";
+circ_textarea.value = `
+width 40
+height 20
+color red
+box 1 1 2 3
+color blue
+box 4 1 3 1
+hwire 4 1 5
+`;
+document.body.appendChild(circ_textarea);
+document.body.appendChild(document.createElement('br'));
+
+const circ_button = document.createElement('button');
+circ_button.textContent = 'update circuit';
+circ_button.id = 'circ_button';
+document.body.appendChild(circ_button);
+
+document.body.appendChild(document.createElement('br'));
+
+// Set up the circuit canvas
+const circ_canvas = document.createElement('canvas');
+circ_canvas.width = 5; 
+circ_canvas.height = 5;
+document.body.appendChild(circ_canvas);
+const circ_ctx = circ_canvas.getContext('2d');
+if (!circ_ctx) {
+    throw new Error('Failed to get the canvas rendering context');
+}
+
+function drawArrow(
+    ctx: CanvasRenderingContext2D,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number
+) {
+    const headLength = 11; // length of arrowhead
+
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+
+    // Draw main line
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    // Draw arrowhead
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.lineTo(toX, toY);
+    ctx.fill();
+}
+
+// Draw the grid on the canvas
+function drawCircuit() {
+    if (!circ_ctx) { return; }
+    let lines = circ_textarea.value
+        .split(/\r?\n/)
+        .map(line => line.trim().split(/\s+/));
+    lines.forEach(words => {
+        if (words.length > 0) {
+            if (words[0] == 'width' && words.length == 2) {
+                circ_width = Number(words[1]);
+            }
+            if (words[0] == 'height' && words.length == 2) {
+                circ_height = Number(words[1]);
+            }
+        }
+    });    
+    circ_canvas.width = miniSize * circ_width + marginSize;
+    circ_canvas.height = miniSize * circ_height + marginSize;
+    circ_ctx.fillStyle = 'black';
+    circ_ctx.fillRect(0, 0, circ_canvas.width, circ_canvas.height); // Clear the canvas
+    circ_ctx.fillStyle = '#444444';
+    for (let row = 0; row < circ_height; row++) {
+        for (let col = 0; col < circ_width; col++) {
+            const cell : BExp = grid[row][col];
+            circ_ctx.fillRect(col * miniSize + marginSize, 
+                              row * miniSize + marginSize, 
+                              miniSize - marginSize, 
+                              miniSize - marginSize);
+        }
+    }
+    var color = '#3a5bb7ff';
+    // draw boxes
+    lines.forEach(words => {
+        if (words.length > 0) {
+            if (words[0] == 'color' && words.length == 2) {
+                color = words[1];
+            }
+            if (words[0] == 'box' && words.length == 5) {
+                let x = Number(words[1]);
+                let y = Number(words[2]);
+                let w = Number(words[3]);
+                let h = Number(words[4]);
+                circ_ctx.fillStyle = color;
+                circ_ctx.fillRect(x * miniSize + marginSize, 
+                                  y * miniSize + marginSize, 
+                                  w * miniSize - marginSize, 
+                                  h * miniSize - marginSize);
+            }
+        }
+    });  
+    // draw arrows 
+    lines.forEach(words => {
+        if (words.length > 0) {
+            if (words[0] == 'hwire' && words.length >= 4) {
+                let x = Number(words[1]);
+                let y = Number(words[2]);
+                let l = Number(words[3]);
+                circ_ctx.lineWidth = 3;
+                circ_ctx.fillStyle = 'white';
+                circ_ctx.strokeStyle = 'white';
+                if (words.length >= 5) {
+                    circ_ctx.fillStyle = 'red';
+                    circ_ctx.strokeStyle = 'red';
+                }
+                if (l < 0) {
+                    drawArrow(circ_ctx, x * miniSize,
+                                        y * miniSize + miniSize/2,
+                                        (x + l) * miniSize + marginSize,
+                                        y * miniSize + miniSize/2);
+                } else {
+                    drawArrow(circ_ctx, x * miniSize + marginSize,
+                                        y * miniSize + miniSize/2,
+                                        (x + l) * miniSize,
+                                        y * miniSize + miniSize/2);
+                }   
+            }
+            if (words[0] == 'vwire' && words.length >= 4) {
+                let x = Number(words[1]);
+                let y = Number(words[2]);
+                let l = Number(words[3]);
+                circ_ctx.lineWidth = 3;
+                circ_ctx.fillStyle = 'white';
+                circ_ctx.strokeStyle = 'white';
+                if (words.length >= 5) {
+                    circ_ctx.fillStyle = 'red';
+                    circ_ctx.strokeStyle = 'red';
+                }
+                if (l < 0) {
+                    drawArrow(circ_ctx, x * miniSize + miniSize/2,
+                                        y * miniSize,
+                                        x * miniSize + miniSize/2,
+                                        (y + l) * miniSize + marginSize);
+                } else {
+                    drawArrow(circ_ctx, x * miniSize + miniSize/2,
+                                        y * miniSize + marginSize,
+                                        x * miniSize + miniSize/2,
+                                        (y + l) * miniSize);
+                }   
+            }
+        }
+    });       
+}
+
+drawCircuit();
+
+circ_button.addEventListener('click', () => {
+    drawCircuit();
 });

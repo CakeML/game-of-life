@@ -219,6 +219,14 @@ var circuits = [
         content: "\no2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo$88bobo$89bo2$39b2o$\n39b2o2$40bo49b3o$39bobo42bobo$39bobo25b2o3b2o10b2o4bobo$40bo44bo3b5o$\n68bo3bo15b2o3b2o$69b3o16b2o3b2o$37b2obob2o25b3o$37bo5bo$38bo3bo35bo$\n39b3o34b2o12b2o$77b2o2$68bo5bo6b2o$67b3o5bo4b2o$67b3o3b3o6bo2$42bo22b\n2o3b2o19b2obob2o$43bo21b2o3b2o19bo5bo$41b3o48bo3bo$89bo3b3o$68bo19b2o$\n67bobo18bobo$66b2o6bobo$36b5o25b2o9bo6b2o$35bob3obo8bo15b3o8bo6bobo$\n36bo3bo7bobo16bobo4bo2bo3b2obobo$37b3o9b2o17b2o5b3o3bobobo$38bo44bo8bo\n$83b2o7bo$83b3o5bobo$83b3o4b2ob2o$37b2o44b3o3bo5bo$37b2o44b2o7bo$83bo\n5b2o3b2o$41bo39bobobo$41b2o38b2obobo$40bobo41bobo6bo$o30bo52b2o7bo$30b\nobo61bo$29bo3b2o8bo21bo$18b2o9bo3b2o5b4o4bo14bobo$18b2o9bo3b2o4b4o5bo\n15b2o25b2o$30bobo6bo2bo9b2o37b2o$31bo7b4o9b2o$40b4o$43bo3$30bo2bo26bo\n2bo$34bo29bo$30bo3bo25bo3bo$31b4o26b4o$74bobo$77bo$77bo$74bo2bo7b2o$\n75b3o7b2o10$85b3o$84bo3bo$83bo5bo$84bo3bo$85b3o$85b3o$102bo$101bobo$\n94b2o4bob2o15b2o$94b2o3b2ob2o14bobo$83b3o14bob2o13bo6b2o2b2o$82b2ob2o\n3bo10bobo13bo2bo2bo2bob2o$82b2ob2o4b2o9bo5bo8bo6b2o$82b5o3b2o16bobo7bo\nbo$81b2o3b2o20b2o9b2o2$74bobo$77bo$77bo21bo$74bo2bo7b2o10bo2b2o$75b3o\n20b2o$98bob3o2$83b2o$83b2o3$93bo$93bobo$93b2o2$o5$109b2o$102b3o4b2o$\n62b2o37b5o6b2o10bo$62bo37bobo3bo5b3o7bobo$60bobo37b2o3bo6b2o6b2o$60b2o\n47b2o9b2o12b2o$109b2o9b2o12b2o$122bobo$112bo11bo$101bo2bo7bobo$25b4o\n26b4o15bobo8b4o11bo11b2o$25bo3bo25bo3bo17bo7bo3bo10bo3bo12bo$25bo29bo\n21bo7bo14b4o12b2o$26bo2bo26bo2bo14bo2bo8bo2bo26bobo$75b3o$113bo$47b3o\n41b2o2b3o2b2o11b2o$49bo41bo2b5o2bo10bobo$48bo43b9o$89b3o9b3o20b2o$73b\n2o14bo2bo7bo2bo19b2o$74bo15b2o9b2o22bo9bo$71b3o59bobo$71bo33b2o14b2o9b\nobo11b2o$93bobo10b2o13b3o7bo2bo11b2o$30b2o15b2o44bo2bo8bo11bo5b2obo5bo\nbo$31bo15bo3bo32b2o10b2o11b2o6bo5bo2bo6bobo$31bobo11bobo2bobo31b2o8bo\n3b2o8bobo12b2obo8bo$32b2o11b2o3bobo36b2o5b2o9bo13b3o$39bo9b2ob3o33bo4b\no2bo10bo2bo10b2o$38bobo14bo37bobo11bo$38bobo8b2ob3o53bobo$39bo9b2obo\n56b2o3$42b3o5b2o2b2o$42bo2bo4bobo2bo$42bo9bobo$36b2o4bo8b2ob2o$37bo5bo\nbo6bo$34b3o13bobo$34bo15b2o14$o!\n",
     },
     {
+        name: "U turn - WN - EXN",
+        input: [[[7, 0], "W"], [[6, 3], "N"]],
+        output: [[[7, 2], "EX"], [[6, -1], "N"]],
+        height: 2,
+        width: 4,
+        content: "\no29bo29bo29bo3$81bo$81b3o$84bo$83b2o$96b2o$8b2o86bo$8b2o84bobo$94b2o6b\n3o$86b2o14bo2bo$6bo78bo2bo13bo$7bo76b2ob2o13bo$7bo77bobo15bobo$86bo28b\n4o$115bo3bo$5b2o3b2o103bo$8bo74b2o31bo2bo$5bo5bo72bo$6b2ob2o20bobo47b\n3o$7bobo20bo2bo47bo$8bo20b2o10bo6bo36bob2o$8bo12b2o4b2o3bo8bo5bobo19bo\n13b3ob2o2b2o3b2o$21b2o6b2o9bo6b2obo18bobo10bo8bo2bo2bo$30bo2bo2b2o9b2o\nb2o3b2o12b2o12b3ob2o3b5o$31bobo2bo2b3o5b2obo4b2o28bobo$36b4o7bobo35bob\no3bob2o$37b2o9bo37bo4b2obo$10bobo$o10b2o$5b3o3bo$4bo3bo21bo6b2o9b2o$3b\no5bo18b2o6bo2bo2b3o2bo2bo$3b2obob2o19b2o5b3o2b5o2b3o$39b9o$18bo19bo9bo\n$6bo12b2o17b2o7b2o$5bobo10b2o$5bobo$6bo21bo2bo70b3o$32bo11b4o26b4o24bo\n2bo$6b2o20bo3bo10bo3bo25bo3bo24bo$6b2o21b4o14bo29bo24bo$43bo2bo26bo2bo\n26bobo$13bo8b2o$11bobo6bo2bo$4b2o4bobo7bo3bo2b2o$4b2o3bo2bo7bo2b2o2b3o\n$10bobo16b2obo5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!\n",
+    },
+    {
         name: "-----------",
         input: [[[-1, 4], "E"]],
         output: [[[9, 4], "E"]],
@@ -668,6 +676,8 @@ function golCell(x, ys) {
 // ************************************************************************* //
 //  Rest
 // ************************************************************************* //
+var miniSize = 30; // pixels
+var marginSize = 2; // pixels
 // Create the dropdown menu
 var dropdown = document.createElement('select');
 circuits.forEach(function (optionText) {
@@ -697,7 +707,6 @@ var rotate_button = document.createElement('button');
 rotate_button.textContent = 'rotate';
 rotate_button.id = 'rotate_button';
 document.body.appendChild(rotate_button);
-// New line
 document.body.appendChild(document.createElement('br'));
 // Set up the canvas
 var canvas = document.createElement('canvas');
@@ -706,6 +715,16 @@ canvas.height = 320 * 5;
 document.body.appendChild(canvas);
 var ctx = canvas.getContext('2d');
 if (!ctx) {
+    throw new Error('Failed to get the canvas rendering context');
+}
+document.body.appendChild(document.createElement('br'));
+// Set up the canvas
+var mini_canvas = document.createElement('canvas');
+mini_canvas.width = 320 * 5; // Grid size in pixels
+mini_canvas.height = 320 * 5;
+document.body.appendChild(mini_canvas);
+var mini_ctx = mini_canvas.getContext('2d');
+if (!mini_ctx) {
     throw new Error('Failed to get the canvas rendering context');
 }
 // Parameters for the grid
@@ -1002,6 +1021,64 @@ function resizeGrid(width, height) {
         }
     }
 }
+function drawMiniGate(x, y, rotate, ctxt, circuit) {
+    var width = circuit.width;
+    var height = circuit.height;
+    var input_list = circuit.input;
+    var output_list = circuit.output;
+    var i;
+    var _loop_1 = function () {
+        var h = height;
+        var w = width;
+        width = h;
+        height = w;
+        input_list = input_list.map(function (elem) {
+            return [[2 * (h - 1) - elem[0][1], elem[0][0]], rotateDir(elem[1])];
+        });
+        output_list = output_list.map(function (elem) {
+            return [[2 * (h - 1) - elem[0][1], elem[0][0]], rotateDir(elem[1])];
+        });
+    };
+    for (i = 0; i < rotate; i++) {
+        _loop_1();
+    }
+    ctxt.fillStyle = '#7d5820ff';
+    ctxt.fillRect(x * miniSize + marginSize, y * miniSize + marginSize, width * miniSize - marginSize, height * miniSize - marginSize);
+    /*
+    ctxt.beginPath();
+    ctxt.moveTo(x - 10, bubbleY + bubbleHeight);
+    ctxt.lineTo(x, y);
+    ctxt.lineTo(x + 10, bubbleY + bubbleHeight);
+    ctxt.closePath();
+    ctxt.fillStyle = 'yellow';
+    ctxt.fill();
+    ctxt.strokeStyle = 'yellow';
+    ctxt.stroke();
+    */
+}
+function drawMiniCircuit() {
+    if (!mini_ctx) {
+        throw new Error('Failed to get the canvas rendering context');
+    }
+    var width = lastLoadedCircut.width;
+    var height = lastLoadedCircut.height;
+    var mini_width = 2 * width + 2 * height + 5;
+    var mini_height = 2 + Math.max(height, width);
+    mini_canvas.width = miniSize * mini_width + marginSize;
+    mini_canvas.height = miniSize * mini_height + marginSize;
+    mini_ctx.fillStyle = 'black';
+    mini_ctx.fillRect(0, 0, mini_canvas.width, mini_canvas.height); // Clear the canvas
+    mini_ctx.fillStyle = '#444444';
+    for (var row = 0; row < mini_height; row++) {
+        for (var col = 0; col < mini_width; col++) {
+            mini_ctx.fillRect(col * miniSize + marginSize, row * miniSize + marginSize, miniSize - marginSize, miniSize - marginSize);
+        }
+    }
+    drawMiniGate(1, 1, 0, mini_ctx, lastLoadedCircut);
+    drawMiniGate(2 + width, 1, 1, mini_ctx, lastLoadedCircut);
+    drawMiniGate(3 + width + height, 1, 2, mini_ctx, lastLoadedCircut);
+    drawMiniGate(4 + 2 * width + height, 1, 3, mini_ctx, lastLoadedCircut);
+}
 function loadCircuit(circuit) {
     lastLoadedCircut = circuit;
     var rleContent = circuit.content;
@@ -1011,6 +1088,7 @@ function loadCircuit(circuit) {
     updateBackground();
     initializeFromRLE(rleContent, 10, 10);
     drawGrid();
+    drawMiniCircuit();
 }
 // Function to handle dropdown changes
 function handleDropdownChange(event) {
@@ -1105,4 +1183,141 @@ canvas.addEventListener('click', function (event) {
 canvas.addEventListener('mouseleave', function (event) {
     latestClick = { x: -500, y: -500 };
     drawGrid();
+});
+// ************************************************************************* //
+//  Circuit canvas
+// ************************************************************************* //
+var circ_width = 30; // Number of rows
+var circ_height = 30; // Number of columns
+document.body.appendChild(document.createElement('br'));
+var circ_textarea = document.createElement('textarea');
+circ_textarea.rows = 40;
+circ_textarea.cols = 40;
+circ_textarea.style.fontFamily = "monospace";
+circ_textarea.value = "\nwidth 40\nheight 20\ncolor red\nbox 1 1 2 3\ncolor blue\nbox 4 1 3 1\nhwire 4 1 5\n";
+document.body.appendChild(circ_textarea);
+document.body.appendChild(document.createElement('br'));
+var circ_button = document.createElement('button');
+circ_button.textContent = 'update circuit';
+circ_button.id = 'circ_button';
+document.body.appendChild(circ_button);
+document.body.appendChild(document.createElement('br'));
+// Set up the circuit canvas
+var circ_canvas = document.createElement('canvas');
+circ_canvas.width = 5;
+circ_canvas.height = 5;
+document.body.appendChild(circ_canvas);
+var circ_ctx = circ_canvas.getContext('2d');
+if (!circ_ctx) {
+    throw new Error('Failed to get the canvas rendering context');
+}
+function drawArrow(ctx, fromX, fromY, toX, toY) {
+    var headLength = 11; // length of arrowhead
+    var dx = toX - fromX;
+    var dy = toY - fromY;
+    var angle = Math.atan2(dy, dx);
+    // Draw main line
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    // Draw arrowhead
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.lineTo(toX, toY);
+    ctx.fill();
+}
+// Draw the grid on the canvas
+function drawCircuit() {
+    if (!circ_ctx) {
+        return;
+    }
+    var lines = circ_textarea.value
+        .split(/\r?\n/)
+        .map(function (line) { return line.trim().split(/\s+/); });
+    lines.forEach(function (words) {
+        if (words.length > 0) {
+            if (words[0] == 'width' && words.length == 2) {
+                circ_width = Number(words[1]);
+            }
+            if (words[0] == 'height' && words.length == 2) {
+                circ_height = Number(words[1]);
+            }
+        }
+    });
+    circ_canvas.width = miniSize * circ_width + marginSize;
+    circ_canvas.height = miniSize * circ_height + marginSize;
+    circ_ctx.fillStyle = 'black';
+    circ_ctx.fillRect(0, 0, circ_canvas.width, circ_canvas.height); // Clear the canvas
+    circ_ctx.fillStyle = '#444444';
+    for (var row = 0; row < circ_height; row++) {
+        for (var col = 0; col < circ_width; col++) {
+            var cell = grid[row][col];
+            circ_ctx.fillRect(col * miniSize + marginSize, row * miniSize + marginSize, miniSize - marginSize, miniSize - marginSize);
+        }
+    }
+    var color = '#3a5bb7ff';
+    // draw boxes
+    lines.forEach(function (words) {
+        if (words.length > 0) {
+            if (words[0] == 'color' && words.length == 2) {
+                color = words[1];
+            }
+            if (words[0] == 'box' && words.length == 5) {
+                var x = Number(words[1]);
+                var y = Number(words[2]);
+                var w = Number(words[3]);
+                var h = Number(words[4]);
+                circ_ctx.fillStyle = color;
+                circ_ctx.fillRect(x * miniSize + marginSize, y * miniSize + marginSize, w * miniSize - marginSize, h * miniSize - marginSize);
+            }
+        }
+    });
+    // draw arrows 
+    lines.forEach(function (words) {
+        if (words.length > 0) {
+            if (words[0] == 'hwire' && words.length >= 4) {
+                var x = Number(words[1]);
+                var y = Number(words[2]);
+                var l = Number(words[3]);
+                circ_ctx.lineWidth = 3;
+                circ_ctx.fillStyle = 'white';
+                circ_ctx.strokeStyle = 'white';
+                if (words.length >= 5) {
+                    circ_ctx.fillStyle = 'red';
+                    circ_ctx.strokeStyle = 'red';
+                }
+                if (l < 0) {
+                    drawArrow(circ_ctx, x * miniSize, y * miniSize + miniSize / 2, (x + l) * miniSize + marginSize, y * miniSize + miniSize / 2);
+                }
+                else {
+                    drawArrow(circ_ctx, x * miniSize + marginSize, y * miniSize + miniSize / 2, (x + l) * miniSize, y * miniSize + miniSize / 2);
+                }
+            }
+            if (words[0] == 'vwire' && words.length >= 4) {
+                var x = Number(words[1]);
+                var y = Number(words[2]);
+                var l = Number(words[3]);
+                circ_ctx.lineWidth = 3;
+                circ_ctx.fillStyle = 'white';
+                circ_ctx.strokeStyle = 'white';
+                if (words.length >= 5) {
+                    circ_ctx.fillStyle = 'red';
+                    circ_ctx.strokeStyle = 'red';
+                }
+                if (l < 0) {
+                    drawArrow(circ_ctx, x * miniSize + miniSize / 2, y * miniSize, x * miniSize + miniSize / 2, (y + l) * miniSize + marginSize);
+                }
+                else {
+                    drawArrow(circ_ctx, x * miniSize + miniSize / 2, y * miniSize + marginSize, x * miniSize + miniSize / 2, (y + l) * miniSize);
+                }
+            }
+        }
+    });
+}
+drawCircuit();
+circ_button.addEventListener('click', function () {
+    drawCircuit();
 });
