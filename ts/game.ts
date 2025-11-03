@@ -12,64 +12,18 @@ type Circuit = {
   output: CoordinateDirectionPair[];
   height: number;
   width: number;
+  drawing: string;
   content: string;
 };
 
 const circuits: Circuit[] = [
     {
-        name: "Collide - EXN - EXN",
-        input: [[[-1,0],"EX"],[[0,1],"N"]],
-        output: [[[1,0],"EX"],[[0,-1],"N"]],
-        height: 1,
-        width: 1,
-        content: "!",
-    },
-    {
-        name: "Collide - EXS - EXS",
-        input: [[[-1,0],"EX"],[[0,-1],"S"]],
-        output: [[[1,0],"EX"],[[0,1],"S"]],
-        height: 1,
-        width: 1,
-        content: "!",
-    },
-    {
-        name: "Collide stop - EXN - N",
-        input: [[[-1,0],"EX"],[[0,1],"N"]],
-        output: [[[0,-1],"N"]],
-        height: 1,
-        width: 1,
-        content: `
-o7$20b2o$20bo$18bobo$o2bo14b2o$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$
-11bobo!
-`,
-    },
-    {
-        name: "Collide stop - EXN - EX",
-        input: [[[-1,0],"EX"],[[0,1],"N"]],
-        output: [[[1,0],"EX"]],
-        height: 1,
-        width: 1,
-        content: `
-o4$8bo$8b3o$11bo$10b2o3$o2bo$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$
-11bobo!
-`,
-    },
-    {
-        name: "Collide stop - EXS - EX",
-        input: [[[-1,0],"EX"],[[0,-1],"S"]],
-        output: [[[1,0],"EX"]],
-        height: 1,
-        width: 1,
-        content: `
-o19$13b2o$14bo$11b3o$11bo!
-`,
-    },
-    {
-        name: "Generate1 - E",
+        name: "Generate1_E",
         input: [],
         output: [[[3,0],"E"]],
         height: 2,
         width: 2,
+        drawing: "--ro-r--r--",
         content: `
 o29bo2$29bo$29b4o$13bo16b4o$12bobo5b2o8bo2bo5b2o$10b2o3bo14b4o5b2o$5b
 2o3b2o3bo4bobob2o3b4o$5b2o3b2o3bo5b2o3bo2bo$12bobo10bo$13bo8bo2bo$30bo
@@ -82,11 +36,12 @@ bo2bob4o5b2obobo3b2o$o28bo3bo3bob2o5b3obo2bo2b2o$22b2o5bo12bo4b2obobo$
 `,
     },
     {
-        name: "Generate2 - E",
+        name: "Generate2_E",
         input: [],
         output: [[[3,2],"E"]],
         height: 2,
         width: 2,
+        drawing: "--r-or--r--",
         content: `
 o29bo9$8b2o$8b2o11$5b2o3b2o18bo$7b3o18bobo$6bo3bo16bobo17bo$7bobo11b2o
 3bo2bo16b2o$8bo12b2o4bobo15b2o4b2o$28bobo13b3o4b2o2b2o$30bo4bobo7b2o4b
@@ -98,11 +53,12 @@ o29bo9$8b2o$8b2o11$5b2o3b2o18bo$7b3o18bobo$6bo3bo16bobo17bo$7bobo11b2o
 `,
     },
     {
-        name: "Generate1 - EX",
+        name: "Generate1_EX",
         input: [],
         output: [[[3,0],"EX"]],
         height: 2,
         width: 2,
+        drawing: "--ro-r--r--",
         content: `
 o$28b2o$28bo2bo$14bobo15bo$12bo3bo2b3o10bo6b2o$12bo19bo6b2o$5b2o4bo4bo
 7b2o2bo2bo$5b2o5bo7bobo2bo2b2o$12bo3bo5b3o$14bobo$28bo2bo$7b2o23bo11b
@@ -115,11 +71,12 @@ o$28b2o$28bo2bo$14bobo15bo$12bo3bo2b3o10bo6b2o$12bo19bo6b2o$5b2o4bo4bo
 `,
     },
     {
-        name: "Generate2 - EX",
+        name: "Generate2_EX",
         input: [],
         output: [[[3,2],"EX"]],
         height: 2,
         width: 2,
+        drawing: "--r-or--r--",
         content: `
 o8$8b2o$8b2o3$6bo$7bo$7bo3$5b2o3b2o$8bo$5bo5bo$6b2ob2o20bobo$7bobo20bo
 2bo$8bo20b2o10bo6bo$8bo12b2o4b2o3bo8bo5bobo$21b2o6b2o9bo6b2obo$30bo2bo
@@ -132,11 +89,65 @@ o5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
 `,
     },
     {
-        name: "Not turn - EX - S",
+        name: "Collide_EXN_EXN",
+        input: [[[-1,0],"EX"],[[0,1],"N"]],
+        output: [[[1,0],"EX"],[[0,-1],"N"]],
+        height: 1,
+        width: 1,
+        drawing: "ororiri",
+        content: "!",
+    },
+    {
+        name: "Collide_EXS_EXS",
+        input: [[[-1,0],"EX"],[[0,-1],"S"]],
+        output: [[[1,0],"EX"],[[0,1],"S"]],
+        height: 1,
+        width: 1,
+        drawing: "irorori",
+        content: "!",
+    },
+    {
+        name: "Collide_stop_EXN_N",
+        input: [[[-1,0],"EX"],[[0,1],"N"]],
+        output: [[[0,-1],"N"]],
+        height: 1,
+        width: 1,
+        drawing: "or-riri",
+        content: `
+o7$20b2o$20bo$18bobo$o2bo14b2o$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$
+11bobo!
+`,
+    },
+    {
+        name: "Collide_stop_EXN_EX",
+        input: [[[-1,0],"EX"],[[0,1],"N"]],
+        output: [[[1,0],"EX"]],
+        height: 1,
+        width: 1,
+        drawing: "-roriri",
+        content: `
+o4$8bo$8b3o$11bo$10b2o3$o2bo$4bo$o3bo$b4o10$12b3o$11bo2bo$14bo$14bo$
+11bobo!
+`,
+    },
+    {
+        name: "Collide_stop_EXS_EX",
+        input: [[[-1,0],"EX"],[[0,-1],"S"]],
+        output: [[[1,0],"EX"]],
+        height: 1,
+        width: 1,
+        drawing: "iror-ri",
+        content: `
+o19$13b2o$14bo$11b3o$11bo!
+`,
+    },
+    {
+        name: "Not_turn_EX_S",
         input: [[[-1,4],"EX"]],
         output: [[[2,5],"S"]],
         height: 3,
         width: 3,
+        drawing: "---r---r-o-ri--",
         content: `
 o29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$57bo3bo$58bobo$59bo5$
 60b3o$54bobo$37b2o3b2o10b2o4bobo$55bo3b5o$38bo3bo15b2o3b2o$39b3o16b2o
@@ -152,11 +163,12 @@ o$15b2obo3bobo39bo$22bobo$13b5o3b2ob3o$12bo2bo2bo8bo33b2o$12b2o3b2o2b
 `,
     },
     {
-        name: "Not turn - N - EX",
+        name: "Not_turn_N_EX",
         input: [[[2,3], "N"]],
         output: [[[3,2], "EX"]],
         height: 2,
         width: 2,
+        drawing: "",
         content: `
 o8$6b2o$6b2o11$3b2o3b2o18bo$5b3o18bobo$4bo3bo16bobo17bo$5bobo11b2o3bo
 2bo16b2o$6bo12b2o4bobo15b2o4b2o$26bobo13b3o4b2o2b2o$28bo4bobo7b2o4b2o
@@ -168,11 +180,12 @@ o18b2o7b2o$2b2o14b2o$17b2o$bo26bo2bo$32bo11b4o$2bo2bo22bo3bo10bo3bo$4b
 `,
     },
     {
-        name: "Not turn - S - EX",
+        name: "Not_turn_S_EX",
         input: [[[4,-1], "S"]],
         output: [[[5,0], "EX"]],
         height: 2,
         width: 3,
+        drawing: "",
         content: `
 o29bo29bo$42bo$42bobo$25b2o18b2o$23bo3bo17b2o4b2o$22bo5bo16b2o4b2o$17b
 2o2b2obo3bo8bo4bobo$17b2o3bo5bo9bo3bo$23bo3bo5bo2b3o$25b2o2$44b4o26b4o
@@ -185,11 +198,12 @@ bo$41b2o10bo6bo$42bo2bo$43bobo!
 `,
     },
     {
-        name: "Turn - E - N",
+        name: "Turn_E_N",
         input: [[[-1,0], "E"]],
         output: [[[2,-1], "N"]],
         height: 3,
         width: 3,
+        drawing: "-o-r---r---r--i",
         content: `
 o29bo29bo29bo11$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o4$27b2o$27b2o
 4$34b2o29b2o16b2o$26b3o4bobo29bobo15b2o$26b3o4bobob2o21b2o3bo$25bo3bo
@@ -206,11 +220,12 @@ o29bo29bo29bo11$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o4$27b2o$27b2o
 `,
     },
     {
-        name: "Turn - E - S",
+        name: "Turn_E_S",
         input: [[[-1,4], "E"]],
         output: [[[2,5], "S"]],
         height: 3,
         width: 3,
+        drawing: "---r---r-o-ri--",
         content: `
 o29bo29bo3$48bo5b2o$40b2o4bo3bo3b3o$40b2o8bo5b2obo8bo$45bo5bo4bo2bo6bo
 bo$45b2o9b2obo5bobo$40bo13b3o7bo2bo11b2o$39b3o12b2o9bobo11b2o$38bo3bo
@@ -229,11 +244,12 @@ o$24bobo$15b5o3b2ob3o$14bo2bo2bo8bo$14b2o3b2o2b2ob3o12bo$23b2obo15b2o$
 `,
     },   
     {
-        name: "Duplicate - E - ES",
+        name: "Duplicate_E_ES",
         input: [[[-1,4],"E"]],
         output: [[[5,4],"E"],[[2,5],"S"]],
         height: 3,
         width: 3,
+        drawing: "---r--or-o-ri--",
         content: `
 o29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$26b2o29bo3bo$6b2o18b2o
 30bobo$6b2o51bo5$60b3o$54bobo$37b2o3b2o10b2o4bobo$25b3o27bo3b5o$7bo16b
@@ -249,11 +265,12 @@ obo$34b2o25b2o$61b2o6$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o!
 `,
     },
     {
-        name: "Duplicate - E - EN",
+        name: "Duplicate_E_EN",
         input: [[[-1,2],"E"]],
         output: [[[7,2],"E"],[[4,-1],"N"]],
         height: 4,
         width: 4,
+        drawing: "r-l--l-ro-r-o--r---r--l-ri-",
         content: `
 o29bo29bo29bo10$72b3o$72bo2bo$72bo$72bo$73bobo$84b2o$84b2o3$87bo$86bo$
 86bo3$82b2o3b2o$85bo$82bo5bo$83b2ob2o$84bobo$85bo$o84bo4$87b2o$87bo$
@@ -273,11 +290,12 @@ $37b2o43bo3b2ob2o$37b2o48b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o
 `,
     },
     {
-        name: "Duplicate1 - E - ENS",
+        name: "Duplicate1_E_ENS",
         input: [[[-1,4],"E"]],
         output: [[[9,4],"E"],[[6,-1],"N"],[[2,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o29bo59bo29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$26b2o29bo3bo$6b
 2o18b2o30bobo$6b2o51bo5$60b3o$54bobo$37b2o3b2o10b2o4bobo$25b3o27bo3b5o
@@ -308,11 +326,12 @@ o5b2obobo$102bo8bobo$60b3o8b2o11bo18bobo5b2o$59b2ob2o6b6o6b2ob2o6bo$
 `,
     },
     {
-        name: "Duplicate2 - E - ENS",
+        name: "Duplicate2_E_ENS",
         input: [[[-1,4],"E"]],
         output: [[[9,4],"E"],[[2,-1],"N"],[[6,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o29bo29bo29bo2$118b2o$118b2o11$100b2o14b2o3b2o$100b2o16b3o$86b2o29bo3b
 o$66b2o18b2o30bobo$66b2o51bo5$120b3o$114bobo$97b2o3b2o10b2o4bobo$85b3o
@@ -342,11 +361,12 @@ $55b3o10$55b2o$55b2o!
 `,
     },
     {
-        name: "And Wire - ES - ES",
+        name: "And_Wire_ES_ES",
         input: [[[-1,4],"E"],[[2,-1],"S"]],
         output: [[[3,4],"E"],[[2,5],"S"]],
         height: 3,
         width: 2,
+        drawing: "",
         content: `
 o29bo15$44bobo$47bo$47bo$44bo2bo$29b2o14b3o$9b2o18b2o$9b2o18b2o$29bo$
 10bo17bobo$9bobo16bobo$9bobo17bo$10bo2$26b2o3b2o$7b2obob2o12bobobobo$o
@@ -357,11 +377,12 @@ o29bo15$44bobo$47bo$47bo$44bo2bo$29b2o14b3o$9b2o18b2o$9b2o18b2o$29bo$
 `,
     },    
     {
-        name: "And - ES - S",
+        name: "And_ES_S",
         input: [[[-1,2], "E"], [[2,-1], "S"]],
         output: [[[2,3], "S"]],
         height: 2,
         width: 2,
+        drawing: "",
         content: `
 o29bo12$27bo$25bobo$15b2o6b2o12b2o$14bo3bo4b2o12b2o5bobo$3b2o8bo5bo3b
 2o22bo$3b2o8bo3bob2o4bobo19bo$13bo5bo7bo16bo2bo$14bo3bo26b3o$15b2o$26b
@@ -373,11 +394,12 @@ o$27b2o$26b2o6$33bobo$34b2o$17bob2o4bo8bo$17b2obo3bobo$24bobo$15b5o3b
 `,
     },
     {
-        name: "And - EN - N (Illegal)",
+        name: "And_EN_N (Illegal)",
         input: [[[-1,2], "E"], [[2,3], "N"]],
         output: [[[2,-1], "N"]],
         height: 2,
         width: 2,
+        drawing: "",
         content: `
 o$6b2o19b2o$6b2o19b2o3$33bo23bo$33b3o19b3o$6b3o18bo8bo17bo$6b3o18bo7b
 2o17b2o$5bo3bo16bobo$25b2ob2o$4b2o3b2o13bo5bo$27bo$24b2o3b2o2$49b2obob
@@ -390,11 +412,12 @@ o$6b2o19b2o$6b2o19b2o3$33bo23bo$33b3o19b3o$6b3o18bo8bo17bo$6b3o18bo7b
 `,
     },
     {
-        name: "And - EN - N (Illegal 2)",
+        name: "And_EN_N (Illegal 2)",
         input: [[[-1,2], "E"], [[0,3], "N"]],
         output: [[[0,-1], "N"]],
         height: 2,
         width: 2,
+        drawing: "",
         content: `
 o29b2o$30b2o$49b2o$49b2o4$31bo$30b3o$30b3o2$28b2o3b2o$28b2o3b2o13b3o$
 47bo3bo$46bo5bo$30b2o14bo5bo$30bobo16bo$29bo2b2o13bo3bo$31b2o15b3o$31b
@@ -406,11 +429,12 @@ o8b2o5b2o6b2o$18b2o8bo7bo4b2o$18b2o8bo12b2o$29bo$30b2o!
 `,
     },
     {
-        name: "And - EN - N",
+        name: "And_EN_N",
         input: [[[-1,2], "E"], [[0,5], "N"]],
         output: [[[0,-1], "N"]],
         height: 3,
         width: 2,
+        drawing: "",
         content: `
 o24$5b2o$6bo$6bobo$7b2o3$o29bo29bo8$20b2o$20bobo$12b3o5bo$o2bo8bo2bo$
 4bo7bo$o3bo7bo$b4o8bobo3$47b2o$47b2o$24b2o$24b2o2$25bo21bo$24bobo8b2o
@@ -422,11 +446,12 @@ o!
 `,
     },
     {
-        name: "And - NN - NN",
+        name: "And_NN_NN",
         input: [[[0,3], "N"], [[4,3], "N"]],
         output: [[[0,-1], "N"], [[4,-1], "N"]],
         height: 2,
         width: 4,
+        drawing: "",
         content: `
 o29bo29bo29bo2$3b2o$4bo$4bobo$5b2o$63b2o$63bo$54b2o5bobo$10b3o40bo3bo
 3b2o$10bo41bo5bo$11bo40bo3bob2o$52bo5bo$44b2o7bo3bo$43bobo8b2o$43bo$
@@ -440,11 +465,12 @@ o9bo$27b6o$29bob2o8b2o$32b2o7bo$42b3o47b2o$44bo47bobo$92bo3$106bobo$
 `,
     },
     {
-        name: "And Not - NN - NN",
+        name: "And_Not_NN_NN",
         input: [[[0,3], "N"], [[4,3], "N"]],
         output: [[[0,-1], "N"], [[4,-1], "N"]],
         height: 2,
         width: 4,
+        drawing: "",
         content: `
 o29bo29bo29bo6$5b2o$6bo$6bobo54b2o$7b2o54bo$53b2o6bobo$51bo2bo6b2o$50b
 o$50bo6bo$50bo7b2o$44b2o5bo2bo$43bobo7b2o$17b2o24bo$17bobo22b2o$17bo2$
@@ -459,11 +485,12 @@ bo$41bo5bo8bo6b2o$40bobo13bo2bo2bo2bob2o36bobo$39bob2o13bo6b2o2b2o31b
 `,
     },
     {
-        name: "And Not - NN - N",
+        name: "And_Not_NN_N",
         input: [[[0,3], "N"], [[4,3], "N"]],
         output: [[[0,-1], "N"], [[4,-1], "N"]],
         height: 2,
         width: 3,
+        drawing: "",
         content: `
 o6$5b2o$6bo$6bob2o$7bo$11bo$9bo$10bo$71bo$69b3o$58b3o7bo$56bo11b2o$54b
 obo2bo$64bo$53bob4o4bobo$52bo2b3o4bo2bo$54bo8b2o$51bo2bo$51bo13b2o$52b
@@ -476,11 +503,12 @@ o2b3o6bo3bo13bo2bobo$32bob4o5bo2bo15bobo$44b3o14b2ob2o13b2o$33bobo2bo
 `,
     },
     {
-        name: "U turn - EN - EW",
+        name: "U_turn_EN_EW",
         input: [[[-1,4], "E"], [[2,11], "N"]],
         output: [[[9,4], "E"], [[-1,8], "W"]],
         height: 6,
         width: 5,
+        drawing: "",
         content: `
 o2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo$88bobo$89bo2$39b2o$
 39b2o2$40bo49b3o$39bobo42bobo$39bobo25b2o3b2o10b2o4bobo$40bo44bo3b5o$
@@ -514,11 +542,12 @@ bo6bo$34b3o13bobo$34bo15b2o14$o!
 `,
     },
     {
-        name: "U turn - WN - EXN",
+        name: "U_turn_WN_EXN",
         input: [[[7,0], "W"], [[6,3], "N"]],
         output: [[[7,2], "EX"], [[6,-1], "N"]],
         height: 2,
         width: 4,
+        drawing: "---oriori---r--",
         content: `
 o29bo29bo29bo3$81bo$81b3o$84bo$83b2o$96b2o$8b2o86bo$8b2o84bobo$94b2o6b
 3o$86b2o14bo2bo$6bo78bo2bo13bo$7bo76b2ob2o13bo$7bo77bobo15bobo$86bo28b
@@ -540,6 +569,7 @@ $10bobo16b2obo5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: "!",
     },    
     {
@@ -548,6 +578,7 @@ $10bobo16b2obo5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o57$47b2o$48bo$48bobo$49b2o$52b2o$52bobo$52bo8$o2$o$bo2$67b2o$67bobo$
 67bo13$82b2o$82bobo$82bo13$97b2o$97bobo$97bo2$86b2o$85bo2bo$88bo$88bo$
@@ -563,6 +594,7 @@ o3b2o3b2o$92bo11b4o14bo3b2o3b2o$97b2o5bo2bo8b2o5bobo$97b2o5b4o16bo$
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o3$117b2o$117b2o9$117bo$116b3o$115b5o$114b2o3b2o$115b5o$115bo3bo$116bo
 bo$117bo3$119bo$117b2ob2o$112bo$111bo4bo5bo$111b3o$116b2obob2o$107b2o$
@@ -579,6 +611,7 @@ $115b2o$115b2o4$82bo$81bo$81b3o13$67bo$o65bo$66b3o$o$bo11$52bo$51bo$
         output: [[[4,-1],"N"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o20$30b2o$31bo$31bobo5bo$32b2o4bobo$37bob2o15b2o$36b2ob2o16bo$37bob2o
 16bobo$38bobo8b2o7b2o$18bo20bo9bobo$16b3o32bo$15bo35b2o$15b2o23bo$38bo
@@ -615,6 +648,7 @@ o$3bo3bo59bobo4bo5bobo58b3o$7bo15b3o3b3o36b2o11bo51b2o5b5o$4b2obo15bo
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o52$83b2o$83bo2bo$87bo9bobo$71bo15bo7bo3bo$68b4o15bo7bo$59bo7b4o12bo2b
 o7bo4bo8b2o$58bobo6bo2bo12b2o10bo12b2o$57bo3b2o4b4o24bo3bo$43bo2b2o9bo
@@ -643,6 +677,7 @@ o$56bo5b3ob2o8bobo$43b2o19bob2o9bo$43b2o2$61b2o2b2o$61bo2bobo$62bobo$
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o49$30bo$28b4o$19b2o5b4ob2o9b2o$17bo2bo3bo3b2ob3o8b2o40b2o$8b2o6bo7bo
 3b2ob2o49bo3bo$8b2o6bo6bo3b5o49bo5bo13b2o$16bo7b3o3bo42b2o5bo2bo3bo13b
@@ -665,6 +700,7 @@ $62b2o6$69bobo$70b2o$70bo5$77bo$78b2o$77b2o10$72b2o$73b2o$72bo$61b2o$
         output: [[[19,4],"E"],[[14,19],"S"]],
         height: 10,
         width: 10,
+        drawing: "",
         content: `
 o23$101b2o$101b2o5$78b2o$78b2o2$100b3o$99bo3bo$79bo18bo5bo$78bobo17b2o
 bob2o$77bo3bo$78b3o$76b2o3b2o18bo$100bobo$100bobo$101b2o$103bo$77bo24b
@@ -737,6 +773,7 @@ o17bo3bo$15b2o20b3o$38bo4$38b2o$38b2o!
         output: [[[19,4],"E"],[[19,14],"E"]],
         height: 10,
         width: 10,
+        drawing: "",
         content: `
 o23$101b2o$101b2o5$78b2o$78b2o2$100b3o$99bo3bo$79bo18bo5bo$78bobo17b2o
 bob2o$77bo3bo$78b3o$76b2o3b2o18bo$100bobo$100bobo$101b2o$103bo$77bo24b
@@ -797,6 +834,7 @@ obo48b2o$13b2o3b2o17bo2b2o46b2o$202b2o$201bobo$16bo184bo$17b2o181b2o2$
         output: [[[4,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o2$88b2o$88b2o6$54b2o$54b2o4$70b2o14b2o3b2o$31b2o37b2o16b3o$31b2o54bo
 3bo$88bobo$89bo2$53b3o$32bo19bo3bo$32bo18bo5bo$31bobo18bo3bo33b3o$30b
@@ -819,6 +857,7 @@ o$81b2obobo$84bobo6bo$84b2o7bo$94bo3$91b2o$91b2o4$69bo$70bo$o2bo64b3o$
         output: [[[4,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o3$63b2o$63b2o9$60b2obob2o2$60bo5bo14b2o$81b2o$61b2ob2o$63bo2$83b2o12b
 2o$97b2o3$66bo$60b3o4b2o10b2o3b2o$59bo3bo2b2o12b5o12b3o$80b2ob2o12b3o$
@@ -841,6 +880,7 @@ o3$63b2o$63b2o9$60b2obob2o2$60bo5bo14b2o$81b2o$61b2ob2o$63bo2$83b2o12b
         output: [[[4,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo22b2o$88bobo23b2o$
 89bo4$137b2o$90b3o21b3o20b2o$84bobo$67b2o3b2o10b2o4bobo21bobo$85bo3b5o
@@ -865,6 +905,7 @@ o!
         output: [[[4,-1],"N"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o36$47b2o$48bo$48bobo$49b2o29$80b2o$80bobo$72b3o5bo$o71bo2bo$72bo$o71b
 o$bo71bobo9$95b2o$57b2o36bobo$57b2o36bo3$55bo$56bo7b2o$56bo6bobo$63bob
@@ -886,6 +927,7 @@ $71b2o20bo3bo$58b2o12b2o20b3o$71bo20b2o3b2o2$78b3o$55b2o3b2o16b3o$55b
         output: [[[9,4],"E"],[[4,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o2$88b2o$88b2o8$30b2o$30b2o2$70b2o14b2o3b2o$70b2o16b3o$32b2o53bo3bo$
 88bobo$89bo3$28b2o3b2o$29b5o$29b2ob2o56b3o$29b2ob2o50bobo$30b3o34b2o3b
@@ -907,6 +949,7 @@ o3b5o50b3o3bo5bo$9b2o6bo7bo3b2ob2o49b2o7bo$18bo2bo3bo3b2ob3o8b2o38bo5b
         output: [[[9,4],"E"],[[4,-1],"N"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o18$97b2o$97b2o8$97b3o$90bo5bo3bo$89b2o4bo5bo$89bobo3b2obob2o3$98bo$
 97bobo$97bobo$98b3o$100b2o$100bo$101b3o$72b3o28bo$72bo2bo$72bo$72bo$
@@ -931,6 +974,7 @@ $23b2o62b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o15bo3bo$85b3o10$85b
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: "!",
     },
     {
@@ -939,6 +983,7 @@ $23b2o62b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o15bo3bo$85b3o10$85b
         output: [[[9,4],"E"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o12$124b2o$124b2o5$101b2o$101b2o3$123b3o$122bo3bo$102bo18bo5bo$100b2ob
 2o16bo5bo$124bo$99bo5bo16bo3bo$123b3o$99b2obob2o18bo3$100bo24b3o$100bo
@@ -967,6 +1012,7 @@ bo$8b5o3b2ob3o27bo5b2o13b2o4b2o53bo$17bobo51b2o$10b2obo3bobo52bo$10bob
         output: [[[39,4],"E"]],
         height: 5,
         width: 20,
+        drawing: "",
         content: `
 o5$87bo49bo49bo49bo49bo49bo49bo49bo49bo49bo$87b3o47b3o9bo37b3o47b3o47b
 3o9bo37b3o47b3o47b3o9bo37b3o47b3o$90bo7b2o40bo8bo40bo7b3o39bo7b2o40bo
@@ -1081,6 +1127,7 @@ o37b3o47b3o47b3o9bo140b2o$24bo49bo49bo49bo49bo49bo49bo49bo49bo152b2o!
         output: [[[9,4],"E"],[[4,-1],"N"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: "!",
     },
     {
@@ -1089,6 +1136,7 @@ o37b3o47b3o47b3o9bo140b2o$24bo49bo49bo49bo49bo49bo49bo49bo49bo152b2o!
         output: [[[9,4],"E"],[[4,9],"S"]],
         height: 5,
         width: 5,
+        drawing: "",
         content: "!",
     },
     {
@@ -1097,6 +1145,7 @@ o37b3o47b3o47b3o9bo140b2o$24bo49bo49bo49bo49bo49bo49bo49bo49bo152b2o!
         output: [],
         height: 5,
         width: 5,
+        drawing: "",
         content: `
 o68$12b2o$12bo$10bobo$o2bo6b2o$4bo$o3bo$b4o!
 `,
@@ -1390,7 +1439,10 @@ if (!ctx) {
     throw new Error('Failed to get the canvas rendering context');
 }
 
-document.body.appendChild(document.createElement('br'));
+const paragraph = document.createElement("p");
+paragraph.textContent = "This is a paragraph created from TypeScript.";
+paragraph.style.fontFamily = "monospace";
+document.body.appendChild(paragraph);
 
 // Set up the canvas
 const mini_canvas = document.createElement('canvas');
@@ -1700,6 +1752,10 @@ function drawMiniGate(x: number,
     var height = circuit.height;
     var input_list = circuit.input;
     var output_list = circuit.output;
+    var startX;
+    var startY;
+    var deltaX;
+    var deltaY;
     var i: number;
     for(i = 0; i < rotate; i++) {
         let h = height;
@@ -1711,22 +1767,60 @@ function drawMiniGate(x: number,
         output_list = output_list.map((elem) =>
                 [[2*(h-1)-elem[0][1],elem[0][0]],rotateDir(elem[1])]);
     }
-    ctxt.fillStyle = '#7d5820ff';
-    ctxt.fillRect(x * miniSize + marginSize, 
+    if (rotate % 4 == 0) { 
+        startX = x;       startY = y;        deltaX = 1;  deltaY = 0; }
+    else if (rotate % 4 == 1) { 
+        startX = x+width; startY = y;        deltaX = 0;  deltaY = 1; }
+    else if (rotate % 4 == 2) { 
+        startX = x+width; startY = y+height; deltaX = -1; deltaY = 0; }
+    else { 
+        startX = x;       startY = y+height; deltaX = 0;  deltaY = -1;  }
+    /* ctxt.fillRect(x * miniSize + marginSize, 
                   y * miniSize + marginSize, 
                   width * miniSize - marginSize, 
-                  height * miniSize - marginSize);
-    /* 
+                  height * miniSize - marginSize); */
+    let chars = circuit.drawing.split('');
     ctxt.beginPath();
-    ctxt.moveTo(x - 10, bubbleY + bubbleHeight);
-    ctxt.lineTo(x, y);
-    ctxt.lineTo(x + 10, bubbleY + bubbleHeight);
+    ctxt.moveTo( startX * miniSize + 1, startY * miniSize + 1);
+    i = 0;
+    while(i < chars.length) {
+        if (chars[i] == '-') {
+            startX += deltaX;
+            startY += deltaY;
+            ctxt.lineTo( startX * miniSize + 1, startY * miniSize + 1);
+        } else if (chars[i] == 'i') {
+            ctxt.lineTo( (startX + deltaX / 2 - deltaY / 3) * miniSize + 1, 
+                         (startY + deltaY / 2 + deltaX / 3) * miniSize + 1);
+            startX += deltaX;
+            startY += deltaY;
+            ctxt.lineTo( startX * miniSize + 1, startY * miniSize + 1);
+        } else if (chars[i] == 'o') {
+            ctxt.lineTo( (startX + deltaX / 2 + deltaY / 3) * miniSize + 1, 
+                         (startY + deltaY / 2 - deltaX / 3) * miniSize + 1);
+            startX += deltaX;
+            startY += deltaY;
+            ctxt.lineTo( startX * miniSize + 1, startY * miniSize + 1);
+        } else if (chars[i] == 'r') {
+            let x : number = deltaX;
+            let y : number = deltaY;
+            deltaX = -y;
+            deltaY = x;
+        } else if (chars[i] == 'l') {
+            let x : number = deltaX;
+            let y : number = deltaY;
+            deltaX = y;
+            deltaY = -x;
+        }  
+        i++;
+    }
     ctxt.closePath();
-    ctxt.fillStyle = 'yellow';
+    ctxt.fillStyle = '#ff0000ff';
+    ctxt.globalAlpha = 0.5;
     ctxt.fill();
-    ctxt.strokeStyle = 'yellow';
+    ctxt.globalAlpha = 1.0;
+    ctxt.strokeStyle = '#ff0000ff';
     ctxt.stroke();
-    */
+    
 }
 
 function drawMiniCircuit() {
@@ -1761,6 +1855,7 @@ function loadCircuit(circuit: Circuit) {
     const rleContent = circuit.content;
     inputs = circuit.input;
     outputs = circuit.output;
+    paragraph.textContent = circuit.name + ' 3 4 red 2';
     resizeGrid(circuit.width, circuit.height);
     updateBackground();
     initializeFromRLE(rleContent, 10, 10);
@@ -1874,8 +1969,8 @@ circ_textarea.rows = 40;
 circ_textarea.cols = 40;
 circ_textarea.style.fontFamily = "monospace";
 circ_textarea.value = `
-width 40
-height 20
+width 30
+height 30
 color red
 box 1 1 2 3
 color blue
@@ -1957,6 +2052,7 @@ function drawCircuit() {
     circ_ctx.fillStyle = 'black';
     circ_ctx.fillRect(0, 0, circ_canvas.width, circ_canvas.height); // Clear the canvas
     circ_ctx.fillStyle = '#444444';
+    circ_ctx.strokeStyle = '#777777ff';
     for (let row = 0; row < circ_height; row++) {
         for (let col = 0; col < circ_width; col++) {
             const cell : BExp = grid[row][col];
@@ -1964,6 +2060,8 @@ function drawCircuit() {
                               row * miniSize + marginSize, 
                               miniSize - marginSize, 
                               miniSize - marginSize);
+            circ_ctx.strokeText(col.toString(), col * miniSize + marginSize * 4, row * miniSize + marginSize + 12);
+            circ_ctx.strokeText(row.toString(), col * miniSize + marginSize * 4, row * miniSize + marginSize + 22);
         }
     }
     var color = '#3a5bb7ff';
