@@ -345,6 +345,43 @@ o5b2obobo$102bo8bobo$60b3o8b2o11bo18bobo5b2o$59b2ob2o6b6o6b2ob2o6bo$
 `,
     },
     {
+        name: "Duplicate_N_WEX",
+        input: [[[2,11],"N"]],
+        output: [[[-1,6],"W"],[[7,0],"EX"]],
+        height: 6,
+        width: 4,
+        drawing: "----ro-----r--i-r--o---",
+        content: `
+o59bo29bo$28b2o$28bo2bo$14bobo15bo$12bo3bo2b3o10bo6b2o$12bo19bo6b2o$5b
+2o4bo4bo7b2o2bo2bo$5b2o5bo7bobo2bo2b2o$12bo3bo5b3o$14bobo$28bo2bo$7b2o
+23bo11b4o$7b2o19bo3bo10bo3bo$29b4o14bo$43bo2bo$7bo$6b3o10bo$5bo3bo9b2o
+18b2o2b3o2b2o$7bo10bobo18bo2b5o2bo$4bo5bo29b9o$4bo5bo20bo5b3o9b3o$5bo
+3bo20b2o5bo2bo7bo2bo$6b3o21bobo5b2o9b2o$89bo$11b2o74b3o$12b2o72bo$11bo
+27bo7bo38b2o$38b4o5bobo$33b2o2bo2b2o8b2o4b2o$33b2o2b2o11b2o4b2o25b3o$o
+21b2o6b2o10bo7b2o31b3o$22b2o5b3o10bo4bobo24bo7bo3bo$9bo20b2o10bo4bo25b
+2o$8b3o22b2o38bobo5b2o3b2o$8b3o22b2o2$6b2o3b2o$6b2o3b2o3$9bo$8bobo$7b
+2o77b2o$7b2o77bo$7b3o77b3o$8bobo78bo$9b2o2$74b3o$76bo$75bo10$o3$59b3o$
+61bo$60bo13$44b3o$46bo$45bo4$30b2o15b2o$31bo15bo3bo$31bobo11bobo2bobo$
+32b2o11b2o3bobo$39bo9b2ob3o$38bobo14bo$o37bobo8b2ob3o$3b2o19b2o13bo9b
+2obo$4bo19bo$4bobo7b2o6bobo$5b2o6bobo5b3o26b2o2b2o$12bo6b3o28bobo2bo
+21bo$12bo2bo2bo2bo30bobo22b2o$12bo6b2o15b2o13b2ob2o16b2o4b2o13b2o5bo$
+13bobo21bo14bo15b2o2b2o4b3o11b3o3bo3bo$14b2o6b3o9b3o13bobo15b2o2b2o4b
+2o9bob2o5bo$22bo11bo7b3o5b2o25b2o10bo2bo4bo5bo$23bo18bo2bo31bo11bob2o
+9b2o$42bo38bo10b3o$42bo38bobo9b2o$43bobo25bo2bo6b2o$25b4o26b4o11bo$25b
+o3bo25bo3bo10bo3bo$25bo29bo14b4o12bo$26bo2bo26bo2bo25b2o$85bobo2$59b2o
+2b3o2b2o10bo$59bo2b5o2bo10b2o$60b9o10bobo$37b3o17b3o9b3o$37bo19bo2bo7b
+o2bo21b2o$38bo19b2o9b2o21b2o10bobo$94bo8bo2bo$89b2o11b2o10b2o$61b2o9b
+2o15bobo8b2o3bo8b2o$o60bobo9b2o9b2o6bo9b2o5b2o$52b3ob2o4b3o7bo6bo3bo2b
+o2bo2bo10bo2bo4bo$52b4o2bo4b3o12bobo3b2o6bo11bobo$56b2o4b3o12bo3b2o6bo
+bo$61bobo13bo3b2o6b2o$61b2o14bo3b2o$78bobo$79bo2$52b3o$42b3o7bo$42bo2b
+o7bo$42bo$42bo$43bobo8$51b2o$51b2o$67b3o$67bo$68bo4$o$75b2o$59b2o14bob
+o9b2o5bo$60b2o13bo10b3o3bo3bo$50b5o4bo11bo11bob2o5bo$49bob3obo15b2o10b
+o2bo4bo5bo$50bo3bo11b2o4b2o9bob2o9b2o$51b3o8b2o2b2o4b3o11b3o$52bo9b2o
+2b2o4b2o13b2o$53b2o16b2o$42b3o8bobo15bo$42bo2bo7bobo$42bo11bo$42bo$43b
+obo$51b2obob2o$51bo5bo$52bo3bo$53b3o8$53b2o$53b2o!
+`,
+    },
+    {
         name: "Duplicate2_E_ENS",
         input: [[[-1,4],"E"]],
         output: [[[9,4],"E"],[[2,-1],"N"],[[6,9],"S"]],
@@ -2060,7 +2097,7 @@ hwire 9 2 -3
 hwire 4 2 -1
 Not_turn_N_EX 28 16 blue 2
 color grey
-box 4 23 4 6
+Duplicate_N_WEX 4 23 red 0
 box 1 18 29 2
 box 3 20 27 2
 box 1 8 5 5
