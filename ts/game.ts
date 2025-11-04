@@ -163,12 +163,31 @@ o$15b2obo3bobo39bo$22bobo$13b5o3b2ob3o$12bo2bo2bo8bo33b2o$12b2o3b2o2b
 `,
     },
     {
+        name: "Not_turn_EX_N",
+        input: [[[-1,0],"EX"]],
+        output: [[[2,-1],"N"]],
+        height: 2,
+        width: 3,
+        drawing: "-o-r--r---r-i",
+        content: `
+o29bo4$59b2o$59b2o$59b2o$60bo$59bobo$59bobo$42b3o6b2o7bo$14b4o24bo2bo
+5bobo$13bo3bo24bo5b2obobo$17bo24bo5bobobo4b2o3b2o$13bo2bo26bobo4bo6bob
+obobo$49b2o7b5o$48b3o8b3o$48b3o9bo$48b3o$49b2o$50bo$35b2o11bobobo$35b
+2o11b2obobo$51bobo$51b2o4bobo$42b3o12b2o$35bo5bo2bo13bo$34b3o7bo$33bo
+3bo6bo$32bob3obo2bobo17b3o$33b5o22bo3bo$51bo7bo5bo$49b2o9bo3bo$50b2o9b
+3o$61b3o$38b3o$40bo$39bo$61b2o$46b2o13b2o$45b2o$47bo3$36b3o$35bo3bo$
+34bo5bo13bo$34b2obob2o12b2o$53bobo$64bo$37bo25bobo$36bobo13bo8b2o3bo9b
+2o$36bobo13b4o5b2o3bo9b2o$37bo4b2o9b4o4b2o3bo$42b2o9bo2bo6bobo$37b2o8b
+o5b4o7bo$37b2o8bo4b4o$52bo!
+`,
+    },
+    {
         name: "Not_turn_N_EX",
         input: [[[2,3], "N"]],
         output: [[[3,2], "EX"]],
         height: 2,
         width: 2,
-        drawing: "",
+        drawing: "--r-ori-r--",
         content: `
 o8$6b2o$6b2o11$3b2o3b2o18bo$5b3o18bobo$4bo3bo16bobo17bo$5bobo11b2o3bo
 2bo16b2o$6bo12b2o4bobo15b2o4b2o$26bobo13b3o4b2o2b2o$28bo4bobo7b2o4b2o
@@ -1814,11 +1833,9 @@ function drawMiniGate(x: number,
         i++;
     }
     ctxt.closePath();
-    ctxt.fillStyle = '#ff0000ff';
     ctxt.globalAlpha = 0.5;
     ctxt.fill();
     ctxt.globalAlpha = 1.0;
-    ctxt.strokeStyle = '#ff0000ff';
     ctxt.stroke();
     
 }
@@ -1844,6 +1861,8 @@ function drawMiniCircuit() {
                               miniSize - marginSize);
         }
     }    
+    mini_ctx.fillStyle = 'yellow';
+    mini_ctx.strokeStyle = 'yellow';
     drawMiniGate(1,1,0,mini_ctx,lastLoadedCircut);
     drawMiniGate(2+width,1,1,mini_ctx,lastLoadedCircut);
     drawMiniGate(3+width+height,1,2,mini_ctx,lastLoadedCircut);
@@ -1968,14 +1987,91 @@ const circ_textarea = document.createElement('textarea');
 circ_textarea.rows = 40;
 circ_textarea.cols = 40;
 circ_textarea.style.fontFamily = "monospace";
-circ_textarea.value = `
-width 30
+circ_textarea.value = `width 30
 height 30
-color red
-box 1 1 2 3
-color blue
-box 4 1 3 1
-hwire 4 1 5
+Generate2_E 10 28 red 3
+Generate1_E 12 28 red 3
+Generate1_E 14 28 red 3
+Generate1_E 16 28 red 3
+Generate2_E 18 28 lime 3
+vwire 11 28 -16
+vwire 12 28 -18
+vwire 14 28 -16
+vwire 16 28 -16
+U_turn_WN_EXN 8 26 red 0
+U_turn_WN_EXN 8 24 red 0
+U_turn_WN_EXN 8 14 red 0
+U_turn_WN_EXN 8 12 red 0
+hwire 12 13 5 red
+hwire 12 15 5 red
+hwire 7 16 10 red
+hwire 4 17 13 red
+hwire 3 22 14 red
+hwire 8 23 9 red
+hwire 12 25 5 red
+hwire 12 27 5 red
+Generate2_EX 5 15 red 0
+Generate2_EX 2 16 red 0
+Generate2_EX 1 21 red 0
+Turn_E_S 0 23 blue 1
+Duplicate_E_EN 24 22 blue 2
+hwire 24 24 -12
+hwire 30 26 -18
+hwire 30 24 -2
+vwire 25 26 4
+vwire 3 30 -8
+hwire 4 26 -4
+vwire 22 17 13
+vwire 0 5 18
+hwire 0 9 1
+vwire 4 13 5
+vwire 7 7 10
+hwire 0 6 6
+Turn_E_S 6 4 blue 0
+Not_turn_EX_N 21 15 blue 2
+hwire 28 16 -4 red
+hwire 25 14 -13 
+hwire 22 12 -10
+Turn_E_S 22 11 blue 1
+Turn_E_S 25 13 blue 1
+vwire 25 0 13
+vwire 22 0 4
+vwire 22 8 3
+hwire 24 6 6
+Duplicate_E_EN 20 4 blue 1
+Duplicate_E_EN 26 7 blue 1
+vwire 28 11 5
+vwire 28 4 3
+hwire 16 3 11
+Generate1_E 14 3 yellow 0
+Generate1_EX 15 0 yellow 1
+Generate2_E 12 4 orange 0
+vwire 16 2 2 red
+vwire 17 6 -4 red
+hwire 14 5 6 red
+hwire 18 2 -5
+vwire 19 28 -25 
+Duplicate_E_EN 9 0 blue 2
+vwire 10 4 2 
+vwire 14 6 -1 
+vwire 16 10 -5
+vwire 3 8 -8
+hwire 9 2 -3
+hwire 4 2 -1
+Not_turn_N_EX 28 16 blue 2
+color grey
+box 4 23 4 6
+box 1 18 29 2
+box 3 20 27 2
+box 1 8 5 5
+box 18 1 3 2
+box 13 10 4 2
+box 10 6 5 4
+box 27 1 3 3
+box 0 0 3 5
+box 4 0 2 5
+box 17 5 3 5
+vwire 5 30 -1
 `;
 document.body.appendChild(circ_textarea);
 document.body.appendChild(document.createElement('br'));
@@ -2133,6 +2229,21 @@ function drawCircuit() {
                                         (y + l) * miniSize);
                 }   
             }
+        }
+    });  
+    // draw gates
+    lines.forEach(words => {
+        if (words.length > 4) {
+            circuits.forEach(c => {
+                if (c.name == words[0]) {
+                    let x = Number(words[1]);
+                    let y = Number(words[2]);
+                    let r = Number(words[4]);
+                    circ_ctx.fillStyle = words[3];
+                    circ_ctx.strokeStyle = words[3];
+                    drawMiniGate(x,y,r,circ_ctx,c);
+                }
+            });
         }
     });       
 }

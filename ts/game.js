@@ -93,12 +93,21 @@ var circuits = [
         content: "\no29bo2$58b2o$58b2o11$40b2o14b2o3b2o$40b2o16b3o$57bo3bo$58bobo$59bo5$\n60b3o$54bobo$37b2o3b2o10b2o4bobo$55bo3b5o$38bo3bo15b2o3b2o$39b3o16b2o\n3b2o$39b3o2$48bo$46b2o12b2o$47b2o2$38bo5bo6b2o$37b3o5bo4b2o$37b3o3b3o\n6bo2$35b2o3b2o19b2obob2o$35b2o3b2o19bo5bo$62bo3bo$59bo3b3o$38bo19b2o$\n37bobo18bobo$36b2o6bobo$36b2o9bo6b2o$36b3o8bo6bobo$37bobo4bo2bo3b2obob\no$38b2o5b3o3bobobo$53bo8bo$53b2o7bo$53b3o5bobo$53b3o4b2ob2o$53b3o3bo5b\no$53b2o7bo$53bo5b2o3b2o$51bobobo$51b2obobo$54bobo6bo$15bob2o4bo30b2o7b\no$15b2obo3bobo39bo$22bobo$13b5o3b2ob3o$12bo2bo2bo8bo33b2o$12b2o3b2o2b\n2ob3o34b2o$21b2obo$28bo$26b3o$25bo$25b2o$14b4o$13bo3bo$17bo$13bo2bo$\n22b2o20bobo$21bo2bo22bo$22b2o23bo$14b2o28bo2bo$13bobo29b3o$13bo$12b2o$\n25b2o$25bo$26b3o$28bo!\n",
     },
     {
+        name: "Not_turn_EX_N",
+        input: [[[-1, 0], "EX"]],
+        output: [[[2, -1], "N"]],
+        height: 2,
+        width: 3,
+        drawing: "-o-r--r---r-i",
+        content: "\no29bo4$59b2o$59b2o$59b2o$60bo$59bobo$59bobo$42b3o6b2o7bo$14b4o24bo2bo\n5bobo$13bo3bo24bo5b2obobo$17bo24bo5bobobo4b2o3b2o$13bo2bo26bobo4bo6bob\nobobo$49b2o7b5o$48b3o8b3o$48b3o9bo$48b3o$49b2o$50bo$35b2o11bobobo$35b\n2o11b2obobo$51bobo$51b2o4bobo$42b3o12b2o$35bo5bo2bo13bo$34b3o7bo$33bo\n3bo6bo$32bob3obo2bobo17b3o$33b5o22bo3bo$51bo7bo5bo$49b2o9bo3bo$50b2o9b\n3o$61b3o$38b3o$40bo$39bo$61b2o$46b2o13b2o$45b2o$47bo3$36b3o$35bo3bo$\n34bo5bo13bo$34b2obob2o12b2o$53bobo$64bo$37bo25bobo$36bobo13bo8b2o3bo9b\n2o$36bobo13b4o5b2o3bo9b2o$37bo4b2o9b4o4b2o3bo$42b2o9bo2bo6bobo$37b2o8b\no5b4o7bo$37b2o8bo4b4o$52bo!\n",
+    },
+    {
         name: "Not_turn_N_EX",
         input: [[[2, 3], "N"]],
         output: [[[3, 2], "EX"]],
         height: 2,
         width: 2,
-        drawing: "",
+        drawing: "--r-ori-r--",
         content: "\no8$6b2o$6b2o11$3b2o3b2o18bo$5b3o18bobo$4bo3bo16bobo17bo$5bobo11b2o3bo\n2bo16b2o$6bo12b2o4bobo15b2o4b2o$26bobo13b3o4b2o2b2o$28bo4bobo7b2o4b2o\n2b2o$33b2o9b2o$34bo10bo$3b3o$o8bobo$3bobo4b2o$2b5o3bo24b2o9b2o$b2o3b2o\n19bo6bo2bo2b3o2bo2bo$b2o3b2o17b2o7b3o2b5o2b3o$26b2o9b9o$36bo9bo$4bo12b\no18b2o7b2o$2b2o14b2o$17b2o$bo26bo2bo$32bo11b4o$2bo2bo22bo3bo10bo3bo$4b\n2o23b4o14bo$43bo2bo$10b2o$8bo3bo5bo2b3o$2b2o3bo5bo9bo3bo$2b2o2b2obo3bo\n8bo4bobo$7bo5bo16b2o4b2o$8bo3bo17b2o4b2o$10b2o18b2o$27bobo$27bo!\n",
     },
     {
@@ -1162,11 +1171,9 @@ function drawMiniGate(x, y, rotate, ctxt, circuit) {
         i++;
     }
     ctxt.closePath();
-    ctxt.fillStyle = '#ff0000ff';
     ctxt.globalAlpha = 0.5;
     ctxt.fill();
     ctxt.globalAlpha = 1.0;
-    ctxt.strokeStyle = '#ff0000ff';
     ctxt.stroke();
 }
 function drawMiniCircuit() {
@@ -1187,6 +1194,8 @@ function drawMiniCircuit() {
             mini_ctx.fillRect(col * miniSize + marginSize, row * miniSize + marginSize, miniSize - marginSize, miniSize - marginSize);
         }
     }
+    mini_ctx.fillStyle = 'yellow';
+    mini_ctx.strokeStyle = 'yellow';
     drawMiniGate(1, 1, 0, mini_ctx, lastLoadedCircut);
     drawMiniGate(2 + width, 1, 1, mini_ctx, lastLoadedCircut);
     drawMiniGate(3 + width + height, 1, 2, mini_ctx, lastLoadedCircut);
@@ -1308,7 +1317,7 @@ var circ_textarea = document.createElement('textarea');
 circ_textarea.rows = 40;
 circ_textarea.cols = 40;
 circ_textarea.style.fontFamily = "monospace";
-circ_textarea.value = "\nwidth 30\nheight 30\ncolor red\nbox 1 1 2 3\ncolor blue\nbox 4 1 3 1\nhwire 4 1 5\n";
+circ_textarea.value = "width 30\nheight 30\nGenerate2_E 10 28 red 3\nGenerate1_E 12 28 red 3\nGenerate1_E 14 28 red 3\nGenerate1_E 16 28 red 3\nGenerate2_E 18 28 lime 3\nvwire 11 28 -16\nvwire 12 28 -18\nvwire 14 28 -16\nvwire 16 28 -16\nU_turn_WN_EXN 8 26 red 0\nU_turn_WN_EXN 8 24 red 0\nU_turn_WN_EXN 8 14 red 0\nU_turn_WN_EXN 8 12 red 0\nhwire 12 13 5 red\nhwire 12 15 5 red\nhwire 7 16 10 red\nhwire 4 17 13 red\nhwire 3 22 14 red\nhwire 8 23 9 red\nhwire 12 25 5 red\nhwire 12 27 5 red\nGenerate2_EX 5 15 red 0\nGenerate2_EX 2 16 red 0\nGenerate2_EX 1 21 red 0\nTurn_E_S 0 23 blue 1\nDuplicate_E_EN 24 22 blue 2\nhwire 24 24 -12\nhwire 30 26 -18\nhwire 30 24 -2\nvwire 25 26 4\nvwire 3 30 -8\nhwire 4 26 -4\nvwire 22 17 13\nvwire 0 5 18\nhwire 0 9 1\nvwire 4 13 5\nvwire 7 7 10\nhwire 0 6 6\nTurn_E_S 6 4 blue 0\nNot_turn_EX_N 21 15 blue 2\nhwire 28 16 -4 red\nhwire 25 14 -13 \nhwire 22 12 -10\nTurn_E_S 22 11 blue 1\nTurn_E_S 25 13 blue 1\nvwire 25 0 13\nvwire 22 0 4\nvwire 22 8 3\nhwire 24 6 6\nDuplicate_E_EN 20 4 blue 1\nDuplicate_E_EN 26 7 blue 1\nvwire 28 11 5\nvwire 28 4 3\nhwire 16 3 11\nGenerate1_E 14 3 yellow 0\nGenerate1_EX 15 0 yellow 1\nGenerate2_E 12 4 orange 0\nvwire 16 2 2 red\nvwire 17 6 -4 red\nhwire 14 5 6 red\nhwire 18 2 -5\nvwire 19 28 -25 \nDuplicate_E_EN 9 0 blue 2\nvwire 10 4 2 \nvwire 14 6 -1 \nvwire 16 10 -5\nvwire 3 8 -8\nhwire 9 2 -3\nhwire 4 2 -1\nNot_turn_N_EX 28 16 blue 2\ncolor grey\nbox 4 23 4 6\nbox 1 18 29 2\nbox 3 20 27 2\nbox 1 8 5 5\nbox 18 1 3 2\nbox 13 10 4 2\nbox 10 6 5 4\nbox 27 1 3 3\nbox 0 0 3 5\nbox 4 0 2 5\nbox 17 5 3 5\nvwire 5 30 -1\n";
 document.body.appendChild(circ_textarea);
 document.body.appendChild(document.createElement('br'));
 var circ_button = document.createElement('button');
@@ -1431,6 +1440,21 @@ function drawCircuit() {
                     drawArrow(circ_ctx, x * miniSize + miniSize / 2, y * miniSize + marginSize, x * miniSize + miniSize / 2, (y + l) * miniSize);
                 }
             }
+        }
+    });
+    // draw gates
+    lines.forEach(function (words) {
+        if (words.length > 4) {
+            circuits.forEach(function (c) {
+                if (c.name == words[0]) {
+                    var x = Number(words[1]);
+                    var y = Number(words[2]);
+                    var r = Number(words[4]);
+                    circ_ctx.fillStyle = words[3];
+                    circ_ctx.strokeStyle = words[3];
+                    drawMiniGate(x, y, r, circ_ctx, c);
+                }
+            });
         }
     });
 }
