@@ -183,6 +183,15 @@ var circuits = [
         content: "\no29bo29bo29bo2$118b2o$118b2o11$100b2o14b2o3b2o$100b2o16b3o$86b2o29bo3b\no$66b2o18b2o30bobo$66b2o51bo5$120b3o$114bobo$97b2o3b2o10b2o4bobo$85b3o\n27bo3b5o$67bo16bo3bo9bo3bo15b2o3b2o$66b3o14bo5bo9b3o16b2o3b2o$65b5o13b\no5bo9b3o$64b2o3b2o15bo$65b5o14bo3bo19bo$65bo3bo15b3o18b2o12b2o$66bobo\n17bo20b2o$67bo$98bo5bo6b2o$87b3o7b3o5bo4b2o$65bo21b3o7b3o3b3o6bo$63b2o\nb2o18bo3bo$72bo7bobo12b2o3b2o19b2obob2o$42b3o17bo5bo4bo6b2o3b2o3b2o3b\n2o3b2o19bo5bo$42bo2bo25b3o7bo40bo3bo$42bo19b2obob2o50bo3b3o$42bo55bo\n19b2o$43bobo51bobo18bobo$54b2o40b2o6bobo$54b2o40b2o9bo6b2o$80bo15b3o8b\no6bobo$78bobo16bobo4bo2bo3b2obobo$57bo21b2o17b2o5b3o3bobobo$56bo31b2o\n23bo8bo$56bo7b2o22b2o23b2o7bo$64b2o47b3o5bobo$113b3o4b2ob2o$52b2o3b2o\n54b3o3bo5bo$55bo57b2o7bo$52bo5bo54bo5b2o3b2o$53b2ob2o53bobobo$54bobo\n54b2obobo$55bo58bobo6bo$55bo58b2o7bo$124bo$95bo$93bobo$57b2o35b2o25b2o\n$57bo63b2o$58b3o$48b3o9bo$50bo$49bo$42b3o$o2bo26bo2bo8bo2bo14bo2bo26bo\n2bo26bo2bo$4bo29bo7bo21bo29bo29bo$o3bo25bo3bo7bo17bo3bo25bo3bo25bo3bo$\nb4o26b4o8bobo15b4o26b4o26b4o8$33b3o$35bo$34bo$58b2o$58b2o4$51b2o$51bob\no$48b2obobo$48bobobo$3b2o45bo$3b2o22b2o20b2o5b2obob2o$27b2o19b3o$18b3o\n27b3o5bo5bo$20bo27b3o$19bo29b2o6b2ob2o$42b3o5bo8bo$35b2o5bo2bo2bobobo$\n35b2o5bo5b2obobo$42bo8bobo$11b2o30bobo5b2o$10bobo6b2o12bo$b2o3b2o4bo5b\n2o14bo21bo$3b3o14bo4b5o4bo19b2o4b3o$2bo3bo17bob3obo24b2o2bo3bo$3bobo\n19bo3bo$4bo21b3o3b2o3b2o19bo5bo$27bo7bo22b2o3b2o$5b3o17b2o5bo5bo2b2o$\n5b3o16bobo6b2ob2o2bobo$24bobo7bobo5bo4bobo$25bo9bo11b2o$35bo8bo3bo$3b\n2o3b2o33b2o$4b5o13b2obob2o14bobo$5b3o14bo5bo$6bo16bo3bo9bo$24b3o9b3o$\n35bo3bo$34bob3obo14b2o3b2o$35b5o11b2o3b5o$50b2o4b2ob2o$52bo3b2ob2o$57b\n3o$5b2o$5b2o18b2o$25b2o2$55b3o$55b3o$54bo3bo$37b2o14bo5bo$37b2o15bo3bo\n$55b3o10$55b2o$55b2o!\n",
     },
     {
+        name: "U_turn_W_E",
+        input: [[[7, 0], "W"]],
+        output: [[[7, 2], "E"]],
+        height: 2,
+        width: 4,
+        drawing: "----rior----r--",
+        content: "\no29bo29bo29bo3$67bo$66bobo$49b2o14bo3b2o3b2o$49bobo13bo3b2o3b2o$40b3ob\n2o4b3o12bo3b2o$40b4o2bo4b3o12bobo$8b2o34b2o4b3o7bo6bo$8b2o39bobo9b2o$\n49b2o9b2o4$85b4o26b4o$85bo3bo25bo3bo$67bobo15bo29bo$68b2o16bo2bo26bo2b\no$68bo2$5b2o3b2o18bo$7b3o18bobo$6bo3bo16bobo17bo$7bobo11b2o3bo2bo16b2o\n27bo$8bo12b2o4bobo15b2o4b2o23b2o$28bobo13b3o4b2o2b2o18b2o$30bo4bobo7b\n2o4b2o2b2o$35b2o9b2o$36bo10bo$o4b3o82bo$11bobo$5bobo4b2o68bobo$4b5o3bo\n24b2o9b2o33b2o$3b2o3b2o19bo6bo2bo7bo2bo32bo$3b2o3b2o17b2o7b3o9b3o$28b\n2o9b9o$38bo2b5o2bo$6bo12bo18b2o2b3o2b2o$4b2o14b2o68bo$19b2o70b2o$3bo\n26bo2bo26bo2bo26b2o$34bo29bo$4bo2bo22bo3bo25bo3bo$6b2o23b4o26b4o2$12b\n2o$10bo3bo5bo2b3o71bobo$4b2o3bo5bo9bo3bo68b2o$4b2o2b2obo3bo8bo4bobo66b\no$9bo5bo16b2o4b2o$10bo3bo17b2o4b2o$12b2o18b2o$29bobo71b2o$29bo73bo$\n104b3o$106bo!\n",
+    },
+    {
         name: "And_Wire_ES_ES",
         input: [[[-1, 4], "E"], [[2, -1], "S"]],
         output: [[[3, 4], "E"], [[2, 5], "S"]],
@@ -229,6 +238,15 @@ var circuits = [
     },
     {
         name: "And_NN_NN",
+        input: [[[2, 3], "N"], [[6, 3], "N"]],
+        output: [[[2, -1], "N"], [[6, -1], "N"]],
+        height: 2,
+        width: 4,
+        drawing: "",
+        content: "\no29bo29bo29bo5$112b2o$112bo$110bobo$110b2o$52b2o$53bo52b2o$53bobo6b2o\n41bobo$54b2o6b3o42bo$64b2obo$64bo2bo$64b2obo$62b3o6b2o$62b2o7bobo$73bo\n$73b2o3$63bo$47b2o15b2o$46bobo14b2o$29b2o17bo42b2o$28bo3bo57bobo$12b2o\n13bo5bo3b2o53bo$12b2o13bo3bob2o2b2o$3b2o3bo6b2o10bo5bo$3bobo3bo5b3o10b\no3bo$4b5o6b2o12b2o$5b3o4b2o9bobo$12b2o10b2o$24bo$94bo$92b3o$91bo$32b2o\n57b2o$31bobo45b2o9b2o$33bo45bo9b2o$81bo4bo3bo$80bo3b3ob3o$80bo8bo$84b\n6o$74b2o8b2obo$24b3o48bo7b2o$26bo45b3o$25bo46bo$13bo$12b2o$11b2o4b2o5b\no$b2o7b3o4b2o3bobo$b2o8b2o4b2o2bobo$12b2o6bo2bo11b2o$13bo7bobo11b2o$\n22bobo$24bo!\n",
+    },
+    {
+        name: "And1_NN_NN",
         input: [[[0, 3], "N"], [[4, 3], "N"]],
         output: [[[0, -1], "N"], [[4, -1], "N"]],
         height: 2,
@@ -237,7 +255,25 @@ var circuits = [
         content: "\no29bo29bo29bo2$3b2o$4bo$4bobo$5b2o$63b2o$63bo$54b2o5bobo$10b3o40bo3bo\n3b2o$10bo41bo5bo$11bo40bo3bob2o$52bo5bo$44b2o7bo3bo$43bobo8b2o$43bo$\n42b2o2$53bobo$53b2o$54bo2$69b3o$69bo$25b3o42bo$25bo64b2o$26bo63b3o$81b\n2o9b2obo8bo$81bo5bo4bo2bo6bobo$86bo5b2obo5bobo11b2o$o81bo3bo3b3o7bo2bo\n11b2o$84bo5b2o9bobo$22bo79bobo$22b3o13bobo53bo9bo$25bo12b2o52b2o$24b2o\n13bo53b2o$25b2o$26b2o8b2o46b3o$26bo3bo4bo2bo45bo$26b3ob3o3bobo46bo$27b\no9bo$27b6o$29bob2o8b2o$32b2o7bo$42b3o47b2o$44bo47bobo$92bo3$106bobo$\n101b2o3bo2bo$94b2o2b2ob3o5b2o$93bobo3bo3bo3bo3b2o4b2o$92bo8bobo5b2o6b\n2o$83b2o7bo2bo6b2o2bo2bo$83b2o7bo13bobo$93bobo$94b2o!\n",
     },
     {
+        name: "And_Not_And_Not_NNS_N",
+        input: [[[8, 7], "N"], [[4, 7], "N"], [[0, -1], "S"]],
+        output: [[[8, -1], "N"]],
+        height: 4,
+        width: 5,
+        drawing: "i---or----ri-i--r----",
+        content: "\no29bo29bo$92b2o$93bo$93bobo5bo$94b2o3b4o$98bobob2o$7bo15b2o72bo2bob3o$\n7b3o13bobo72bobob2o$10bo14bo73b4o8b2o$9b2o13b2ob2o72bo9bobo$25bobo85bo\n$23bobo2bo84b2o$23b2o2b2o73bo$103bo$13bo87b3o$12bobo7b2obo$11bo3bo6b2o\nb3o$11bo3bo12bo56b2o$11bo3bo6b2ob3o58b2o$5b2o5bobo3b2o3bobo59bo$4bobo\n6bo4bobo2bobo$4bo15bo3bo$3b2o15b2o5$117bo$118bo$116b3o$o2$70b2o$25bo\n45b2o$23bobo44bo$24b2o7$132bo$133bo$131b3o3$55b2o$40bo15b2o$38bobo14bo\n$39b2o3$64b2o$64bo78b2o$55bo6bobo78bobo$55bobo4b2o35b2o44bo$58b2o40bo\n44b2o$58b2o40bobo10bo$58b2o41b2o9bobo$o44b2o8bobo54b2obo$44bobo8bo56b\n2ob2o$44bo67b2obo$43b2o67bobo3b2o$113bo4bobo$120bo$120b2o3$95b3o$97bo\n34b3o$96bo14bobo18bo2bo$112b2o18bo$112bo19bo$133bobo12$126bobo$127b2o$\n127bo2$o6$60b2o15b2o$61bo15bo3bo$61bobo11bobo2bobo$62b2o6bo4b2o3bobo$\n69b3o7b2ob3o$68bo3bo12bo$68bob2o7b2ob3o58b2o$69b2o8b2obo60bobo$145bo$\n145b2o$80b2o2b2o$80bobo2bo$82bobo$66b2o13b2ob2o$67bo14bo$64b3o13bobo$\n64bo15b2o!\n",
+    },
+    {
         name: "And_Not_NN_NN",
+        input: [[[2, 3], "N"], [[6, 3], "N"]],
+        output: [[[2, -1], "N"], [[6, -1], "N"]],
+        height: 2,
+        width: 4,
+        drawing: "-o-or--ri-i-r--",
+        content: "\no29bo29bo29bo7$110b2o$110bo$52b2o54bobo$53bo54b2o$53bobo6b2o$54b2o6b3o\n$64b2obo$64bo2bo$64b2obo$62b3o6b2o$62b2o7bobo$73bo24b3o$73b2o25bo$99bo\n2$63bo$47b2o15b2o$46bobo14b2o$29b2o17bo42b2o$28bo3bo57bobo$12b2o13bo5b\no3b2o53bo$12b2o13bo3bob2o2b2o$3b2o3bo6b2o10bo5bo$3bobo3bo5b3o10bo3bo$\n4b5o6b2o12b2o$5b3o4b2o9bobo$12b2o10b2o57b3o$24bo60bo$84bo3$32b2o$31bob\no$33bo42b2o24b3o$75bobo24bo2bo$77bo24bo$102bo$103bobo$61bobo$24b3o33bo\n2bo3b2o$26bo32b2o5b3ob2o2b2o$15bo9bo25b2o4b2o3bo3bo3bo3bobo$14bobo34b\n2o6b2o5bobo8bo$14b2obo8bobo31bo2bo2b2o6bo2bo7b2o$2b2o10b2ob2o6bo2bo4bo\n27bobo13bo7b2o$2b2o10b2obo6b2o5b2o41bobo$14bobo5b2o3bo8b2o36b2o$15bo8b\n2o10b2o$25bo2bo$26bobo!\n",
+    },
+    {
+        name: "And_Not1_NN_NN",
         input: [[[0, 3], "N"], [[4, 3], "N"]],
         output: [[[0, -1], "N"], [[4, -1], "N"]],
         height: 2,
@@ -1326,7 +1362,7 @@ var circ_textarea = document.createElement('textarea');
 circ_textarea.rows = 40;
 circ_textarea.cols = 40;
 circ_textarea.style.fontFamily = "monospace";
-circ_textarea.value = "width 30\nheight 30\nGenerate2_E 10 28 red 3\nGenerate1_E 12 28 red 3\nGenerate1_E 14 28 red 3\nGenerate1_E 16 28 red 3\nGenerate2_E 18 28 lime 3\nvwire 11 28 -16\nvwire 12 28 -18\nvwire 14 28 -16\nvwire 16 28 -16\nU_turn_WN_EXN 8 26 red 0\nU_turn_WN_EXN 8 24 red 0\nU_turn_WN_EXN 8 14 red 0\nU_turn_WN_EXN 8 12 red 0\nhwire 12 13 5 red\nhwire 12 15 5 red\nhwire 7 16 10 red\nhwire 4 17 13 red\nhwire 3 22 14 red\nhwire 8 23 9 red\nhwire 12 25 5 red\nhwire 12 27 5 red\nGenerate2_EX 5 15 red 0\nGenerate2_EX 2 16 red 0\nGenerate2_EX 1 21 red 0\nTurn_E_S 0 23 blue 1\nDuplicate_E_EN 24 22 blue 2\nhwire 24 24 -12\nhwire 30 26 -18\nhwire 30 24 -2\nvwire 25 26 4\nvwire 3 30 -8\nhwire 4 26 -4\nvwire 22 17 13\nvwire 0 5 18\nhwire 0 9 1\nvwire 4 13 5\nvwire 7 7 10\nhwire 0 6 6\nTurn_E_S 6 4 blue 0\nNot_turn_EX_N 21 15 blue 2\nhwire 28 16 -4 red\nhwire 25 14 -13 \nhwire 22 12 -10\nTurn_E_S 22 11 blue 1\nTurn_E_S 25 13 blue 1\nvwire 25 0 13\nvwire 22 0 4\nvwire 22 8 3\nhwire 24 6 6\nDuplicate_E_EN 20 4 blue 1\nDuplicate_E_EN 26 7 blue 1\nvwire 28 11 5\nvwire 28 4 3\nhwire 16 3 11\nGenerate1_E 14 3 yellow 0\nGenerate1_EX 15 0 yellow 1\nGenerate2_E 12 4 orange 0\nvwire 16 2 2 red\nvwire 17 6 -4 red\nhwire 14 5 6 red\nhwire 18 2 -5\nvwire 19 28 -25 \nDuplicate_E_EN 9 0 blue 2\nvwire 10 4 2 \nvwire 14 6 -1 \nvwire 16 10 -5\nvwire 3 8 -8\nhwire 9 2 -3\nhwire 4 2 -1\nNot_turn_N_EX 28 16 blue 2\ncolor grey\nDuplicate_N_WEX 4 23 red 0\nbox 1 18 29 2\nbox 3 20 27 2\nbox 1 8 5 5\nbox 18 1 3 2\nbox 13 10 4 2\nbox 10 6 5 4\nbox 27 1 3 3\nbox 0 0 3 5\nbox 4 0 2 5\nbox 17 5 3 5\nvwire 5 30 -1\n";
+circ_textarea.value = "width 30\nheight 30\nGenerate2_E 10 28 red 3\nGenerate1_E 12 28 red 3\nGenerate1_E 14 28 red 3\nGenerate1_E 16 28 red 3\nGenerate2_E 18 28 lime 3\nvwire 11 28 -16\nvwire 12 28 -18\nvwire 14 28 -16\nvwire 16 28 -16\nU_turn_WN_EXN 8 26 red 0\nU_turn_WN_EXN 8 24 red 0\nU_turn_WN_EXN 8 14 red 0\nU_turn_WN_EXN 8 12 red 0\nhwire 12 13 5 red\nhwire 12 15 5 red\nhwire 7 16 10 red\nhwire 4 17 13 red\nhwire 3 22 14 red\nhwire 8 23 9 red\nhwire 12 25 5 red\nhwire 12 27 5 red\nGenerate2_EX 5 15 red 0\nGenerate2_EX 2 16 red 0\nGenerate2_EX 1 21 red 0\nTurn_E_S 0 23 blue 1\nDuplicate_E_EN 24 22 blue 2\nhwire 24 24 -12\nhwire 30 26 -18\nhwire 30 24 -2\nvwire 25 26 4\nvwire 3 30 -8\nhwire 4 26 -4\nvwire 22 17 13\nvwire 0 5 18\nhwire 0 9 1\nvwire 4 13 5\nvwire 7 7 10\nhwire 0 6 6\nTurn_E_S 6 4 blue 0\nNot_turn_EX_N 21 15 blue 2\nhwire 28 16 -4 red\nhwire 25 14 -13 \nhwire 22 12 -10\nTurn_E_S 22 11 blue 1\nTurn_E_S 25 13 blue 1\nvwire 25 0 13\nvwire 22 0 4\nvwire 22 8 3\nhwire 24 6 6\nDuplicate_E_EN 20 4 blue 1\nDuplicate_E_EN 26 7 blue 1\nvwire 28 11 5\nvwire 28 4 3\nhwire 16 3 11\nGenerate1_E 14 3 yellow 0\nGenerate1_EX 15 0 yellow 1\nGenerate2_E 12 4 orange 0\nvwire 16 2 2 red\nvwire 17 6 -4 red\nhwire 14 5 6 red\nhwire 18 2 -5\nvwire 19 28 -25 \nDuplicate_E_EN 9 0 blue 2\nvwire 10 4 2 \nvwire 14 6 -1 \nvwire 16 10 -5\nvwire 3 8 -8\nhwire 9 2 -3\nhwire 4 2 -1\nNot_turn_N_EX 28 16 blue 2\ncolor grey\nDuplicate_N_WEX 4 23 red 0\nAnd_Not_And_Not_NNS_N 10 6 orange 0\nAnd_Not_NN_NN 13 10 orange 0\nbox 1 18 29 2\nbox 3 20 27 2\nbox 1 8 5 5\nbox 18 1 3 2\nbox 27 1 3 3\nbox 0 0 3 5\nbox 4 0 2 5\nbox 17 5 3 5\nvwire 5 30 -1\n";
 document.body.appendChild(circ_textarea);
 document.body.appendChild(document.createElement('br'));
 var circ_button = document.createElement('button');

@@ -417,6 +417,28 @@ $55b3o10$55b2o$55b2o!
 `,
     },
     {
+        name: "U_turn_W_E",
+        input: [[[7,0],"W"]],
+        output: [[[7,2],"E"]],
+        height: 2,
+        width: 4,
+        drawing: "----rior----r--",
+        content: `
+o29bo29bo29bo3$67bo$66bobo$49b2o14bo3b2o3b2o$49bobo13bo3b2o3b2o$40b3ob
+2o4b3o12bo3b2o$40b4o2bo4b3o12bobo$8b2o34b2o4b3o7bo6bo$8b2o39bobo9b2o$
+49b2o9b2o4$85b4o26b4o$85bo3bo25bo3bo$67bobo15bo29bo$68b2o16bo2bo26bo2b
+o$68bo2$5b2o3b2o18bo$7b3o18bobo$6bo3bo16bobo17bo$7bobo11b2o3bo2bo16b2o
+27bo$8bo12b2o4bobo15b2o4b2o23b2o$28bobo13b3o4b2o2b2o18b2o$30bo4bobo7b
+2o4b2o2b2o$35b2o9b2o$36bo10bo$o4b3o82bo$11bobo$5bobo4b2o68bobo$4b5o3bo
+24b2o9b2o33b2o$3b2o3b2o19bo6bo2bo7bo2bo32bo$3b2o3b2o17b2o7b3o9b3o$28b
+2o9b9o$38bo2b5o2bo$6bo12bo18b2o2b3o2b2o$4b2o14b2o68bo$19b2o70b2o$3bo
+26bo2bo26bo2bo26b2o$34bo29bo$4bo2bo22bo3bo25bo3bo$6b2o23b4o26b4o2$12b
+2o$10bo3bo5bo2b3o71bobo$4b2o3bo5bo9bo3bo68b2o$4b2o2b2obo3bo8bo4bobo66b
+o$9bo5bo16b2o4b2o$10bo3bo17b2o4b2o$12b2o18b2o$29bobo71b2o$29bo73bo$
+104b3o$106bo!
+`,
+    },    
+    {
         name: "And_Wire_ES_ES",
         input: [[[-1,4],"E"],[[2,-1],"S"]],
         output: [[[3,4],"E"],[[2,5],"S"]],
@@ -503,6 +525,25 @@ o!
     },
     {
         name: "And_NN_NN",
+        input: [[[2,3], "N"], [[6,3], "N"]],
+        output: [[[2,-1], "N"], [[6,-1], "N"]],
+        height: 2,
+        width: 4,
+        drawing: "",
+        content: `
+o29bo29bo29bo5$112b2o$112bo$110bobo$110b2o$52b2o$53bo52b2o$53bobo6b2o
+41bobo$54b2o6b3o42bo$64b2obo$64bo2bo$64b2obo$62b3o6b2o$62b2o7bobo$73bo
+$73b2o3$63bo$47b2o15b2o$46bobo14b2o$29b2o17bo42b2o$28bo3bo57bobo$12b2o
+13bo5bo3b2o53bo$12b2o13bo3bob2o2b2o$3b2o3bo6b2o10bo5bo$3bobo3bo5b3o10b
+o3bo$4b5o6b2o12b2o$5b3o4b2o9bobo$12b2o10b2o$24bo$94bo$92b3o$91bo$32b2o
+57b2o$31bobo45b2o9b2o$33bo45bo9b2o$81bo4bo3bo$80bo3b3ob3o$80bo8bo$84b
+6o$74b2o8b2obo$24b3o48bo7b2o$26bo45b3o$25bo46bo$13bo$12b2o$11b2o4b2o5b
+o$b2o7b3o4b2o3bobo$b2o8b2o4b2o2bobo$12b2o6bo2bo11b2o$13bo7bobo11b2o$
+22bobo$24bo!
+`,
+    },
+    {
+        name: "And1_NN_NN",
         input: [[[0,3], "N"], [[4,3], "N"]],
         output: [[[0,-1], "N"], [[4,-1], "N"]],
         height: 2,
@@ -521,7 +562,51 @@ o9bo$27b6o$29bob2o8b2o$32b2o7bo$42b3o47b2o$44bo47bobo$92bo3$106bobo$
 `,
     },
     {
+        name: "And_Not_And_Not_NNS_N",
+        input: [[[8,7], "N"], [[4,7], "N"], [[0,-1], "S"]],
+        output: [[[8,-1], "N"]],
+        height: 4,
+        width: 5,
+        drawing: "i---or----ri-i--r----",
+        content: `
+o29bo29bo$92b2o$93bo$93bobo5bo$94b2o3b4o$98bobob2o$7bo15b2o72bo2bob3o$
+7b3o13bobo72bobob2o$10bo14bo73b4o8b2o$9b2o13b2ob2o72bo9bobo$25bobo85bo
+$23bobo2bo84b2o$23b2o2b2o73bo$103bo$13bo87b3o$12bobo7b2obo$11bo3bo6b2o
+b3o$11bo3bo12bo56b2o$11bo3bo6b2ob3o58b2o$5b2o5bobo3b2o3bobo59bo$4bobo
+6bo4bobo2bobo$4bo15bo3bo$3b2o15b2o5$117bo$118bo$116b3o$o2$70b2o$25bo
+45b2o$23bobo44bo$24b2o7$132bo$133bo$131b3o3$55b2o$40bo15b2o$38bobo14bo
+$39b2o3$64b2o$64bo78b2o$55bo6bobo78bobo$55bobo4b2o35b2o44bo$58b2o40bo
+44b2o$58b2o40bobo10bo$58b2o41b2o9bobo$o44b2o8bobo54b2obo$44bobo8bo56b
+2ob2o$44bo67b2obo$43b2o67bobo3b2o$113bo4bobo$120bo$120b2o3$95b3o$97bo
+34b3o$96bo14bobo18bo2bo$112b2o18bo$112bo19bo$133bobo12$126bobo$127b2o$
+127bo2$o6$60b2o15b2o$61bo15bo3bo$61bobo11bobo2bobo$62b2o6bo4b2o3bobo$
+69b3o7b2ob3o$68bo3bo12bo$68bob2o7b2ob3o58b2o$69b2o8b2obo60bobo$145bo$
+145b2o$80b2o2b2o$80bobo2bo$82bobo$66b2o13b2ob2o$67bo14bo$64b3o13bobo$
+64bo15b2o!
+`,
+    },
+    {
         name: "And_Not_NN_NN",
+        input: [[[2,3], "N"], [[6,3], "N"]],
+        output: [[[2,-1], "N"], [[6,-1], "N"]],
+        height: 2,
+        width: 4,
+        drawing: "-o-or--ri-i-r--",
+        content: `
+o29bo29bo29bo7$110b2o$110bo$52b2o54bobo$53bo54b2o$53bobo6b2o$54b2o6b3o
+$64b2obo$64bo2bo$64b2obo$62b3o6b2o$62b2o7bobo$73bo24b3o$73b2o25bo$99bo
+2$63bo$47b2o15b2o$46bobo14b2o$29b2o17bo42b2o$28bo3bo57bobo$12b2o13bo5b
+o3b2o53bo$12b2o13bo3bob2o2b2o$3b2o3bo6b2o10bo5bo$3bobo3bo5b3o10bo3bo$
+4b5o6b2o12b2o$5b3o4b2o9bobo$12b2o10b2o57b3o$24bo60bo$84bo3$32b2o$31bob
+o$33bo42b2o24b3o$75bobo24bo2bo$77bo24bo$102bo$103bobo$61bobo$24b3o33bo
+2bo3b2o$26bo32b2o5b3ob2o2b2o$15bo9bo25b2o4b2o3bo3bo3bo3bobo$14bobo34b
+2o6b2o5bobo8bo$14b2obo8bobo31bo2bo2b2o6bo2bo7b2o$2b2o10b2ob2o6bo2bo4bo
+27bobo13bo7b2o$2b2o10b2obo6b2o5b2o41bobo$14bobo5b2o3bo8b2o36b2o$15bo8b
+2o10b2o$25bo2bo$26bobo!
+`,
+    },
+    {
+        name: "And_Not1_NN_NN",
         input: [[[0,3], "N"], [[4,3], "N"]],
         output: [[[0,-1], "N"], [[4,-1], "N"]],
         height: 2,
@@ -2098,12 +2183,12 @@ hwire 4 2 -1
 Not_turn_N_EX 28 16 blue 2
 color grey
 Duplicate_N_WEX 4 23 red 0
+And_Not_And_Not_NNS_N 10 6 orange 0
+And_Not_NN_NN 13 10 orange 0
 box 1 18 29 2
 box 3 20 27 2
 box 1 8 5 5
 box 18 1 3 2
-box 13 10 4 2
-box 10 6 5 4
 box 27 1 3 3
 box 0 0 3 5
 box 4 0 2 5
