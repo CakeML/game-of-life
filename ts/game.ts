@@ -89,6 +89,24 @@ o5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
 `,
     },
     {
+        name: "Generate2_EY",
+        input: [],
+        output: [[[3,2],"EY"]],
+        height: 2,
+        width: 2,
+        drawing: "--r-or--r--",
+        content: `
+o29bo8$7b2o$7b2o3$5bo$6bo$6bo3$4b2o3b2o$7bo$4bo5bo$5b2ob2o20bobo$6bobo
+20bo2bo$7bo20b2o10bo6bo$7bo12b2o4b2o3bo8bo5bobo$20b2o6b2o9bo6b2obo$29b
+o2bo2b2o9b2ob2o3b2o$30bobo2bo2b3o5b2obo4b2o$35b4o7bobo$36b2o9bo$9bobo$
+o9b2o$4b3o3bo$3bo3bo21bo6b2o9b2o$2bo5bo18b2o6bo2bo2b3o2bo2bo$2b2obob2o
+19b2o5b3o2b5o2b3o$38b9o$17bo19bo9bo$5bo12b2o17b2o7b2o$4bobo10b2o$4bobo
+$5bo21bo2bo$31bo11b4o$5b2o20bo3bo10bo3bo$5b2o21b4o14bo$42bo2bo$12bo8b
+2o$10bobo6bo2bo$3b2o4bobo7bo3bo2b2o$3b2o3bo2bo7bo2b2o2b3o$9bobo16b2obo
+5b2o$10bobo4b3o8bo2bo5b2o$12bo15b2obo$26b3o$26b2o!
+`,
+    },
+    {
         name: "Collide_EXN_EXN",
         input: [[[-1,0],"EX"],[[0,1],"N"]],
         output: [[[1,0],"EX"],[[0,-1],"N"]],
@@ -260,6 +278,69 @@ o$24bobo$15b5o3b2ob3o$14bo2bo2bo8bo$14b2o3b2o2b2ob3o12bo$23b2obo15b2o$
 30bo10b2o$28b3o$27bo$o2bo23b2o$4bo$o3bo$b4o16bo26bobo$20b3o7b2o17b2o$
 19bo2bo6bobo17bo$19b3o9bo$20bo32b2o$16b2o35bobo$15bobo37bo$15bo39b2o$
 14b2o$27b2o$27bo$28b3o$30bo!
+`,
+    },   
+    {
+        name: "Turn_Middle_E_S",
+        input: [[[-1,2], "E"]],
+        output: [[[4,5], "S"]],
+        height: 3,
+        width: 4,
+        drawing: "----r---r-o--r-i-",
+        content: `
+o59bo29bo$9b2o19b2o$9b2o19b2o$78bo5b2o$70b2o4bo3bo3b3o$70b2o8bo5b2obo
+8bo$75bo5bo4bo2bo6bobo$75b2o9b2obo5bobo$70bo13b3o7bo2bo11b2o$9b3o57b3o
+12b2o9bobo11b2o$8bo3bo17bo37bo3bo23bobo$29b3o38bo17bo9bo$7bo5bo14b5o
+34bo5bo12b2o$7b2o3b2o13b2o3b2o33bo5bo13b2o$68bo3bo$69b3o$10bo$8b2obo
+17b3o$11bo17b3o$7bo3bo67bobo$7bo2bo21bo39bo6b2o$6b5o20bobo46bo13b2o$6b
+5o19bo3bo59b2o$5b2o3b2o12b2o5b3o38bo$6b5o12bo2bo2b2o3b2o34bobo$7b3o5bo
+bo4bo48b2o$8bo7b2o5bob2o68bo$16bo67bo9bobo$21bobo59b2o8bo3bo$21bobo41b
+2o3b2o11bobo8b3o$o75bobo13b2o3b2o$66bo3bo4bo$67b3o5bo$67b3o5bo2bo$75b
+3o$7b2o23b2o57b2o$7b2o23b2o50b2o4b2o$84bobo5bo$68b2o11b2obobo$68b2o11b
+obobo$30bobo50bo$o2bo27b2o50b2o$4bo26bo51b3o$o3bo78b3o$b4o78b3o7bo$74b
+obo6b2o7b3o$77bo5bo7b5o$77bo3bobobo4b2o3b2o$74bo2bo3b2obobo$75b3o6bobo
+$84b2o$92b3o$92b3o3$45bobo44b2o$46b2o44b2o$46bo$58b3o$60bo$o58bo9bo$
+67b3o$66bo$66b2o$65b2o$54b2o8b2o$53bo2bo4bo3bo$53bobo3b3ob3o$54bo9bo$
+59b6o$49b2o8b2obo$50bo7b2o$47b3o$47bo!
+`,
+    },   
+    {
+        name: "And_Not_NW_W",
+        input: [[[5,4], "W"],[[4,5], "N"]],
+        output: [[[-1,4], "W"]],
+        height: 3,
+        width: 3,
+        drawing: "---r--iri--ro--",
+        content: `
+o29bo29bo13$71bo$69b3o$58b3o7bo$56bo11b2o$54bobo2bo$64bo$53bob4o4bobo$
+52bo2b3o4bo2bo$54bo8b2o$51bo2bo$51bo13b2o$52bo12bobo$49b3o13bo$49bo4$o
+58bo3$52bobo$52b2o$53bo14b2o15b2o$65bo3bo15bo$64bobo2bobo11bobo$64bobo
+3b2o11b2o$62b3ob2o8b2o$61bo13b2obo$62b3ob2o8bobo$64bob2o9bo3$25b2o34b
+2o2b2o$26bo34bo2bobo$26bobo33bobo$27b2o8bobo21b2ob2o13b2o$37b2o25bo14b
+o$38bo25bobo13b3o$31b2o32b2o15bo$30bo2bo$31bobo$32bo2$27bo$27b3obo$28b
+2obo$29bob2o$o27b2o14bo$29bobo13bo$29b3obo9b3o$31b4o$34b3o$35bobo$37bo
+$37b2o3$72b3o$72bo2bo$72bo$72bo$73bobo$55b4o26b4o$55bo3bo25bo3bo$55bo
+29bo$56bo2bo26bo2bo3$64b2o$64bobo$66bo$66b2o!
+`,
+    },   
+    {
+        name: "And_Wire_Wire_EWN_EWN",
+        input: [[[-1,4], "E"],[[7,2], "W"],[[0,5], "N"]],
+        output: [[[7,4], "E"],[[-1,2], "W"],[[0,-1], "N"]],
+        height: 3,
+        width: 4,
+        drawing: "o---r-ior---irio-",
+        content: `
+o29bo29bo29bo3$2bo$2b3o$5bo$4b2o5$80bo$78b4o$72b2o3bobob2o14b2o$72b2o
+2bo2bob3o11bo2bo7bo$77bobob2o11bo7b2o3bo$78b4o12bo6bo5bo$80bo5bo7bo7b
+5o$85bo9bo2bo$85b3o9b2o6$78bo$78bobo$78b2o3$o29bo29bo$87bo$86b2o10b2o$
+86bobo9b2o4b3o$81b2o12b2o6b5o$79bo3bo10b3o5bo3bobo$78bo5bo10b2o6bo3b2o
+$73b2o2b2obo3bo13b2o$73b2o3bo5bo13b2o$79bo3bo$12b3o48bo17b2o$12bo2bo
+47bobo$12bo50b2o$12bo$13bobo$85b4o26b4o$85bo3bo25bo3bo$85bo29bo$86bo2b
+o26bo2bo7$54b2o$54bobo$54bo11bo$64bobo$51b2o9b2o$o43b3o4b2o9b2o12b2o
+12bo$43b5o6b2o6b2o12b2o$42bobo3bo5b3o7bobo$42b2o3bo6b2o10bo$51b2o$51b
+2o6$o2bo26bo2bo26bo2bo26bo2bo$4bo29bo29bo29bo$o3bo25bo3bo25bo3bo25bo3b
+o$b4o26b4o26b4o26b4o!
 `,
     },   
     {
@@ -436,6 +517,29 @@ o$68bo2$5b2o3b2o18bo$7b3o18bobo$6bo3bo16bobo17bo$7bobo11b2o3bo2bo16b2o
 2o$10bo3bo5bo2b3o71bobo$4b2o3bo5bo9bo3bo68b2o$4b2o2b2obo3bo8bo4bobo66b
 o$9bo5bo16b2o4b2o$10bo3bo17b2o4b2o$12b2o18b2o$29bobo71b2o$29bo73bo$
 104b3o$106bo!
+`,
+    },    
+
+    {
+        name: "U_turn2_W_E",
+        input: [[[7,2],"W"]],
+        output: [[[7,0],"E"]],
+        height: 2,
+        width: 4,
+        drawing: "----roir----r--",
+        content: `
+o59bo29bo2$30bo$29bobo$12b2o15b2obo$12bobo14b2ob2o3b2o71b2o$7b2o6bo13b
+2obo4b2o71bo$3b2obo2bo2bo2bo13bobo76bobo$3b2o2b2o6bo8bo5bo77b2o$12bobo
+7bobo$12b2o9b2o$30bo2bo26bo2bo26bo2bo$5b2o27bo29bo29bo$5b2o23bo3bo25bo
+3bo25bo3bo$31b4o26b4o26b4o$19bo$19b2o$3b2o13bobo$37b2o7b2o$27bo9bo9bo$
+26b2o10b9o$26bobo6b3o2b5o2b3o$2b2o3b2o26bo2bo2b3o2bo2bo$3b5o3b2o23b2o
+9b2o$3b2ob2o4b2o$3b2ob2o3bo$4b3o$34b2o9b2o40b2o$33b2o9bobo41b2o$28bo6b
+o7b3o4b2ob3o31bo$o26bobo12b3o4bo2b4o$6b3o11b2o3b2o3bo12b3o4b2o$6b3o11b
+2o3b2o3bo13bobo$5bo3bo15b2o3bo14b2o$4bo5bo16bobo50bo$5bo3bo18bo51b2o$
+6b3o70bobo6$72b2o$73b2o$72bo$85b4o26b4o$7b2o76bo3bo25bo3bo$7b2o76bo29b
+o$86bo2bo26bo2bo$65bo$53b2o10b2o$46b3o4b2o9bobo$45b5o6b2o12b2o$44bobo
+3bo5b3o10bo3bo$44b2o3bo6b2o10bo5bo$53b2o13bo3bob2o2b2o$53b2o13bo5bo3b
+2o$69bo3bo$70b2o!
 `,
     },    
     {
@@ -702,6 +806,48 @@ $6bo12b2o17b2o7b2o$5bobo10b2o$5bobo$6bo21bo2bo70b3o$32bo11b4o26b4o24bo
 2bo$6b2o20bo3bo10bo3bo25bo3bo24bo$6b2o21b4o14bo29bo24bo$43bo2bo26bo2bo
 26bobo$13bo8b2o$11bobo6bo2bo$4b2o4bobo7bo3bo2b2o$4b2o3bo2bo7bo2b2o2b3o
 $10bobo16b2obo5b2o$11bobo4b3o8bo2bo5b2o$13bo15b2obo$27b3o$27b2o!
+`,
+    },
+    {
+        name: "Before_Latch_EYN_NN",
+        input: [[[-1,2], "EY"], [[4,13], "N"]],
+        output: [[[0,-1], "N"], [[4,-1], "N"]],
+        height: 7,
+        width: 4,
+        drawing: "o-o-r-------r-i--r-----i-",
+        content: `
+o29bo29bo29bo$41b2o$21b2o18b2o$21bo2bo2$25bo13bo$40bo$23b2o15bo$22bo2$
+38b2o3b2o27b3o$19b2o3b2o15bo30bo2bo$19b2o3b2o12bo5bo27bo$20b5o14b2ob2o
+28bo$21bobo16bobo30bobo$41bo$21b3o17bo6$25bo11bobo$26bo10b2o$24b3o11bo
+3b3o$20bo11bo8bo3bo$19b3o8b3o7bo5bo$11b3o4b5o5bo4bo6b2obob2o$10bo2bo3b
+2o3b2o4bobo$13bo14bo$o12bo17b3o9bo46bo$10bobo19bo9bobo$19b3o20bobo$19b
+3o21bo2$43b2o$19b2o22b2o$19b2o19bo72b2o$41bo71bo$39b3o69bobo$72b3o36b
+2o$13b4o55bo2bo$12bo3bo55bo$16bo55bo$12bo2bo57bobo6$67b2o$67bo$55bo9bo
+bo$56bo8b2o$54b3o2$61b2o$11b3o46bo2bo$10bo2bo46bobo$13bo27bo19bo$o12bo
+25b3o48bo$10bobo15b3o7bo26bo$26bo11b2o26b2o$24bobo2bo31b3obo$34bo30bo$
+23bob4o4bobo24bo$22bo2b3o4bo2bo26bob2o$24bo8b2o25bob2o$21bo2bo35b2o$
+21bo35b2o$22bo33bobo13b3o$19b3o34bo15bo2bo$19bo35b2o15bo$72bo$73bobo4$
+55b2o$56bo$56bobo$57b3o$59b4o$60bob3o$62bobo$64b2o$61b2obo$11b3o14b2o
+32bob2o$10bo2bo15bo32bob3o$13bo12b3o37bo$o12bo12bo63bo$10bobo48bo$59bo
+2b2o$59b2o4$5b2o58b2o$6bo58bobo$3b3o61bo$3bo63b2o3b3o$72bo2bo$72bo$72b
+o$73bobo3$43bo$43b2o$42bobo3$20b2o$20b2o22b2o$44b2o3$11b3o$10bo2bo$13b
+o$o12bo19bobo54bo$10bobo20bobo$28bo$18b2o3b2o3b2o5bob2o$27bobo4bo$19bo
+3bo11bo2bo2b2o3b2o$20b3o13b2o5b3o$20b3o19bo3bo$43bobo$44bo42b2o$23bo
+61bo3bo$22b3o16b3o35b2o3bo5bo13b2o$21bo3bo15b3o35b2o2b2obo3bo13b2o$23b
+o60bo5bo10b2o6bo3b2o$20bo5bo58bo3bo10b3o5bo3bobo$20bo5bo49b3o8b2o12b2o
+6b5o$21bo3bo13b2o3b2o30bo15bobo9b2o4b3o$22b3o15b5o32bo14b2o10b2o$41b3o
+49bo$42bo2$86bo$85bo3bo$85b5o$88bo$85bobo$22b2o61bobo$11b3o8b2o18b2o
+42b2o$10bo2bo28b2o$13bo$o12bo14b2o61b3o9b2o$10bobo15b2o61bo9bo2bo$86bo
+5bo7bo7b5o$84b4o12bo6bo5bo$83bobob2o11bo7b2o3bo$78b2o2bo2bob3o11bo2bo
+7bo$20b2o56b2o3bobob2o14b2o$20bobo5b3o53b4o$17b2obobo63bo$17bobobo6bob
+o$19bo7b5o40b3o$19b2o5b2o3b2o39bo2bo$11b3o5b3o4b2o3b2o39bo$11bo2bo4b3o
+50bo$11bo3bo3b3o51bobo$11bo7b2o8b2o$12bobo4bo7b2ob2o$4b2o11bobobo5bo2b
+o$4b2o11b2obobo7bo$20bobo4bo$20b2o6b2o3$28b2o3b2o$23bo5b5o$21b2o7b3o$
+22b2o7bo$3b3o5b3o$2bo3bo3bo2bo$bo5bo5bo$bo5bo2bo2bo$12bo$7bo$6b2o$6b2o
+22b2o$4bo2b2o21b2o$5bobo$5b2o$18b2o$17b2o$3b2o3b2o9bo52b3o$3b2o3b2o62b
+o2bo$72bo$5b3o64bo$5b3o65bobo$6bo19bo10bo$25b2o9b2o$20bo4bobo7b2o4b2o
+2b2o$18bobo13b3o4b2o2b2o$11b2o4bobo15b2o4b2o$11b2o3bo2bo16b2o$6b2o9bob
+o17bo$6b2o10bobo$20bo!
 `,
     },
     {
@@ -1784,7 +1930,7 @@ function computeNextState(ignoreInput: boolean = false) {
     }
     if (stepCount == 29) {
         outputs.forEach((output) => {
-            if (output[1] == "N" || output[1] == "S" || output[1] == "EX") {
+            if (output[1] == "N" || output[1] == "S" || output[1] == "EX" || output[1] == "EY") {
                 const x = output[0][0];
                 const y = output[0][1];
                 deleteBox(15*x-6, 15*y-6, 12, 12);
@@ -1809,6 +1955,12 @@ function computeNextState(ignoreInput: boolean = false) {
                     const y = input[0][1];
                     const v : BExp = buildVar(varNames[index], genCount);
                     initializeFromRLE("3bo2bo$7bo$3bo3bo$4b4o",toY(15*y-5),toX(15*x-5),v);
+                }
+                if (input[1] == "EY") {
+                    const x = input[0][0];
+                    const y = input[0][1];
+                    const v : BExp = buildVar(varNames[index], genCount);
+                    initializeFromRLE("2bo2bo$6bo$2bo3bo$3b4o",toY(15*y-5),toX(15*x-5),v);
                 }
             });
         }
@@ -2109,13 +2261,13 @@ const circ_textarea = document.createElement('textarea');
 circ_textarea.rows = 40;
 circ_textarea.cols = 40;
 circ_textarea.style.fontFamily = "monospace";
-circ_textarea.value = `width 30
+circ_textarea.value = `
+width 30
 height 30
 Generate2_E 10 28 red 3
 Generate1_E 12 28 red 3
 Generate1_E 14 28 red 3
 Generate1_E 16 28 red 3
-Generate2_E 18 28 lime 3
 vwire 11 28 -16
 vwire 12 28 -18
 vwire 14 28 -16
@@ -2143,24 +2295,24 @@ hwire 30 24 -2
 vwire 25 26 4
 vwire 3 30 -8
 hwire 4 26 -4
-vwire 22 17 13
+vwire 23 17 13
 vwire 0 5 18
 hwire 0 9 1
 vwire 4 13 5
 vwire 7 7 10
 hwire 0 6 6
 Turn_E_S 6 4 blue 0
-Not_turn_EX_N 21 15 blue 2
-hwire 28 16 -4 red
+Not_turn_EX_N 22 15 blue 2
+hwire 28 16 -3 red
 hwire 25 14 -13 
 hwire 22 12 -10
-Turn_E_S 22 11 blue 1
+Turn_Middle_E_S 22 10 blue 1
 Turn_E_S 25 13 blue 1
 vwire 25 0 13
-vwire 22 0 4
-vwire 22 8 3
-hwire 24 6 6
-Duplicate_E_EN 20 4 blue 1
+vwire 23 0 4
+vwire 23 8 2
+hwire 25 6 5
+Duplicate_E_EN 21 4 blue 1
 Duplicate_E_EN 26 7 blue 1
 vwire 28 11 5
 vwire 28 4 3
@@ -2172,7 +2324,6 @@ vwire 16 2 2 red
 vwire 17 6 -4 red
 hwire 14 5 6 red
 hwire 18 2 -5
-vwire 19 28 -25 
 Duplicate_E_EN 9 0 blue 2
 vwire 10 4 2 
 vwire 14 6 -1 
@@ -2185,14 +2336,26 @@ color grey
 Duplicate_N_WEX 4 23 red 0
 And_Not_And_Not_NNS_N 10 6 orange 0
 And_Not_NN_NN 13 10 orange 0
-box 1 18 29 2
-box 3 20 27 2
+And_Wire_Wire_EWN_EWN 19 17 lime 0
+Duplicate_E_ES 18 21 lime 2
+Before_Latch_EYN_NN 17 4 yellow 0
+U_turn2_W_E 1 18 lime 0
+U_turn2_W_E 26 18 lime 2
+U_turn_W_E 3 20 lime 0
+U_turn_W_E 26 20 lime 2
+hwire 5 18 21
+hwire 26 19 -21
+hwire 7 20 29
+hwire 26 21 -19
+vwire 19 21 -1 
+vwire 19 17 -6 
+vwire 19 4 -1
+And_Not_NW_W 17 0 yellow 0
+Generate1_E 20 1 yellow 2
 box 1 8 5 5
-box 18 1 3 2
 box 27 1 3 3
 box 0 0 3 5
 box 4 0 2 5
-box 17 5 3 5
 vwire 5 30 -1
 `;
 document.body.appendChild(circ_textarea);
