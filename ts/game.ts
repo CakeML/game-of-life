@@ -544,6 +544,42 @@ $55b3o10$55b2o$55b2o!
 `,
     },
     {
+        name: "Fork_E_NS",
+        input: [[[-1,6],"E"]],
+        output: [[[2,-1],"N"],[[4,11],"S"]],
+        height: 6,
+        width: 5,
+        drawing: "-o---r------r--o--r--i---",
+        content: `
+o29bo29bo59bo2$88b2o$88b2o11$70b2o14b2o3b2o$70b2o16b3o$87bo3bo$88bobo$
+89bo5$90b3o$84bobo$67b2o3b2o10b2o4bobo$85bo3b5o$68bo3bo15b2o3b2o$69b3o
+16b2o3b2o$69b3o$o$78bo$76b2o12b2o$77b2o2$68bo5bo6b2o$67b3o5bo4b2o$67b
+3o3b3o6bo2$65b2o3b2o19b2obob2o$65b2o3b2o19bo5bo$92bo3bo$89bo3b3o$68bo
+19b2o$67bobo18bobo$66b2o6bobo$66b2o9bo6b2o$66b3o8bo6bobo$67bobo4bo2bo
+3b2obobo$68b2o5b3o3bobobo$83bo8bo$83b2o7bo$83b3o5bobo$83b3o4b2ob2o$83b
+3o3bo5bo$83b2o7bo$83bo5b2o3b2o$81bobobo$81b2obobo$84bobo6bo$o83b2o7bo$
+94bo3$91b2o$91b2o5$42b3o$42bo2bo$42bo$42bo$43bobo$54b2o18bobo$54b2o21b
+o$77bo$74bo2bo$57bo17b3o$56bo$56bo3$52b2o3b2o$55bo$52bo5bo$53b2ob2o$
+54bobo$55bo$o54bo4$57b2o$57bo$58b3o$48b3o9bo$50bo$49bo$42b3o$o2bo26bo
+2bo8bo2bo14bo2bo26bo2bo$4bo29bo7bo21bo29bo$o3bo25bo3bo7bo17bo3bo25bo3b
+o$b4o26b4o8bobo15b4o26b4o$74bobo$77bo$77bo$74bo2bo$75b3o3$33b3o73b3o$
+35bo73bo$34bo75bo$58b2o$58b2o4$o50b2o$51bobo$48b2obobo84b2o$48bobobo
+61b2o22b2o$3b2o45bo62bo2bo21b2o$3b2o22b2o20b2o5b2obob2o53bo21bo$27b2o
+19b3o65bo20bobo$18b3o27b3o5bo5bo51bobo7b3o10bobo$20bo27b3o63bobo7bo13b
+o$19bo29b2o6b2ob2o53bo9bo$42b3o5bo8bo$35b2o5bo2bo2bobobo82b2o3b2o$35b
+2o5bo5b2obobo58b2o3b2o16bobobobo$42bo8bobo58bo5bo17b5o$11b2o30bobo5b2o
+79b2o3b3o$10bobo6b2o12bo79bo3bo2b2o10bobo3bo$b2o3b2o4bo5b2o14bo21bo57b
+3o4b2o9bo$3b3o14bo4b5o4bo19b2o4b3o57bo$2bo3bo17bob3obo24b2o2bo3bo$3bob
+o19bo3bo$4bo21b3o3b2o3b2o19bo5bo$27bo7bo22b2o3b2o$5b3o17b2o5bo5bo2b2o$
+5b3o16bobo6b2ob2o2bobo74bo17b3o$24bobo7bobo5bo4bobo65b2ob2o14b2ob2o$
+25bo9bo11b2o85b2ob2o$35bo8bo3bo65bo5bo13b5o$3b2o3b2o33b2o88b2o3b2o$4b
+5o13b2obob2o14bobo68b2obob2o$5b3o14bo5bo$o5bo16bo3bo9bo$24b3o9b3o$35bo
+3bo94b2o$34bob3obo14b2o3b2o$35b5o11b2o3b5o$50b2o4b2ob2o$52bo3b2ob2o75b
+2o$57b3o56b2o18b2o$5b2o109b2o$5b2o18b2o$25b2o2$55b3o$55b3o$54bo3bo$37b
+2o14bo5bo$37b2o15bo3bo$55b3o10$55b2o$55b2o!
+`,
+    },
+    {
         name: "U_turn_W_E",
         input: [[[7,0],"W"]],
         output: [[[7,2],"E"]],
@@ -2371,7 +2407,7 @@ vwire 3 30 -8
 hwire 4 26 -4
 vwire 23 17 13
 vwire 0 4 19
-hwire 0 9 1
+hwire 0 10 2
 vwire 4 13 5
 vwire 7 7 10
 hwire 0 6 6
@@ -2387,9 +2423,9 @@ vwire 23 0 4
 vwire 23 8 2
 hwire 25 6 5
 Duplicate_E_EN 21 4 blue 1
-Duplicate_E_EN 26 7 blue 1
-vwire 28 11 5
-vwire 28 4 3
+Duplicate_E_EN 26 8 blue 1
+vwire 28 12 4
+vwire 28 4 4
 hwire 16 3 11
 Generate1_E 14 3 yellow 0
 Generate1_EX 15 0 yellow 1
@@ -2402,7 +2438,7 @@ Duplicate_E_EN 9 0 blue 2
 vwire 10 4 2 
 vwire 14 6 -1 
 vwire 16 10 -5
-vwire 3 8 -8
+vwire 3 7 -7
 vwire 5 1 -1
 hwire 9 2 -1
 hwire 4 2 -1
@@ -2430,7 +2466,7 @@ Generate1_E 20 1 yellow 2
 Not_Turn_E_S 27 1 blue 0
 Not_Turn_E_N 0 0 blue 2
 Fork_Not_WN_WN 4 1 blue 0
-box 1 8 5 5
+Fork_E_NS 2 7 blue 0
 vwire 5 30 -1
 `;
 document.body.appendChild(circ_textarea);
