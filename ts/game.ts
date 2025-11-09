@@ -305,6 +305,52 @@ $84b2o$92b3o$92b3o3$45bobo44b2o$46b2o44b2o$46bo$58b3o$60bo$o58bo9bo$
 `,
     },   
     {
+        name: "Not_Turn_E_S",
+        input: [[[-1,4], "E"]],
+        output: [[[2,5], "S"]],
+        height: 3,
+        width: 3,
+        drawing: "---r---r-o-ri--",
+        content: `
+o29bo29bo3$48bo5b2o$40b2o4bo3bo3b3o$40b2o8bo5b2obo8bo$45bo5bo4bo2bo6bo
+bo$45b2o9b2obo5bobo$40bo13b3o7bo2bo11b2o$39b3o12b2o9bobo11b2o$38bo3bo
+23bobo$40bo17bo9bo$37bo5bo12b2o$37bo5bo13b2o$38bo3bo$39b3o4$49bobo$42b
+o6b2o$50bo13b2o$64b2o$42bo$40bobo$41b2o$65bo$54bo9bobo$53b2o8bo3bo$35b
+2o3b2o11bobo8b3o$o29bo15bobo13b2o3b2o$36bo3bo4bo$37b3o5bo$37b3o5bo2bo$
+45b3o$61b2o$54b2o4b2o$54bobo5bo$38b2o11b2obobo$38b2o11bobobo$53bo$53b
+2o$53b3o$53b3o$53b3o7bo$44bobo6b2o7b3o$47bo5bo7b5o$47bo3bobobo4b2o3b2o
+$44bo2bo3b2obobo$45b3o6bobo$54b2o$62b3o$62b3o3$62b2o$62b2o4$o$11bob2o
+4bo$11b2obo3bobo$18bobo$9b5o3b2ob3o$8bo2bo2bo8bo$8b2o3b2o2b2ob3o$17b2o
+bo$24bo$22b3o$14b3o4bo$o2bo10bo2bo3b2o$4bo9bo12b2o$o3bo9bo3bo7bobo$b4o
+13bo9bo2$13bo5bo$19bo$14bo4bo$10b2o4b2o$9bobo$9bo$8b2o$21b2o$21bo$22b
+3o$24bo!
+`,
+    },   
+    {
+        name: "Not_Turn_E_N",
+        input: [[[-1,2], "E"]],
+        output: [[[4,-1], "N"]],
+        height: 4,
+        width: 3,
+        drawing: "--or----r---r--i-",
+        content: `
+o29bo29bo10$72b3o$72bo2bo$72bo$72bo$73bobo$51bobo$50bo2bo$40bo8b2o10b
+2o$39bobo5b2o3bo8b2o$27b2o10b2obo6b2o5b2o$27b2o10b2ob2o6bo2bo4bo$39b2o
+bo8bobo$39bobo$40bo9bo$51bo$49b3o5$o$58bo$56bobo$57b2o7$72b3o$o2bo26bo
+2bo38bo2bo$4bo29bo37bo$o3bo25bo3bo37bo$b4o26b4o38bobo4$38b3o16b2o$40bo
+16b2o$39bo3$64b2o$56b3o4bobo$31b2o23b3o4bobob2o$30bobo22bo3bo4bobobo$
+32bo33bo$10b2o42b2o3b2o4b2o$10b2o52b3o$o9b2o52b3o$11bo52b3o$10bobo52b
+2o$10bobo10b3o28b3o9bo$11bo13bo32b2o4bobobo11b2o$24bo33b2o3bobob2o11b
+2o$59b2o2bobo$8b2o3b2o42bobo4b2o$8bobobobo42b2o$9b5o$10b3o3b2o54b3o$
+11bo3bobo34b2o3b2o13bo2bo4b3o$17bo34b2o3b2o13bo6b2ob2o$64bo7bo6b2ob2o$
+54b3o8b2o6bobo3b5o$54b3o7b2o12b2o3b2o$55bo2$78bo$12b3o61b2obo$11b2ob2o
+63bo$11b2ob2o$11b5o42bo17bob2o$10b2o3b2o39b2ob2o7b2o8bo2bo$69b2o8bobo$
+55bo5bo6bo2$55b2obob2o$14b2o$78b3o$o60b2o14bo3bo$60bobo13bo5bo$12b2o
+47bo15bo3bo$12b2o46b2o16b3o$60b3o15b3o$61b2o$59bo2$78b2o$78b2o$60bo$
+59b3o$58b5o$57b2o3b2o$58b5o$58bo3bo$59bobo$60bo3$60b2o$60b2o!
+`,
+    },   
+    {
         name: "And_Not_NW_W",
         input: [[[5,4], "W"],[[4,5], "N"]],
         output: [[[-1,4], "W"]],
@@ -370,7 +416,7 @@ obo$34b2o25b2o$61b2o6$o2bo26bo2bo$4bo29bo$o3bo25bo3bo$b4o26b4o!
         output: [[[7,2],"E"],[[4,-1],"N"]],
         height: 4,
         width: 4,
-        drawing: "r-l--l-ro-r-o--r---r--l-ri-",
+        drawing: "--o-r-o--r----r--i-",
         content: `
 o29bo29bo29bo10$72b3o$72bo2bo$72bo$72bo$73bobo$84b2o$84b2o3$87bo$86bo$
 86bo3$82b2o3b2o$85bo$82bo5bo$83b2ob2o$84bobo$85bo$o84bo4$87b2o$87bo$
@@ -540,6 +586,34 @@ o7b3o4b2ob3o31bo$o26bobo12b3o4bo2b4o$6b3o11b2o3b2o3bo12b3o4b2o$6b3o11b
 o$86bo2bo26bo2bo$65bo$53b2o10b2o$46b3o4b2o9bobo$45b5o6b2o12b2o$44bobo
 3bo5b3o10bo3bo$44b2o3bo6b2o10bo5bo$53b2o13bo3bob2o2b2o$53b2o13bo5bo3b
 2o$69bo3bo$70b2o!
+`,
+    },    
+    {
+        name: "Fork_Not_WN_WN",
+        input: [[[7,2],"W"]],
+        output: [[[2,-1],"N"],[[-1,2],"W"]],
+        height: 4,
+        width: 4,
+        drawing: "-o--r-i-r--l-r--r--o-",
+        content: `
+o29bo29bo29bo$67bo$66bobo$54b2o9bo3b2o6b2o$54b2o9bo3bob2o4bobo$65bo3bo
+b3o4b3o7b2o$66bobob2o2bo4b3o6b2o$67bo4b2o4b3o$77bobo$77b2o2$64bo$64bob
+o$64b2o8$80bo$73b2obo3b4o$67b2o2b2obobo4b4o$66bobo2b2obob2o3bo2bo5b2o$
+65b3o8b2o3b4o5b2o$49bo6b2o6b3o8b2o3b4o$49bobo4b2o7b3o12bo$49b2o15bobo$
+67b2o$o29bo10$42b3o$42bo2bo$42bo$42bo23b2o$43bobo20bobo$55b4o7bo18b4o
+26b4o$55bo3bo25bo3bo25bo3bo$55bo29bo29bo$56bo2bo26bo2bo26bo2bo3$91bobo
+$89bo3bo$82b2o5bo19bo$82b2o4bo4bo14b4o$26b2o61bo12bo4b2obobo3b2o$26b2o
+61bo3bo3bob2o5b3obo2bo2b2o$91bobo2bob4o5b2obobo$81b2o13b2o2b2o6b4o$81b
+obo25bo$o80bo$34b2o$33bobo$33bobob2o50b2o$34bobobo50b2o$25b3o8bo52bobo
+$24bo3bo6b2o51b3o$23bo5bo4b3o51b2obo$23bo5bo4b3o52bo$26bo7b3o$24bo3bo
+6b2o5b3o$25b3o8bo5bo2bo$26bo7bobobo3bo7b2o44bo2bo8bo$33bobob2o3bo7b2o
+44bo10bobo$33bobo7bobo46bo2bo3b2o5bo3b2o$23b3o8b2o53b4o3b2obobo4bo3b2o
+3b2o$23b3o62b4o14bo3b2o3b2o$22bo3bo54b2o5bo2bo8b2o5bobo$30bobo48b2o5b
+4o16bo$21b2o3b2o3b2o56b4o$31bo60bo2$48b2obob2o$43b3o$43bo4bo5bo$38bo5b
+o$39b2o8b2ob2o$38b3ob2o7bo$43b2o$24b2o16bo$o23b2o23bo10bo29bo$48bobo$
+47bo3bo$47b5o$35bo10b2o3b2o$35b2o10b5o$34bobo11b3o$49bo3$19bo7bo$17bob
+o5b4o$9b2o4b2o8b2o2bo2b2o$9b2o4b2o11b2o2b2o$15b2o7bo10b2o6b2o$17bobo4b
+o10b3o5b2o$19bo4bo10b2o11b2o$32b2o14b2o$32b2o!
 `,
     },    
     {
@@ -2296,7 +2370,7 @@ vwire 25 26 4
 vwire 3 30 -8
 hwire 4 26 -4
 vwire 23 17 13
-vwire 0 5 18
+vwire 0 4 19
 hwire 0 9 1
 vwire 4 13 5
 vwire 7 7 10
@@ -2329,7 +2403,8 @@ vwire 10 4 2
 vwire 14 6 -1 
 vwire 16 10 -5
 vwire 3 8 -8
-hwire 9 2 -3
+vwire 5 1 -1
+hwire 9 2 -1
 hwire 4 2 -1
 Not_turn_N_EX 28 16 blue 2
 color grey
@@ -2352,10 +2427,10 @@ vwire 19 17 -6
 vwire 19 4 -1
 And_Not_NW_W 17 0 yellow 0
 Generate1_E 20 1 yellow 2
+Not_Turn_E_S 27 1 blue 0
+Not_Turn_E_N 0 0 blue 2
+Fork_Not_WN_WN 4 1 blue 0
 box 1 8 5 5
-box 27 1 3 3
-box 0 0 3 5
-box 4 0 2 5
 vwire 5 30 -1
 `;
 document.body.appendChild(circ_textarea);

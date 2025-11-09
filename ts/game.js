@@ -156,6 +156,24 @@ var circuits = [
         content: "\no59bo29bo$9b2o19b2o$9b2o19b2o$78bo5b2o$70b2o4bo3bo3b3o$70b2o8bo5b2obo\n8bo$75bo5bo4bo2bo6bobo$75b2o9b2obo5bobo$70bo13b3o7bo2bo11b2o$9b3o57b3o\n12b2o9bobo11b2o$8bo3bo17bo37bo3bo23bobo$29b3o38bo17bo9bo$7bo5bo14b5o\n34bo5bo12b2o$7b2o3b2o13b2o3b2o33bo5bo13b2o$68bo3bo$69b3o$10bo$8b2obo\n17b3o$11bo17b3o$7bo3bo67bobo$7bo2bo21bo39bo6b2o$6b5o20bobo46bo13b2o$6b\n5o19bo3bo59b2o$5b2o3b2o12b2o5b3o38bo$6b5o12bo2bo2b2o3b2o34bobo$7b3o5bo\nbo4bo48b2o$8bo7b2o5bob2o68bo$16bo67bo9bobo$21bobo59b2o8bo3bo$21bobo41b\n2o3b2o11bobo8b3o$o75bobo13b2o3b2o$66bo3bo4bo$67b3o5bo$67b3o5bo2bo$75b\n3o$7b2o23b2o57b2o$7b2o23b2o50b2o4b2o$84bobo5bo$68b2o11b2obobo$68b2o11b\nobobo$30bobo50bo$o2bo27b2o50b2o$4bo26bo51b3o$o3bo78b3o$b4o78b3o7bo$74b\nobo6b2o7b3o$77bo5bo7b5o$77bo3bobobo4b2o3b2o$74bo2bo3b2obobo$75b3o6bobo\n$84b2o$92b3o$92b3o3$45bobo44b2o$46b2o44b2o$46bo$58b3o$60bo$o58bo9bo$\n67b3o$66bo$66b2o$65b2o$54b2o8b2o$53bo2bo4bo3bo$53bobo3b3ob3o$54bo9bo$\n59b6o$49b2o8b2obo$50bo7b2o$47b3o$47bo!\n",
     },
     {
+        name: "Not_Turn_E_S",
+        input: [[[-1, 4], "E"]],
+        output: [[[2, 5], "S"]],
+        height: 3,
+        width: 3,
+        drawing: "---r---r-o-ri--",
+        content: "\no29bo29bo3$48bo5b2o$40b2o4bo3bo3b3o$40b2o8bo5b2obo8bo$45bo5bo4bo2bo6bo\nbo$45b2o9b2obo5bobo$40bo13b3o7bo2bo11b2o$39b3o12b2o9bobo11b2o$38bo3bo\n23bobo$40bo17bo9bo$37bo5bo12b2o$37bo5bo13b2o$38bo3bo$39b3o4$49bobo$42b\no6b2o$50bo13b2o$64b2o$42bo$40bobo$41b2o$65bo$54bo9bobo$53b2o8bo3bo$35b\n2o3b2o11bobo8b3o$o29bo15bobo13b2o3b2o$36bo3bo4bo$37b3o5bo$37b3o5bo2bo$\n45b3o$61b2o$54b2o4b2o$54bobo5bo$38b2o11b2obobo$38b2o11bobobo$53bo$53b\n2o$53b3o$53b3o$53b3o7bo$44bobo6b2o7b3o$47bo5bo7b5o$47bo3bobobo4b2o3b2o\n$44bo2bo3b2obobo$45b3o6bobo$54b2o$62b3o$62b3o3$62b2o$62b2o4$o$11bob2o\n4bo$11b2obo3bobo$18bobo$9b5o3b2ob3o$8bo2bo2bo8bo$8b2o3b2o2b2ob3o$17b2o\nbo$24bo$22b3o$14b3o4bo$o2bo10bo2bo3b2o$4bo9bo12b2o$o3bo9bo3bo7bobo$b4o\n13bo9bo2$13bo5bo$19bo$14bo4bo$10b2o4b2o$9bobo$9bo$8b2o$21b2o$21bo$22b\n3o$24bo!\n",
+    },
+    {
+        name: "Not_Turn_E_N",
+        input: [[[-1, 2], "E"]],
+        output: [[[4, -1], "N"]],
+        height: 4,
+        width: 3,
+        drawing: "--or----r---r--i-",
+        content: "\no29bo29bo10$72b3o$72bo2bo$72bo$72bo$73bobo$51bobo$50bo2bo$40bo8b2o10b\n2o$39bobo5b2o3bo8b2o$27b2o10b2obo6b2o5b2o$27b2o10b2ob2o6bo2bo4bo$39b2o\nbo8bobo$39bobo$40bo9bo$51bo$49b3o5$o$58bo$56bobo$57b2o7$72b3o$o2bo26bo\n2bo38bo2bo$4bo29bo37bo$o3bo25bo3bo37bo$b4o26b4o38bobo4$38b3o16b2o$40bo\n16b2o$39bo3$64b2o$56b3o4bobo$31b2o23b3o4bobob2o$30bobo22bo3bo4bobobo$\n32bo33bo$10b2o42b2o3b2o4b2o$10b2o52b3o$o9b2o52b3o$11bo52b3o$10bobo52b\n2o$10bobo10b3o28b3o9bo$11bo13bo32b2o4bobobo11b2o$24bo33b2o3bobob2o11b\n2o$59b2o2bobo$8b2o3b2o42bobo4b2o$8bobobobo42b2o$9b5o$10b3o3b2o54b3o$\n11bo3bobo34b2o3b2o13bo2bo4b3o$17bo34b2o3b2o13bo6b2ob2o$64bo7bo6b2ob2o$\n54b3o8b2o6bobo3b5o$54b3o7b2o12b2o3b2o$55bo2$78bo$12b3o61b2obo$11b2ob2o\n63bo$11b2ob2o$11b5o42bo17bob2o$10b2o3b2o39b2ob2o7b2o8bo2bo$69b2o8bobo$\n55bo5bo6bo2$55b2obob2o$14b2o$78b3o$o60b2o14bo3bo$60bobo13bo5bo$12b2o\n47bo15bo3bo$12b2o46b2o16b3o$60b3o15b3o$61b2o$59bo2$78b2o$78b2o$60bo$\n59b3o$58b5o$57b2o3b2o$58b5o$58bo3bo$59bobo$60bo3$60b2o$60b2o!\n",
+    },
+    {
         name: "And_Not_NW_W",
         input: [[[5, 4], "W"], [[4, 5], "N"]],
         output: [[[-1, 4], "W"]],
@@ -188,7 +206,7 @@ var circuits = [
         output: [[[7, 2], "E"], [[4, -1], "N"]],
         height: 4,
         width: 4,
-        drawing: "r-l--l-ro-r-o--r---r--l-ri-",
+        drawing: "--o-r-o--r----r--i-",
         content: "\no29bo29bo29bo10$72b3o$72bo2bo$72bo$72bo$73bobo$84b2o$84b2o3$87bo$86bo$\n86bo3$82b2o3b2o$85bo$82bo5bo$83b2ob2o$84bobo$85bo$o84bo4$87b2o$87bo$\n88b3o$78b3o9bo$80bo$79bo$72b3o$o2bo26bo2bo26bo2bo8bo2bo$4bo29bo29bo7bo\n$o3bo25bo3bo25bo3bo7bo$b4o26b4o26b4o8bobo5$38bo$36b4o$27b2o5b4ob2o9b2o\n$25bo2bo3bo3b2ob3o8b2o11b3o$16b2o6bo7bo3b2ob2o24bo$16b2o6bo6bo3b5o24bo\n$24bo7b3o3bo49b2o$25bo2bo59b2o$27b2o2$40bo$o40b2o38b2o$40b2o39bobo$35b\n2o41b2obobo$35b2o41bobobo$35b2o43bo$36bo42b2o5b2obob2o$35bobo40b3o$35b\nobo10b3o27b3o5bo5bo$36bo13bo27b3o$49bo29b2o6b2ob2o$72b3o5bo8bo$33b2o3b\n2o25b2o5bo2bo2bobobo$33bobobobo25b2o5bo5b2obobo$34b5o33bo8bobo$35b3o3b\n2o30bobo5b2o$36bo3bobo20bo$42bo21bo21bo$64bo19b2o4b3o$85b2o2bo3bo2$62b\n2o3b2o19bo5bo$65bo22b2o3b2o$62bo5bo2b2o$37b3o23b2ob2o2bobo$36b2ob2o23b\nobo5bo4bobo$36b2ob2o24bo11b2o$36b5o24bo8bo3bo$35b2o3b2o31b2o$73bobo2$o\n66bo$66b3o$39b2o24bo3bo$64bob3obo14b2o3b2o$65b5o11b2o3b5o$80b2o4b2ob2o\n$37b2o43bo3b2ob2o$37b2o48b3o5$85b3o$85b3o$84bo3bo$67b2o14bo5bo$67b2o\n15bo3bo$85b3o10$85b2o$85b2o!\n",
     },
     {
@@ -235,6 +253,15 @@ var circuits = [
         width: 4,
         drawing: "----roir----r--",
         content: "\no59bo29bo2$30bo$29bobo$12b2o15b2obo$12bobo14b2ob2o3b2o71b2o$7b2o6bo13b\n2obo4b2o71bo$3b2obo2bo2bo2bo13bobo76bobo$3b2o2b2o6bo8bo5bo77b2o$12bobo\n7bobo$12b2o9b2o$30bo2bo26bo2bo26bo2bo$5b2o27bo29bo29bo$5b2o23bo3bo25bo\n3bo25bo3bo$31b4o26b4o26b4o$19bo$19b2o$3b2o13bobo$37b2o7b2o$27bo9bo9bo$\n26b2o10b9o$26bobo6b3o2b5o2b3o$2b2o3b2o26bo2bo2b3o2bo2bo$3b5o3b2o23b2o\n9b2o$3b2ob2o4b2o$3b2ob2o3bo$4b3o$34b2o9b2o40b2o$33b2o9bobo41b2o$28bo6b\no7b3o4b2ob3o31bo$o26bobo12b3o4bo2b4o$6b3o11b2o3b2o3bo12b3o4b2o$6b3o11b\n2o3b2o3bo13bobo$5bo3bo15b2o3bo14b2o$4bo5bo16bobo50bo$5bo3bo18bo51b2o$\n6b3o70bobo6$72b2o$73b2o$72bo$85b4o26b4o$7b2o76bo3bo25bo3bo$7b2o76bo29b\no$86bo2bo26bo2bo$65bo$53b2o10b2o$46b3o4b2o9bobo$45b5o6b2o12b2o$44bobo\n3bo5b3o10bo3bo$44b2o3bo6b2o10bo5bo$53b2o13bo3bob2o2b2o$53b2o13bo5bo3b\n2o$69bo3bo$70b2o!\n",
+    },
+    {
+        name: "Fork_Not_WN_WN",
+        input: [[[7, 2], "W"]],
+        output: [[[2, -1], "N"], [[-1, 2], "W"]],
+        height: 4,
+        width: 4,
+        drawing: "-o--r-i-r--l-r--r--o-",
+        content: "\no29bo29bo29bo$67bo$66bobo$54b2o9bo3b2o6b2o$54b2o9bo3bob2o4bobo$65bo3bo\nb3o4b3o7b2o$66bobob2o2bo4b3o6b2o$67bo4b2o4b3o$77bobo$77b2o2$64bo$64bob\no$64b2o8$80bo$73b2obo3b4o$67b2o2b2obobo4b4o$66bobo2b2obob2o3bo2bo5b2o$\n65b3o8b2o3b4o5b2o$49bo6b2o6b3o8b2o3b4o$49bobo4b2o7b3o12bo$49b2o15bobo$\n67b2o$o29bo10$42b3o$42bo2bo$42bo$42bo23b2o$43bobo20bobo$55b4o7bo18b4o\n26b4o$55bo3bo25bo3bo25bo3bo$55bo29bo29bo$56bo2bo26bo2bo26bo2bo3$91bobo\n$89bo3bo$82b2o5bo19bo$82b2o4bo4bo14b4o$26b2o61bo12bo4b2obobo3b2o$26b2o\n61bo3bo3bob2o5b3obo2bo2b2o$91bobo2bob4o5b2obobo$81b2o13b2o2b2o6b4o$81b\nobo25bo$o80bo$34b2o$33bobo$33bobob2o50b2o$34bobobo50b2o$25b3o8bo52bobo\n$24bo3bo6b2o51b3o$23bo5bo4b3o51b2obo$23bo5bo4b3o52bo$26bo7b3o$24bo3bo\n6b2o5b3o$25b3o8bo5bo2bo$26bo7bobobo3bo7b2o44bo2bo8bo$33bobob2o3bo7b2o\n44bo10bobo$33bobo7bobo46bo2bo3b2o5bo3b2o$23b3o8b2o53b4o3b2obobo4bo3b2o\n3b2o$23b3o62b4o14bo3b2o3b2o$22bo3bo54b2o5bo2bo8b2o5bobo$30bobo48b2o5b\n4o16bo$21b2o3b2o3b2o56b4o$31bo60bo2$48b2obob2o$43b3o$43bo4bo5bo$38bo5b\no$39b2o8b2ob2o$38b3ob2o7bo$43b2o$24b2o16bo$o23b2o23bo10bo29bo$48bobo$\n47bo3bo$47b5o$35bo10b2o3b2o$35b2o10b5o$34bobo11b3o$49bo3$19bo7bo$17bob\no5b4o$9b2o4b2o8b2o2bo2b2o$9b2o4b2o11b2o2b2o$15b2o7bo10b2o6b2o$17bobo4b\no10b3o5b2o$19bo4bo10b2o11b2o$32b2o14b2o$32b2o!\n",
     },
     {
         name: "And_Wire_ES_ES",
@@ -1422,7 +1449,7 @@ var circ_textarea = document.createElement('textarea');
 circ_textarea.rows = 40;
 circ_textarea.cols = 40;
 circ_textarea.style.fontFamily = "monospace";
-circ_textarea.value = "\nwidth 30\nheight 30\nGenerate2_E 10 28 red 3\nGenerate1_E 12 28 red 3\nGenerate1_E 14 28 red 3\nGenerate1_E 16 28 red 3\nvwire 11 28 -16\nvwire 12 28 -18\nvwire 14 28 -16\nvwire 16 28 -16\nU_turn_WN_EXN 8 26 red 0\nU_turn_WN_EXN 8 24 red 0\nU_turn_WN_EXN 8 14 red 0\nU_turn_WN_EXN 8 12 red 0\nhwire 12 13 5 red\nhwire 12 15 5 red\nhwire 7 16 10 red\nhwire 4 17 13 red\nhwire 3 22 14 red\nhwire 8 23 9 red\nhwire 12 25 5 red\nhwire 12 27 5 red\nGenerate2_EX 5 15 red 0\nGenerate2_EX 2 16 red 0\nGenerate2_EX 1 21 red 0\nTurn_E_S 0 23 blue 1\nDuplicate_E_EN 24 22 blue 2\nhwire 24 24 -12\nhwire 30 26 -18\nhwire 30 24 -2\nvwire 25 26 4\nvwire 3 30 -8\nhwire 4 26 -4\nvwire 23 17 13\nvwire 0 5 18\nhwire 0 9 1\nvwire 4 13 5\nvwire 7 7 10\nhwire 0 6 6\nTurn_E_S 6 4 blue 0\nNot_turn_EX_N 22 15 blue 2\nhwire 28 16 -3 red\nhwire 25 14 -13 \nhwire 22 12 -10\nTurn_Middle_E_S 22 10 blue 1\nTurn_E_S 25 13 blue 1\nvwire 25 0 13\nvwire 23 0 4\nvwire 23 8 2\nhwire 25 6 5\nDuplicate_E_EN 21 4 blue 1\nDuplicate_E_EN 26 7 blue 1\nvwire 28 11 5\nvwire 28 4 3\nhwire 16 3 11\nGenerate1_E 14 3 yellow 0\nGenerate1_EX 15 0 yellow 1\nGenerate2_E 12 4 orange 0\nvwire 16 2 2 red\nvwire 17 6 -4 red\nhwire 14 5 6 red\nhwire 18 2 -5\nDuplicate_E_EN 9 0 blue 2\nvwire 10 4 2 \nvwire 14 6 -1 \nvwire 16 10 -5\nvwire 3 8 -8\nhwire 9 2 -3\nhwire 4 2 -1\nNot_turn_N_EX 28 16 blue 2\ncolor grey\nDuplicate_N_WEX 4 23 red 0\nAnd_Not_And_Not_NNS_N 10 6 orange 0\nAnd_Not_NN_NN 13 10 orange 0\nAnd_Wire_Wire_EWN_EWN 19 17 lime 0\nDuplicate_E_ES 18 21 lime 2\nBefore_Latch_EYN_NN 17 4 yellow 0\nU_turn2_W_E 1 18 lime 0\nU_turn2_W_E 26 18 lime 2\nU_turn_W_E 3 20 lime 0\nU_turn_W_E 26 20 lime 2\nhwire 5 18 21\nhwire 26 19 -21\nhwire 7 20 29\nhwire 26 21 -19\nvwire 19 21 -1 \nvwire 19 17 -6 \nvwire 19 4 -1\nAnd_Not_NW_W 17 0 yellow 0\nGenerate1_E 20 1 yellow 2\nbox 1 8 5 5\nbox 27 1 3 3\nbox 0 0 3 5\nbox 4 0 2 5\nvwire 5 30 -1\n";
+circ_textarea.value = "\nwidth 30\nheight 30\nGenerate2_E 10 28 red 3\nGenerate1_E 12 28 red 3\nGenerate1_E 14 28 red 3\nGenerate1_E 16 28 red 3\nvwire 11 28 -16\nvwire 12 28 -18\nvwire 14 28 -16\nvwire 16 28 -16\nU_turn_WN_EXN 8 26 red 0\nU_turn_WN_EXN 8 24 red 0\nU_turn_WN_EXN 8 14 red 0\nU_turn_WN_EXN 8 12 red 0\nhwire 12 13 5 red\nhwire 12 15 5 red\nhwire 7 16 10 red\nhwire 4 17 13 red\nhwire 3 22 14 red\nhwire 8 23 9 red\nhwire 12 25 5 red\nhwire 12 27 5 red\nGenerate2_EX 5 15 red 0\nGenerate2_EX 2 16 red 0\nGenerate2_EX 1 21 red 0\nTurn_E_S 0 23 blue 1\nDuplicate_E_EN 24 22 blue 2\nhwire 24 24 -12\nhwire 30 26 -18\nhwire 30 24 -2\nvwire 25 26 4\nvwire 3 30 -8\nhwire 4 26 -4\nvwire 23 17 13\nvwire 0 4 19\nhwire 0 9 1\nvwire 4 13 5\nvwire 7 7 10\nhwire 0 6 6\nTurn_E_S 6 4 blue 0\nNot_turn_EX_N 22 15 blue 2\nhwire 28 16 -3 red\nhwire 25 14 -13 \nhwire 22 12 -10\nTurn_Middle_E_S 22 10 blue 1\nTurn_E_S 25 13 blue 1\nvwire 25 0 13\nvwire 23 0 4\nvwire 23 8 2\nhwire 25 6 5\nDuplicate_E_EN 21 4 blue 1\nDuplicate_E_EN 26 7 blue 1\nvwire 28 11 5\nvwire 28 4 3\nhwire 16 3 11\nGenerate1_E 14 3 yellow 0\nGenerate1_EX 15 0 yellow 1\nGenerate2_E 12 4 orange 0\nvwire 16 2 2 red\nvwire 17 6 -4 red\nhwire 14 5 6 red\nhwire 18 2 -5\nDuplicate_E_EN 9 0 blue 2\nvwire 10 4 2 \nvwire 14 6 -1 \nvwire 16 10 -5\nvwire 3 8 -8\nvwire 5 1 -1\nhwire 9 2 -1\nhwire 4 2 -1\nNot_turn_N_EX 28 16 blue 2\ncolor grey\nDuplicate_N_WEX 4 23 red 0\nAnd_Not_And_Not_NNS_N 10 6 orange 0\nAnd_Not_NN_NN 13 10 orange 0\nAnd_Wire_Wire_EWN_EWN 19 17 lime 0\nDuplicate_E_ES 18 21 lime 2\nBefore_Latch_EYN_NN 17 4 yellow 0\nU_turn2_W_E 1 18 lime 0\nU_turn2_W_E 26 18 lime 2\nU_turn_W_E 3 20 lime 0\nU_turn_W_E 26 20 lime 2\nhwire 5 18 21\nhwire 26 19 -21\nhwire 7 20 29\nhwire 26 21 -19\nvwire 19 21 -1 \nvwire 19 17 -6 \nvwire 19 4 -1\nAnd_Not_NW_W 17 0 yellow 0\nGenerate1_E 20 1 yellow 2\nNot_Turn_E_S 27 1 blue 0\nNot_Turn_E_N 0 0 blue 2\nFork_Not_WN_WN 4 1 blue 0\nbox 1 8 5 5\nvwire 5 30 -1\n";
 document.body.appendChild(circ_textarea);
 document.body.appendChild(document.createElement('br'));
 var circ_button = document.createElement('button');
